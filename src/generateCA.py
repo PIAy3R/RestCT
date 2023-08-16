@@ -6,12 +6,14 @@ import requests
 import subprocess
 import shlex
 import chardet
-from src.Dto.keywords import Loc, DataType, Method
+from src.Dto.keywords import Loc, DataType, Method, Tasks, Method
 from pathlib import Path
 from typing import List, Tuple, Dict, Union, Set
 from src.Dto.operation import Operation, Response
 from src.Dto.constraint import Constraint, Processor
 from src.Dto.parameter import AbstractParam, ValueType
+from src.languagemodel.model import _OpenAILanguageModel
+from src.restct import Config
 from collections import defaultdict
 from loguru import logger
 
@@ -20,18 +22,21 @@ class CA:
     # value used in success http calls. key: operation._repr_+paramName
     okValueDict: Dict[str, List[Tuple[ValueType, object]]] = defaultdict(list)
     # success http call sequence. key: url, value: last operation's parameters and values
-    reuseEssentialSeqDict: Dict[Tuple[str], List[Dict[str, Tuple[ValueType, Union[str, int, float, list, dict]]]]] = defaultdict(list)
+    reuseEssentialSeqDict: Dict[
+        Tuple[str], List[Dict[str, Tuple[ValueType, Union[str, int, float, list, dict]]]]] = defaultdict(list)
     reuseAllSeqDict: Dict[Tuple[str], List[Dict[str, Tuple[ValueType, object]]]] = defaultdict(list)
     # bug: {url: , method: , parameters: , statusCode: , response: , sequence}
     bugList: List[Dict[str, Union[str, dict, int, list]]] = list()
     # seq actually tested, return 20X or 500
     successSet: Set = set()
 
-    def __init__(self, sequence: Tuple[Operation]):
+    def __init__(self, sequence: Tuple[Operation], spec):
         # start time
         self.time = time.time()
 
         self._sequence = sequence
+        self._spec = spec
+
 
         # response chain
         self._maxChainItems = 3
@@ -50,16 +55,21 @@ class CA:
             with filePath.open("r") as fp:
                 self._unresolvedParam = set(json.load(fp).get("unresolvedParams", []))
 
-    def main(self, budget) -> bool:
+    def main(self, budget) -> Union[bool, tuple[bool, float]]:
+        successOpNum = 0
         for i, operation in enumerate(self._sequence):
-            logger.debug("{}-th operation: {}*{}", i + 1, operation.method.value, operation.url)
+            is_success = False
+            logger.debug("{}-th operation: {}", i + 1, operation)
             chainList = self.getChains()
             urlTuple = tuple([op.__repr__() for op in self._sequence[:i + 1]])
             while len(chainList):
+                # run out of time
                 if time.time() - self.time > budget:
                     return False
                 chain = chainList.pop(0)
-                successUrlTuple = tuple([op.__repr__() for op in self._sequence[:i] if op.__repr__() in chain.keys()] + [operation.__repr__()])
+                successUrlTuple = tuple(
+                    [op.__repr__() for op in self._sequence[:i] if op.__repr__() in chain.keys()] + [
+                        operation.__repr__()])
 
                 # solve constraints
                 processor = Processor(operation.parameterList)
@@ -67,37 +77,118 @@ class CA:
                 operation.constraints.clear()
                 operation.addConstraints(constraints)
 
-                coverArray: List[Dict[str, Tuple[ValueType, object]]] = self.genEssentialParamsCase(operation, urlTuple, chain)
-                logger.info("        {}-th operation essential parameters covering array size: {}, parameters: {}, constraints: {}".format(i + 1, len(coverArray), len(coverArray[0]), len(operation.constraints)))
-                essentialSender = SendRequest(operation, coverArray, chain)
+                ecoverArray: List[Dict[str, Tuple[ValueType, object]]] = self.genEssentialParamsCase(operation,
+                                                                                                     urlTuple,
+                                                                                                     chain)
+                logger.info(
+                    "        {}-th operation essential parameters covering array size: {}, parameters: {}, "
+                    "constraints: {}".format(i + 1, len(ecoverArray), len(ecoverArray[0]), len(operation.constraints)))
+
+                essentialSender = SendRequest(operation, ecoverArray, chain)
                 statusCodes, responses = essentialSender.main()
-                self._handleFeedback(chain, operation, statusCodes, responses, coverArray, successUrlTuple, False)
+                logger.info("        status code list: {}".format(statusCodes))
+
+                essentialParamList: List[AbstractParam] = list()
+                ep: List[AbstractParam] = list(filter(lambda p: p.isEssential, operation.parameterList))
+                for p in ep:
+                    flag = True
+                    for domain in p.domain:
+                        if domain[0] == ValueType.Enum:
+                            flag = False
+                        else:
+                            pass
+                    if flag:
+                        essentialParamList.append(p)
+
+                self._handleFeedback(chain, operation, statusCodes, responses, ecoverArray, successUrlTuple, False)
                 eSuccessCodes = set(filter(lambda c: c in range(200, 300), statusCodes))
-                bugCodes = set(filter(lambda c: c in range(500, 600), statusCodes))
+                ebugCodes = set(filter(lambda c: c in range(500, 600), statusCodes))
                 if len(eSuccessCodes) > 0:
                     self._saveSuccessSeq(successUrlTuple)
-                elif len(bugCodes) > 0:
+                    is_success = True
+                elif len(ebugCodes) > 0:
                     self._saveSuccessSeq(successUrlTuple)
+                    is_success = True
                 else:
                     pass
 
-                coverArray: List[Dict[str, Tuple[ValueType, object]]] = self.genAllParamsCase(operation, urlTuple, chain)
-                logger.info("        {}-th operation all parameters covering array size: {}, parameters: {}".format(i + 1, len(coverArray), len(coverArray[0])))
-                logger.info("*" * 100)
-                allSender = SendRequest(operation, coverArray, chain)
+                acoverArray: List[Dict[str, Tuple[ValueType, object]]] = self.genAllParamsCase(operation, urlTuple,
+                                                                                               chain)
+                logger.info(
+                    "        {}-th operation all parameters covering array size: {}, "
+                    "parameters: {}".format(i + 1, len(acoverArray), len(acoverArray[0])))
+                allSender = SendRequest(operation, acoverArray, chain)
                 statusCodes, responses = allSender.main()
-                self._handleFeedback(chain, operation, statusCodes, responses, coverArray, successUrlTuple, True)
+                logger.info("        status code list: {}".format(statusCodes))
+
+                allParamList: List[AbstractParam] = list()
+                ap: List[AbstractParam] = operation.parameterList
+                for p in ap:
+                    flag = True
+                    for domain in p.domain:
+                        if domain[0] == ValueType.Enum:
+                            flag = False
+                        else:
+                            pass
+                    if flag:
+                        allParamList.append(p)
+
+                self._handleFeedback(chain, operation, statusCodes, responses, acoverArray, successUrlTuple, True)
 
                 successCodes = set(filter(lambda c: c in range(200, 300), statusCodes))
                 bugCodes = set(filter(lambda c: c in range(500, 600), statusCodes))
                 if len(successCodes) > 0:
                     self._saveSuccessSeq(successUrlTuple)
+                    is_success = True
                     break
                 elif len(bugCodes) > 0:
                     self._saveSuccessSeq(successUrlTuple)
+                    is_success = True
                     break
                 else:
-                    if len(eSuccessCodes) == 0:
+                    if len(eSuccessCodes) == 0 and len(ebugCodes) == 0:
+                        if Config.UseLLM == "True":
+                            new_ecoverArray = self.regen_coverArray(coverArray=ecoverArray,
+                                                                    param_list=essentialParamList,
+                                                                    operation=operation,
+                                                                    spec=self._spec)
+                            logger.debug("                use regenerated essential parameter cover array")
+                            reSender = SendRequest(operation, new_ecoverArray, chain)
+                            statusCodes, responses = reSender.main()
+                            logger.info("                regenerated essential parameter cover array status code list: {}"
+                                        .format(statusCodes))
+
+                            self._handleFeedback(chain, operation, statusCodes, responses, new_ecoverArray, successUrlTuple,
+                                                 True)
+
+                            esuccessCodes = set(filter(lambda c: c in range(200, 300), statusCodes))
+                            ebugCodes = set(filter(lambda c: c in range(500, 600), statusCodes))
+                            if len(esuccessCodes) > 0 or len(ebugCodes) > 0:
+                                self._saveSuccessSeq(successUrlTuple)
+                                is_success = True
+
+                            new_acoverArray = self.regen_coverArray(coverArray=acoverArray,
+                                                                    param_list=allParamList,
+                                                                    operation=operation,
+                                                                    spec=self._spec)
+                            logger.debug("                use regenerated all parameter cover array")
+                            reSender = SendRequest(operation, new_acoverArray, chain)
+                            statusCodes, responses = reSender.main()
+                            logger.info("                regenerated all parameter cover array status code list: {}"
+                                        .format(statusCodes))
+
+                            self._handleFeedback(chain, operation, statusCodes, responses, new_acoverArray, successUrlTuple,
+                                                 True)
+
+                            successCodes = set(filter(lambda c: c in range(200, 300), statusCodes))
+                            bugCodes = set(filter(lambda c: c in range(500, 600), statusCodes))
+                            if len(successCodes) > 0 or len(bugCodes) > 0:
+                                self._saveSuccessSeq(successUrlTuple)
+                                is_success = True
+
+                            logger.info("*" * 100)
+                        else:
+                            pass
                         errorResponses = [responses[j] for j, sc in enumerate(statusCodes) if sc in range(400, 500)]
                         unresolvedParamList = processor.analyseError(errorResponses)
                         for up in unresolvedParamList:
@@ -110,9 +201,100 @@ class CA:
                                 for rc in removedCons:
                                     operation.constraints.remove(rc)
                                 break
+            if is_success:
+                successOpNum += 1
         logger.info("   unresolved parameters: {}".format(self._unresolvedParam))
         self.clearUp()
-        return True
+        return True, successOpNum
+
+    @staticmethod
+    def regen_coverArray(coverArray: list, param_list: list, spec: dict, operation: Operation):
+
+        def replace_value(qcoverArray: list, qoperation: Operation, qparam_list: list):
+            for param_combinations in qcoverArray:
+                for param_to_replace in qparam_list:
+                    if param_to_replace.name in param_combinations.keys():
+                        i = random.randint(0, len(_OpenAILanguageModel.exampleValueDict
+                                                  [qoperation][param_to_replace.name]) - 1)
+                        if param_combinations[param_to_replace.name][0] == ValueType.Dynamic:
+                            param_combinations[param_to_replace.name] = tuple([ValueType.Random,
+                                                                               _OpenAILanguageModel.exampleValueDict
+                                                                               [qoperation][param_to_replace.name][i]])
+                        else:
+                            param_combinations[param_to_replace.name] = tuple(
+                                [param_combinations[param_to_replace.name][0],
+                                 _OpenAILanguageModel.exampleValueDict
+                                 [qoperation][param_to_replace.name][i]])
+
+        def handel_body(coverarray: list, body_param, swagger: dict, op: Operation):
+            logger.debug("                   body parameter in parameter list, process the body parameter")
+            if _OpenAILanguageModel.exampleValueDict[op].get("body") is not None:
+                logger.info("                   has called llm for body parameter, reuse it")
+            else:
+                logger.info("                   hasn't called llm for body parameter, call for it")
+                openai_model = _OpenAILanguageModel(spec=swagger,
+                                                    operation=op,
+                                                    task=Tasks.BODY,
+                                                    target_param=body_param,
+                                                    constraint="")
+                llm_ans = openai_model.get_completion()
+                logger.info("                answer of language model: {}".format(llm_ans))
+            for cover_dict in coverarray:
+                cover_dict.update({"body":
+                                       tuple([ValueType.Random, _OpenAILanguageModel.exampleValueDict[op]["body"][0]])})
+
+        logger.debug("                use language model values, "
+                     "first check if operation and parameters has called language model")
+        if operation in _OpenAILanguageModel.exampleValueDict.keys():
+            logger.info(
+                "                operation {} has called language model, check the parameters".format(operation))
+            temp = list()
+            for p in param_list:
+                if p.name not in _OpenAILanguageModel.exampleValueDict[operation].keys():
+                    temp.append(p)
+            if "body" in [p.name for p in param_list]:
+                body_param = [p for p in temp if p.name == "body"]
+                handel_body(coverArray, body_param, spec, operation)
+                for p in temp:
+                    if p.name == "body":
+                        temp.remove(p)
+
+            if len(temp) == 0:
+                logger.info("                all parameters has called language model, "
+                            "reuse the value and re-generate cover array")
+                replace_value(coverArray, operation, param_list)
+
+            else:
+                logger.info("                existing parameter has no language model value, "
+                            "call model for these parameters")
+                openai_model = _OpenAILanguageModel(spec=spec,
+                                                    operation=operation,
+                                                    task=Tasks.SPECIAL_VALUE,
+                                                    target_param=temp,
+                                                    constraint="")
+                llm_ans = openai_model.get_completion()
+                logger.info("                answer of language model: {}".format(llm_ans))
+                replace_value(coverArray, operation, param_list)
+        else:
+            logger.info("                operation {} hasn't called language model, call language model and "
+                        "re-generate cover array".format(operation))
+            if "body" in [p.name for p in param_list]:
+                body_param = [p for p in param_list if p.name == "body"]
+                handel_body(coverArray, body_param, spec, operation)
+                param_list = [p for p in param_list if p.name != "body"]
+            if len(param_list) != 0:
+                logger.info("                     there are other parameters to process, asking llm again")
+                openai_model = _OpenAILanguageModel(spec=spec,
+                                                    operation=operation,
+                                                    task=Tasks.SPECIAL_VALUE,
+                                                    target_param=param_list,
+                                                    constraint="")
+                llm_ans = openai_model.get_completion()
+                logger.info("                answer of language model: {}".format(llm_ans))
+                replace_value(coverArray, operation, param_list)
+            else:
+                logger.info("                     only body parameter in coveringarray, processing finished")
+        return coverArray
 
     @staticmethod
     def _saveSuccessSeq(successUrlTuple):
@@ -163,7 +345,8 @@ class CA:
             pass
 
     @staticmethod
-    def _saveBug(url: str, method: str, parameters: dict, statusCode: int, response: Union[list, dict, str], chain: dict):
+    def _saveBug(url: str, method: str, parameters: dict, statusCode: int, response: Union[list, dict, str],
+                 chain: dict):
         opStrSet = {d.get("method") + d.get("url") + str(d.get("statusCode")) for d in CA.bugList}
         if method + url + str(statusCode) in opStrSet:
             return
@@ -211,8 +394,10 @@ class CA:
                     if value[0] not in typeSet:
                         lst.append(value)
 
-    def genEssentialParamsCase(self, operation, urlTuple, chain) -> List[Dict[str, Tuple[ValueType, Union[str, int, float, list, dict]]]]:
-        essentialParamList: List[AbstractParam] = list(filter(lambda p: p.isEssential, operation.parameterList))
+    def genEssentialParamsCase(self, operation, urlTuple, chain) -> List[
+        Dict[str, Tuple[ValueType, Union[str, int, float, list, dict]]]]:
+        essentialParamList: List[AbstractParam] = list(filter(lambda p: p.isEssential and p.name != "body",
+                                                              operation.parameterList))
         if len(essentialParamList) == 0:
             return [{}]
 
@@ -239,8 +424,9 @@ class CA:
             else:
                 return acts.main()
 
-    def genAllParamsCase(self, operation, urlTuple, chain) -> List[Dict[str, Tuple[ValueType, Union[str, int, float, list, dict]]]]:
-        allParamList = operation.parameterList
+    def genAllParamsCase(self, operation, urlTuple, chain) -> List[
+        Dict[str, Tuple[ValueType, Union[str, int, float, list, dict]]]]:
+        allParamList = list(filter(lambda p: p.name != "body", operation.parameterList))
         if len(allParamList) == 0:
             return [{}]
 
@@ -406,14 +592,23 @@ class SendRequest:
         statusCodes = list()
         responses = list()
         for case in self._coverArray:
-            self.setParamValue(case)
-            kwargs = self.assemble()
-            statusCode, response = self.send(**kwargs)
-            statusCodes.append(statusCode)
-            responses.append(response)
+            if "body" in [p for p in case]:
+                body_value = case.pop("body")[1]
+                self.setParamValue(case)
+                kwargs = self.assemble(body_value)
+                statusCode, response = self.send(**kwargs)
+                statusCodes.append(statusCode)
+                responses.append(response)
+                return statusCodes, responses
+            else:
+                self.setParamValue(case)
+                kwargs = self.assemble()
+                statusCode, response = self.send(**kwargs)
+                statusCodes.append(statusCode)
+                responses.append(response)
         return statusCodes, responses
 
-    def assemble(self) -> dict:
+    def assemble(self, body_value=None) -> dict:
         url = self._operation.url
         headers = {
             'Content-Type': 'application/json',
@@ -423,6 +618,8 @@ class SendRequest:
         files = dict()
         formData = dict()
         body = dict()
+        if body_value is not None:
+            body = body_value
 
         for p in self._operation.parameterList:
             value = p.printableValue(self._responses)
@@ -446,10 +643,11 @@ class SendRequest:
                     else:
                         formData[p.name] = value
                 elif p.loc is Loc.Body:
-                    if isinstance(value, dict):
-                        body.update(value)
-                    else:
-                        body[p.name] = value
+                    pass
+                    # if isinstance(value, dict):
+                    #     body.update(value)
+                    # else:
+                    #     body[p.name] = value
                 else:
                     raise Exception("unexpected Param Loc Type: {}".format(p.name))
 
@@ -467,7 +665,7 @@ class SendRequest:
         if len(formData) > 0:
             kwargs["data"] = formData
         if len(body) > 0:
-            kwargs["json"] = body
+            kwargs["data"] = json.dumps(body)
         return kwargs
 
     def setParamValue(self, case: Dict[str, Tuple[ValueType, object]]):
@@ -483,6 +681,7 @@ class SendRequest:
 
         try:
             feedback = getattr(requests, self._operation.method.value.lower())(**kwargs, timeout=10, auth=Auth())
+
         except TypeError:
             raise Exception("request type error: {}".format(self._operation.method.value.lower()))
         except requests.exceptions.Timeout:

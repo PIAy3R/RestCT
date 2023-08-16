@@ -53,6 +53,13 @@ class Config:
     # data and log path
     dataPath = ""
 
+    # OpenAI API key and model
+    UseLLM = str()
+
+    openai_key = ""
+
+    model = ""
+
 
 def checkAndPrehandling(settings: Namespace):
     curFile = Path(__file__)
@@ -134,6 +141,18 @@ def checkAndPrehandling(settings: Namespace):
     if not dataPath.exists():
         dataPath.mkdir()
 
+    if settings.UseLLM is None or settings.UseLLM == "":
+        raise Exception("UseLLM is needed")
+    else:
+        Config.UseLLM = settings.UseLLM
+        if settings.UseLLM == "True":
+            if settings.OpenAIKey is None or settings.OpenAIKey == "":
+                raise Exception("openai key is needed")
+            else:
+                Config.openai_key = settings.OpenAIKey
+            Config.model = settings.model
+
+
 
 if __name__ == "__main__":
     import sys
@@ -163,6 +182,15 @@ if __name__ == "__main__":
     parser.add_argument('--dir',
                         help='output folder',
                         type=str, required=True)
+    parser.add_argument('--UseLLM',
+                        help='Whether use llm or not',
+                        type=str, required=True, default="False")
+    parser.add_argument('--OpenAIKey',
+                        help='The api key of the OpenAI api',
+                        type=str, required=False)
+    parser.add_argument('--model',
+                        help='The OpenAI model',
+                        type=str, required=False, default="gpt-3.5-turbo-0613")
     parser.add_argument('--budget',
                         help='test budget(Secs), default=3600',
                         type=int, required=False, default=3600)

@@ -11,7 +11,7 @@ URL_PREFIX = ""
 DEFINITIONS = dict()
 
 
-def parse(target_base_url=None):
+def parse(swagger, target_base_url=None):
     """
     1. parse definition for examples, definitions dto
     2. parse paths for operations dto

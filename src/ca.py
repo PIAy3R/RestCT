@@ -146,7 +146,7 @@ class CA:
         for iid, url in self._idCounter:
             resourceId = url.rstrip("/") + "/" + str(iid)
             try:
-                requests.delete(url=resourceId, auth=Auth(self.headerAuth))
+                requests.delete(url=resourceId, auth=Auth(self.headerAuth, self.queryAuth))
             except Exception:
                 continue
 
@@ -472,8 +472,6 @@ class SendRequest:
                 else:
                     raise Exception("unexpected Param Loc Type: {}".format(p.name))
 
-        params.update(self.queryAuth)
-
         kwargs = dict()
         kwargs["url"] = url
         kwargs["headers"] = headers
@@ -500,7 +498,7 @@ class SendRequest:
 
         try:
             feedback = getattr(requests, self._operation.method.value.lower())(**kwargs, timeout=10,
-                                                                               auth=Auth(self.headerAuth))
+                                                                               auth=Auth(self.headerAuth, self.queryAuth))
         except TypeError:
             raise Exception("request type error: {}".format(self._operation.method.value.lower()))
         except requests.exceptions.Timeout:
@@ -522,10 +520,13 @@ class SendRequest:
 
 
 class Auth:
-    def __init__(self, headerAuth):
+    def __init__(self, headerAuth, queryAuth):
         self.headerAuth = headerAuth
+        self.queryAuth = queryAuth
 
     def __call__(self, r):
         for key, token in self.headerAuth.items():
             r.headers[key] = token
+        for key, token in self.queryAuth.items():
+            r.params[key] = token
         return r

@@ -1,5 +1,6 @@
 import argparse
 import json
+import os
 from argparse import Namespace
 from pathlib import Path
 
@@ -135,10 +136,12 @@ class Config:
         if not dataPath.exists():
             dataPath.mkdir()
 
+        os.environ["swagger"] = self.swagger
+        os.environ["patternFile"] = self.patterns
+
 
 if __name__ == "__main__":
     import sys
-    import os
 
     curPath = os.path.abspath(os.path.dirname(__file__))
     rootPath = os.path.split(curPath)[0]
@@ -186,6 +189,8 @@ if __name__ == "__main__":
     config.checkAndPrehandling(args)
 
     from src.restct import RestCT
+    from src.controller import RemoteController
 
-    restCT = RestCT(config)
+    controller = RemoteController()
+    restCT = RestCT(config, controller)
     restCT.run()

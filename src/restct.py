@@ -54,7 +54,7 @@ class RestCT:
                    format="<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | - <level>{message}</level>")
         logger.add(sys.stderr,
                    format="<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | - <level>{message}</level>")
-        parse(self._specified_url)
+        parse(self._config.swagger, self._specified_url)
 
         logger.info("operations: {}".format(len(Operation.members)))
         logger.info("examples found: {}".format(len(Example.members)))
@@ -63,7 +63,7 @@ class RestCT:
             sequence = self._sca.buildSequence()
             logger.info("uncovered combinations: {}, sequence length: {}".format(len(self._sca.uncoveredSet), len(sequence)))
 
-        for sequence in sorted(SCA.members, key=lambda item: len(item)):
+        for sequence in sorted(self._sca.sequence, key=lambda item: len(item)):
             flag = self._ca.handle(sequence, RESTCT.budget - (time.time() - start_time))
             self._controller.stop_testcase()
             if not flag:

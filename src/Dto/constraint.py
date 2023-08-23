@@ -1,4 +1,5 @@
 import json
+import os
 import re
 
 import spacy
@@ -27,10 +28,12 @@ class ConstraintMatcher:
         self.spanWithConstraints = set()
 
     def _loadPatterns(self):
-        from src.main import Config
-        patternFile = Path(Config.patterns)
-        with patternFile.open("r") as fp:
-            patterns = json.load(fp)
+        patternFile = os.environ.get("patternFile")
+        if patternFile is None:
+            raise FileNotFoundError("pattern file not in os.environ")
+        else:
+            with patternFile.open("r") as fp:
+                patterns = json.load(fp)
         rules = defaultdict(list)
         for ruleList in patterns.values():
             for ruleInfo in ruleList:

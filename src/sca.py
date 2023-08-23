@@ -1,4 +1,5 @@
 import time
+from main import Config
 from typing import List, Set, Tuple
 from src.Dto.operation import Operation
 from enum import Enum
@@ -44,7 +45,7 @@ class Node:
         return self.operations[0].url
 
     @property
-    def splittedUrl(self) -> Set[Tuple[str, int]]:
+    def splitUrl(self) -> Set[Tuple[str, int]]:
         return self.operations[0].splittedUrl
 
 
@@ -71,16 +72,16 @@ class Graph:
             predecessor = self.root
 
         insertFlag = True
-        if predecessor.isRoot() or newNode.splittedUrl > predecessor.splittedUrl:
+        if predecessor.isRoot() or newNode.splitUrl > predecessor.splitUrl:
             for successor in predecessor.successors:
-                if newNode.splittedUrl > successor.splittedUrl:
+                if newNode.splitUrl > successor.splitUrl:
                     self.insert(newNode, successor)
                     insertFlag = False
         if insertFlag:
             if len(predecessor.successors) > 0:
                 nodesModified = list()
                 for successor in predecessor.successors:
-                    if newNode.splittedUrl < successor.splittedUrl:
+                    if newNode.splitUrl < successor.splitUrl:
                         nodesModified.append(successor)
                 for curNode in nodesModified:
                     curNode.predecessor = newNode
@@ -130,15 +131,18 @@ class Graph:
 
 
 class SCA:
-    members: List[Tuple[Operation]] = list()
-
-    def __init__(self):
-        from src.main import Config
-        self._strength = min(Config.s_strength, len(Operation.members))
+    def __init__(self, config: Config):
+        self._strength = min(config.s_strength, len(Operation.members))
         self.uncoveredSet = self._collectUncoveredSet()
 
         # start time
         self.time = time.time()
+
+        self._members = list()
+
+    @property
+    def sequence(self):
+        return self._members
 
     def _collectUncoveredSet(self):
         """get all combinations to be covered"""
@@ -155,12 +159,12 @@ class SCA:
             # POST Constraint
             if operation.method is Method.POST:
                 for loc in range(index):
-                    if operation.splittedUrl <= permutation[loc].splittedUrl:
+                    if operation.splitUrl <= permutation[loc].splitUrl:
                         return False
             # DELETE Constraint
             if operation.method is Method.DELETE:
                 for loc in range(index + 1, len(permutation)):
-                    if operation.splittedUrl <= permutation[loc].splittedUrl:
+                    if operation.splitUrl <= permutation[loc].splitUrl:
                         return False
         return True
 
@@ -249,5 +253,5 @@ class SCA:
         # update uncovered set
         newCovered = set(combinations(sequence, self._strength))
         self.uncoveredSet -= newCovered
-        SCA.members.append(tuple(sequence))
+        self._members.append(tuple(sequence))
         return tuple(sequence)

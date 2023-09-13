@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 from urllib.parse import urlparse
 
-from src.Dto.keywords import DocKey, ParamKey, DataType, Method
+from src.Dto.keywords import DocKey, ParamKey, DataType, Method, URL
 from src.Dto.operation import Operation
 from src.Dto.operation import Response
 from src.Dto.parameter import buildParam, Example
@@ -58,6 +58,7 @@ class Parser:
         baseurl = spec.get(DocKey.BASEPATH, "")
         host = spec.get(DocKey.HOST, "")
         base_path = "{}://{}/{}".format(protocol, host.strip("/"), baseurl.strip("/"))
+        URL.baseurl = base_path
 
         if self._forwarding_url is not None and len(self._forwarding_url) == 0:
             base_path = self._forwarding_url.rstrip('/') + "/" + urlparse(base_path).path.lstrip('/')

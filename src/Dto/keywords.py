@@ -74,6 +74,23 @@ class DataType(Enum):
 
     NULL = "NONE"
 
+    @staticmethod
+    def from_string(value, value_type):
+        if value_type in [DataType.Integer, DataType.Int32, DataType.Int64, DataType.Long]:
+            value = int(value)
+        elif value_type in [DataType.Float, DataType.Double, DataType.Number]:
+            value = float(value)
+        elif value_type in [DataType.String]:
+            value = str(value)
+        elif value_type in [DataType.Byte]:
+            value = bytes(value)
+        elif value_type in [DataType.Bool]:
+            if value.lower() == "true":
+                value = True
+            else:
+                value = False
+        return value
+
 
 class Loc(Enum):
     FormData = "formData"

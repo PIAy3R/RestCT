@@ -27,23 +27,6 @@ def _saveChain(responseChains: List[dict], chain: dict, opStr: str, response):
         responseChains.pop(0)
 
 
-def format_type(value, type):
-    if type in [DataType.Integer, DataType.Int32, DataType.Int64, DataType.Long]:
-        value = int(value)
-    elif type in [DataType.Float, DataType.Double]:
-        value = float(value)
-    elif type in [DataType.String]:
-        value = str(value)
-    elif type in [DataType.Byte]:
-        value = bytes(value)
-    elif type in [DataType.Bool]:
-        if value.lower() == "true":
-            value = True
-        else:
-            value = False
-    return value
-
-
 class ACTS:
     def __init__(self, dataPath, jar):
         self._workplace = Path(dataPath) / "acts"
@@ -726,7 +709,7 @@ class CAWithLLM(CA):
                 if self._is_regen:
                     if p.name in example_dict.keys():
                         for value in example_dict.get(p.name):
-                            value = format_type(value, p.type)
+                            value = DataType.from_string(value, p.type)
                             p.domain.append(Value(value, ValueType.Example, p.type))
 
                 if not self._manager.is_unresolved(operation.__repr__() + p.name):

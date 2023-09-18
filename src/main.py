@@ -61,6 +61,10 @@ class Config:
         # self.forwarding_url = "http://localhost:8081"
         self.forwarding_url = None
 
+        self.use_llm = False
+        self.language_model = "gpt-3.5-turbo"
+        self.language_model_key = ""
+
     def checkAndPrehandling(self, settings: Namespace):
         curFile = Path(__file__)
 
@@ -144,9 +148,21 @@ class Config:
         if not dataPath.exists():
             dataPath.mkdir()
 
+        if settings.UseLLM is None or settings.UseLLM == "":
+            raise Exception("whether UseLLM need to be decided")
+        else:
+            if settings.UseLLM.lower() == "true":
+                self.use_llm = True
+                if settings.LanguageModelKey is None or settings.LanguageModelKey == "":
+                    raise Exception("api key of language model should be provided")
+                else:
+                    self.language_model_key = settings.LanguageModelKey
+
         os.environ["dataPath"] = self.dataPath
         os.environ["swagger"] = self.swagger
         os.environ["patternFile"] = self.patterns
+        os.environ["model"] = self.language_model
+        os.environ["language_model_key"] = self.language_model_key
 
 
 if __name__ == "__main__":
@@ -198,6 +214,12 @@ if __name__ == "__main__":
     parser.add_argument('--forwardingURL',
                         help='set if the forwarding proxy is running',
                         type=str, required=False, default="")
+    parser.add_argument('--UseLLM',
+                        help='whether to use languae model',
+                        type=str, required=True, default="False")
+    parser.add_argument('--LanguageModelKey',
+                        help='api key of languae model',
+                        type=str, required=False, default="False")
 
     args = parser.parse_args()
 

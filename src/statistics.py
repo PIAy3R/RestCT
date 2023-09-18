@@ -66,6 +66,7 @@ class Statistics:
         self.op_executed_num: set = set()  #
         self.op_success_num: set = set()  #
         self.bug: set = set()  #
+        self.llm_call: int = 0
 
     def update_all_c_way(self, seq):
         self.C_1_way_all.update(self._compute_combinations(seq, 1))

@@ -398,6 +398,15 @@ class AbstractParam(metaclass=abc.ABCMeta):
         # array -> list
         pass
 
+    def __hash__(self):
+        return hash(self.name)
+
+    def __eq__(self, other):
+        if isinstance(other, self.__class__) and self.getGlobalName() == other.getGlobalName():
+            return True
+        else:
+            return False
+
 
 class ObjectParam(AbstractParam):
     def __init__(self, specifiedName: str, default: list, loc: Loc, required: bool, paramType: DataType,

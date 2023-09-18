@@ -15,7 +15,8 @@ from loguru import logger
 from src.Dto.constraint import Constraint, Processor
 from src.Dto.keywords import Loc, DataType, Method
 from src.Dto.operation import Operation
-from src.Dto.parameter import AbstractParam, ValueType, Value
+from src.Dto.parameter import AbstractParam, ValueType, Value, EnumParam
+from src.languagemodel.model import ParamValueModel
 
 
 def _saveChain(responseChains: List[dict], chain: dict, opStr: str, response):
@@ -24,6 +25,23 @@ def _saveChain(responseChains: List[dict], chain: dict, opStr: str, response):
     responseChains.append(newChain)
     if len(responseChains) > 10:
         responseChains.pop(0)
+
+
+def format_type(value, type):
+    if type in [DataType.Integer, DataType.Int32, DataType.Int64, DataType.Long]:
+        value = int(value)
+    elif type in [DataType.Float, DataType.Double]:
+        value = float(value)
+    elif type in [DataType.String]:
+        value = str(value)
+    elif type in [DataType.Byte]:
+        value = bytes(value)
+    elif type in [DataType.Bool]:
+        if value.lower() == "true":
+            value = True
+        else:
+            value = False
+    return value
 
 
 class ACTS:
@@ -239,6 +257,7 @@ class Auth:
 class RuntimeInfoManager:
     def __init__(self):
         self._num_of_requests = 0
+        self._llm_call = 0
 
         self._ok_value_dict: Dict[str, List[Value]] = defaultdict(list)
         self._reused_essential_seq_dict: Dict[Tuple[Operation], List[Dict[str, Value]]] = defaultdict(list)
@@ -247,6 +266,8 @@ class RuntimeInfoManager:
         self._bug_list: list = list()
         self._success_sequence: set = set()
         self._unresolved_params: Set[Tuple[Operation, str]] = set()
+
+        self._llm_example_value_dict: Dict[Operation, Dict[AbstractParam, List[str]]] = dict()
 
     def essential_executed(self, operations: Tuple[Operation]):
         return operations in self._reused_essential_seq_dict.keys()
@@ -269,11 +290,17 @@ class RuntimeInfoManager:
     def get_ok_value_dict(self):
         return self._ok_value_dict
 
+    def get_llm_examples(self):
+        return self._llm_example_value_dict
+
     def is_unresolved(self, p_name):
         return p_name in self._unresolved_params
 
     def register_request(self):
         self._num_of_requests += 1
+
+    def register_llm_call(self):
+        self._llm_call += 1
 
     def save_reuse(self, url_tuple, is_essential, case):
         if is_essential:
@@ -355,6 +382,9 @@ class RuntimeInfoManager:
     def get_chains(self, maxChainItems):
         sortedList = sorted(self._response_chains, key=lambda c: len(c.keys()), reverse=True)
         return sortedList[:maxChainItems] if maxChainItems < len(sortedList) else sortedList
+
+    def save_language_model_response(self, operation, json_output):
+        self._llm_example_value_dict[operation] = json_output
 
 
 class CA:
@@ -587,3 +617,138 @@ class CA:
         self._stat.sum_len_of_executed_seq += len(sequence)
         self._stat.update_executed_c_way(sequence)
         return True
+
+
+class CAWithLLM(CA):
+    def __init__(self, data_path, acts_jar, a_strength, e_strength, **kwargs):
+        super().__init__(data_path, acts_jar, a_strength, e_strength, **kwargs)
+
+        self._is_regen = False
+
+    def _re_handle(self, index, operation, chain, sequence) -> bool:
+        self._is_regen = True
+        success_url_tuple = tuple([op for op in sequence[:index] if op in chain.keys()] + [operation])
+        if len(operation.parameterList) == 0:
+            self._executes(operation, [{}], chain, success_url_tuple, [])
+            return True
+
+        self._call_language_model(operation)
+
+        history = []
+
+        self._reset_constraints(operation, operation.parameterList)
+
+        e_ca = self._handle_essential_params(operation, sequence[:index], chain, history)
+        logger.info(f"{index + 1}-th operation essential parameters covering array size: {len(e_ca)}, "
+                    f"parameters: {len(e_ca[0]) if len(e_ca) > 0 else 0}, constraints: {len(operation.constraints)}")
+
+        is_break = self._executes(operation, e_ca, chain, success_url_tuple, history, True)
+
+        if all([p.isEssential for p in operation.parameterList]):
+            return is_break
+
+        a_ca = self._handle_all_params(operation, sequence[:index], chain, history)
+        logger.info(f"{index + 1}-th operation all parameters covering array size: {len(a_ca)}, "
+                    f"parameters: {len(a_ca[0]) if len(a_ca) > 0 else 0}, constraints: {len(operation.constraints)}")
+
+        is_break = self._executes(operation, a_ca, chain, success_url_tuple, history, False)
+
+        return is_break
+
+    def _call_language_model(self, operation: Operation):
+        param_to_ask = []
+        for param in operation.parameterList:
+            if not isinstance(param, EnumParam):
+                param_to_ask.append(param)
+        value_model = ParamValueModel(operation, param_to_ask, self._manager)
+        value_model.execute()
+
+    def _re_count(self, e_ca, a_ca):
+        self._stat.req_num -= (len(e_ca) + len(a_ca))
+        self._stat.req_40x_num -= (len(e_ca) + len(a_ca))
+
+    def _handle_one_operation(self, index, operation: Operation, chain: dict, sequence) -> bool:
+        self._is_regen = False
+        success_url_tuple = tuple([op for op in sequence[:index] if op in chain.keys()] + [operation])
+
+        if len(operation.parameterList) == 0:
+            logger.debug("operation has no parameter, execute and return")
+            self._executes(operation, [{}], chain, success_url_tuple, [])
+            return True
+
+        history = []
+
+        self._reset_constraints(operation, operation.parameterList)
+
+        e_ca = self._handle_essential_params(operation, sequence[:index], chain, history)
+        logger.info(f"{index + 1}-th operation essential parameters covering array size: {len(e_ca)}, "
+                    f"parameters: {len(e_ca[0]) if len(e_ca) > 0 else 0}, constraints: {len(operation.constraints)}")
+
+        is_break = self._executes(operation, e_ca, chain, success_url_tuple, history, True)
+
+        if all([p.isEssential for p in operation.parameterList]):
+            return is_break
+
+        a_ca = self._handle_all_params(operation, sequence[:index], chain, history)
+        logger.info(f"{index + 1}-th operation all parameters covering array size: {len(a_ca)}, "
+                    f"parameters: {len(a_ca[0]) if len(a_ca) > 0 else 0}, constraints: {len(operation.constraints)}")
+
+        is_break = self._executes(operation, a_ca, chain, success_url_tuple, history, False)
+
+        if not is_break:
+            logger.info("no success request, use llm to help re-generate")
+            self._re_count(e_ca, a_ca)
+            is_break = self._re_handle(index, operation, chain, sequence)
+
+        return is_break
+
+    def _cover_params(self, operation, parameters, constraints, chain, history_ca_of_current_op: List[dict]):
+        """
+        generate domain for each parameter of the current operation
+        @param history_ca_of_current_op: ca_1 -> ca_2 -> ca_3, currently, essential_ca -> all_ca
+        @param operation: the target operation
+        @param parameters: parameter list
+        @param constraints: the constraints among parameters
+        @param chain: a response chain
+        @return: the parameters and their domains
+        """
+
+        example_dict = self._manager.get_llm_examples().get(operation)
+
+        if history_ca_of_current_op is None:
+            history_ca_of_current_op = []
+
+        domain_map = defaultdict(list)
+        for root_p in parameters:
+            p_with_children = root_p.genDomain(operation.__repr__(), chain, self._manager.get_ok_value_dict())
+
+            for p in p_with_children:
+                if self._is_regen:
+                    if p.name in example_dict.keys():
+                        for value in example_dict.get(p.name):
+                            value = format_type(value, p.type)
+                            p.domain.append(Value(value, ValueType.Example, p.type))
+
+                if not self._manager.is_unresolved(operation.__repr__() + p.name):
+                    domain_map[p.getGlobalName()] = p.domain
+
+        if history_ca_of_current_op is not None and len(history_ca_of_current_op) > 0:
+            new_domain_map = {
+                "history_ca_of_current_op": [Value(v, ValueType.Reused, DataType.Int32) for v in
+                                             range(len(history_ca_of_current_op))]}
+
+            for p in domain_map.keys():
+                if p not in history_ca_of_current_op[0].keys():
+                    new_domain_map[p] = domain_map.get(p)
+
+            for c in operation.constraints:
+                for p in c.paramNames:
+                    if self._manager.is_unresolved(p):
+                        return [{}]
+
+            domain_map = new_domain_map
+
+        for p, v in domain_map.items():
+            logger.debug(f"            {p}: {len(v)} - {v}")
+
+        return self._call_acts(domain_map, constraints, self._eStrength, history_ca_of_current_op)

@@ -1,67 +1,57 @@
+import abc
 import os
-
 import openai
 import time
 from pathlib import Path
 from collections import defaultdict
 from typing import List, Dict, Tuple
 from loguru import logger
-from src.Dto.keywords import Template, TaskTemplate, Method, URL
+from src.Dto.keywords import Template, TaskTemplate, Method
 from src.Dto.operation import Operation
 from src.Dto.parameter import AbstractParam
+from src.languagemodel.OutputFixer import ValueOutputFixer
 from src.languagemodel.outputprocessor import OutputProcessor
 import tiktoken
 import json
 
 
-
-def num_tokens_from_string(string: str, encoding_name: str) -> int:
-    """Returns the number of tokens in a text string."""
-    logger.debug("                check token nums")
+def num_tokens_from_string(messages: List[Dict[str, str]], encoding_name: str = "gpt-3.5-turbo") -> int:
+    """
+    :param messages: the messages string_to_count to be counted
+    :param encoding_name: the model to call, different models have different ways to count tokens
+    :return: the token num of the prompt
+    """
+    string_to_count = ""
+    for role_message in messages:
+        string_to_count += role_message.get("content")
     encoding = tiktoken.encoding_for_model(encoding_name)
-    num_tokens = len(encoding.encode(string))
-    logger.info("                token nums: {}".format(num_tokens))
+    num_tokens = len(encoding.encode(string_to_count))
+    logger.info("token nums: {}".format(num_tokens))
     return num_tokens
 
 
-class _OpenAILanguageModel:
-    exampleValueDict: Dict[Operation, Dict[str, List]] = defaultdict(dict)
-    combinationDict: Dict[Operation, Dict[Tuple[str], Tuple[Dict[str, str]]]] = defaultdict(dict)
+class BasicLanguageModel:
 
-    def __init__(self, spec: dict, constraint: str, task: str, operation: Operation,
-                 target_param: list = List[AbstractParam], temperature: float = 0.5):
+    def __init__(self, operation: Operation, manager, temperature: float = 0.7):
         self._temperature: float = temperature
 
-        self._target_param: list = target_param
-        self._constraint: str = constraint
-        self._task: str = task
         self._operation = operation
-        swagger = Path(os.environ.get("swagger"))
-        with swagger.open("r") as fp:
-            spec = json.load(fp)
-        self._spec: dict = spec
-        if self._operation is not None:
-            self._method: Method = operation.method
-            self._url: str = operation.url.replace(URL.baseurl, "")
-            self._opera_info: dict = self._spec["paths"][self._url][self._method.value]
+        self._manager = manager
+        self._constraint: list = operation.constraints
 
         self._max_query_len: int = 3900
-        self.num_calls: int = 0
-        self.calling_time: float = 0
 
-        self.prompt = str()
-        self.message = list()
-
-        self._complete_model: str = os.getenv("model")
-        openai.api_key = os.getenv("openApiKey")
+        self._complete_model: str = os.environ.get("model")
+        openai.api_key = os.environ.get("language_model_key")
+        logger.debug(f"call language model for operation: {self._operation}")
 
     @property
-    def target_param(self) -> list:
-        return self._target_param
+    def operation(self) -> Operation:
+        return self._operation
 
-    @target_param.setter
-    def target_param(self, target_param: list):
-        self._target_param = target_param
+    @operation.setter
+    def operation(self, operation: Operation):
+        self._operation = operation
 
     @property
     def temperature(self) -> float:
@@ -72,150 +62,100 @@ class _OpenAILanguageModel:
         self._temperature = temperature
 
     @property
-    def model(self) -> str:
-        return self._complete_model
+    def max_query_len(self) -> int:
+        return self._max_query_len
 
-    @model.setter
-    def model(self, model: str):
-        self._complete_model = model
+    @max_query_len.setter
+    def max_query_len(self, max_query_len: int):
+        self._max_query_len = max_query_len
 
-    @property
-    def url(self) -> str:
-        return self._url
+    def build_prompt(self) -> str:
+        pass
 
-    @url.setter
-    def url(self, url: str):
-        self._url = url
+    def build_message(self) -> List[Dict[str, str]]:
+        pass
 
-    @property
-    def method(self) -> str:
-        return self._method
-
-    @method.setter
-    def method(self, method: str):
-        self._method = method
-
-    @property
-    def task(self) -> str:
-        return self._task
-
-    @task.setter
-    def task(self, task: str):
-        self._task = task
-
-    @property
-    def constraint(self) -> str:
-        return self._constraint
-
-    @constraint.setter
-    def constraint(self, constraint: str):
-        self._constraint = constraint
-
-    # def build_combination(self, request_name, param_info):
-    #     prompt = Template.EXPLANATION + Template.TEXT.format(request_name, param_info, self._constraint) + \
-    #              TaskTemplate.COMBINATION.format(f"[{', '.join(self._target_param)}]")
-    #     return prompt
-    #
-    # def build_example_value(self, request_name, param_info):
-    #     prompt = Template.EXPLANATION + Template.TEXT.format(request_name, param_info, self._constraint) + \
-    #              TaskTemplate.SPECIAL_VALUE.format(f"[{', '.join(self._target_param)}]")
-    #     return prompt
-
-    def get_param_name_in_list(self):
-        param_name_list = [p.name for p in self.target_param]
-        return param_name_list
-
-    def build_prompt(self):
-        definition = self._spec["definitions"]
-        def get_def(definition_dict: dict):
-            final_dict = dict()
-            required_param_list = definition_dict["required"]
-            # required_param_list = [p for p in definition_dict["properties"]]
-            properties = dict()
-            for param, info in definition_dict["properties"].items():
-                if param in required_param_list:
-                    properties.update({param: info})
-                    if properties[param].get("$ref") != None:
-                        new_def_dict = definition[properties[param].get("$ref").split("/")[-1]]
-                        new_def_dict_return = get_def(new_def_dict)
-                        properties[param] = new_def_dict_return
-                    elif properties[param].get("type") == "array" and properties[param].get("items").\
-                            get("$ref") is not None:
-                        new_def_dict = definition[properties[param].get("items").get("$ref").split("/")[-1]]
-                        new_def_dict_return = get_def(new_def_dict)
-                        properties[param]["items"] = new_def_dict_return
-                final_dict.update(properties)
-            return final_dict
-
-        request_name = str(self._method.value) + " " + self._url + " " + self._opera_info.get("description")
-        param_info = self._opera_info.get("parameters")
-        param_list = self.get_param_name_in_list()
-        final_param_info = list()
-        for pd in param_info:
-            if pd["name"] in param_list:
-                final_param_info.append(pd)
-        prompt = Template.EXPLANATION + Template.TEXT.format(request_name, final_param_info, self._constraint,
-                                                             f"[{', '.join(param_list)}]")
-        if self._task == "body":
-            body_dict = dict()
-            body_ref = ""
-            for paramdict in param_info:
-                if paramdict.get("in") == "body":
-                    body_ref = paramdict["schema"]["$ref"].split("/")[-1]
-            body_dict["body"] = get_def(definition[body_ref])
-            prompt += Template.BODY_EXPLANATION.format(body_dict) + TaskTemplate.BODY
-            return prompt
-        else:
-            if self._task == "value":
-                prompt += TaskTemplate.SPECIAL_VALUE
-            elif self._task == "combination":
-                prompt += TaskTemplate.COMBINATION
-            return prompt
-
-
-    def save_model_response(self, model_response: dict):
-        if self._task == "body":
-            value_list = list()
-            value_list.append(model_response)
-            _OpenAILanguageModel.exampleValueDict[self._operation].update({"body": value_list})
-        if self._task == "value":
-            _OpenAILanguageModel.exampleValueDict[self._operation].update(model_response)
-        if self._task == "combination":
-            combination_list = list()
-            for k, v in model_response.items():
-                combination_list.append(v)
-            combination_dict = {tuple(self._target_param): tuple(combination_list)}
-            _OpenAILanguageModel.combinationDict.update({self._operation: combination_dict})
-
-    def get_completion(self):
-        self.prompt = self.build_prompt()
-        num_tokens = num_tokens_from_string(self.prompt, self.model)
-        if num_tokens > 3900:
-            self.model = "gpt-3.5-turbo-16k-0613"
-            if num_tokens_from_string(self.prompt, self.model) > self._max_query_len:
-                logger.error("Exceeding the maximum token limit")
-        else:
-            pass
-        self.message.append({"role": "system", "content": Template.SYS_ROLE})
-        self.message.append({"role": "user", "content": self.prompt})
-
-        logger.debug("                call language model for operation {}".format(self._operation))
-        logger.info("                parameter list to ask: {}".format(self.get_param_name_in_list()))
+    def call(self):
+        message = self.build_message()
+        num_tokens = num_tokens_from_string(message, self._complete_model)
+        if num_tokens > self._max_query_len:
+            self._complete_model = "gpt-3.5-turbo-16k"
+            recount_tokens = num_tokens_from_string(message)
+            if recount_tokens > 16384:
+                logger.warning("Exceeding the maximum token limit")
+                return
         start_time = time.time()
         response = openai.ChatCompletion.create(
-            model=self.model,
-            messages=self.message,
-            temperature=0,
+            model=self._complete_model,
+            messages=message,
+            temperature=self._temperature,
         )
+        self._manager.register_llm_call()
         end_time = time.time()
-        self.calling_time = end_time - start_time
-        logger.info("                Call Complete. Total time: {}".format(self.calling_time))
-        self.num_calls += 1
-        output_processor = OutputProcessor(task=self._task,
-                                           output_to_process=response.choices[0].message["content"],
-                                           param_list=self._target_param,
-                                           opera_info=self._opera_info)
-        message_to_return = output_processor.main()
-        self.save_model_response(message_to_return)
-        # return response.choices[0].message["content"]
-        return message_to_return
+        logger.info(f"call time: {end_time - start_time} s")
+        return response.choices[0].message["content"]
+
+    def execute(self):
+        pass
+
+
+class ParamValueModel(BasicLanguageModel):
+    def __init__(self, operation: Operation, target_param: List[AbstractParam], manager, temperature: float = 0.7):
+        super().__init__(operation, manager, temperature)
+
+        self._target_param: List[AbstractParam] = target_param
+        self._fixer = ValueOutputFixer(self._manager, self._operation)
+
+        logger.debug(f"target parameter list: {self._target_param}")
+
+    def build_prompt(self) -> str:
+        pInfo = []
+        for p in self._target_param:
+            info = {
+                "name": p.name,
+                "in": p.loc.value,
+                "type": p.type.value,
+                "description": p.description
+            }
+            pInfo.append(info)
+        prompt = Template.EXPLANATION + Template.TEXT.format(self._operation, pInfo, self._operation.constraints,
+                                                             self._target_param) + TaskTemplate.SPECIAL_VALUE
+        return prompt
+
+    def build_message(self) -> List[Dict[str, str]]:
+        message = []
+        prompt = self.build_prompt()
+        message.append({"role": "system", "content": Template.SYS_ROLE})
+        message.append({"role": "user", "content": prompt})
+        return message
+
+    def execute(self):
+        response_str = self.call()
+        formatted_output = self._fixer.handle(response_str)
+        logger.info(f"Language model answer: {formatted_output}")
+
+
+class FakerMethodModel(BasicLanguageModel):
+    def __init__(self, operation: Operation, target_param: List[AbstractParam], manager, temperature: float = 0.7):
+        super().__init__(operation, manager, temperature)
+
+        self._target_param: List[AbstractParam] = target_param
+
+    def build_prompt(self) -> str:
+        pInfo = []
+        for p in self._target_param:
+            info = {
+                "name": p.name,
+                "type": p.type.value,
+                "description": p.description
+            }
+            pInfo.append(info)
+        prompt = Template.PARAMETER.format(pInfo) + TaskTemplate.FAKER
+        return prompt
+
+    def build_message(self) -> List[Dict[str, str]]:
+        message = []
+        prompt = self.build_prompt()
+        message.append({"role": "system", "content": Template.FAKER})
+        message.append({"role": "user", "content": prompt})
+        return message

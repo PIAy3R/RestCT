@@ -15,18 +15,16 @@ from src.openapiParser import Parser
 swagger = "D:/Python_Codes/RestCT/exp/swagger/BingMap/Elevations.json"
 os.environ["swagger"] = swagger
 os.environ["model"] = "gpt-3.5-turbo"
-os.environ["language_model_key"] = "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"
+os.environ["language_model_key"] = ""
 
 p = Parser(logger)
 p.parse()
 op = p.operations[1]
-with Path(swagger).open("r") as fp:
-    spec = json.load(fp)
-print(spec.get("paths").get(op.url.replace(URL.baseurl, "")).get(op.method.value).get("parameters"))
-print(op.url.replace(URL.baseurl, ""))
-# ep = [p for p in op.parameterList if not isinstance(p, EnumParam)]
-# r = RuntimeInfoManager()
-# m = ParamValueModel(op, ep, r)
-# a = m.execute()
+ep = [p for p in op.parameterList if not isinstance(p, EnumParam)]
+r = RuntimeInfoManager()
+m = ParamValueModel(op, ep, r)
+p = m.build_prompt()
+# print(p)
+a = m.execute()
 # t = r.get_llm_examples().get(op)
 # print(t)

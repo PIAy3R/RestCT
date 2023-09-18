@@ -41,6 +41,10 @@ class BasicLanguageModel:
 
         self._max_query_len: int = 3900
 
+        swagger = Path(os.getenv("swagger"))
+        with swagger.open("r") as fp:
+            self._spec = json.load(fp)
+
         self._complete_model: str = os.environ.get("model")
         openai.api_key = os.environ.get("language_model_key")
         logger.debug(f"call language model for operation: {self._operation}")
@@ -105,10 +109,6 @@ class ParamValueModel(BasicLanguageModel):
 
         self._target_param: List[AbstractParam] = target_param
         self._fixer = ValueOutputFixer(self._manager, self._operation)
-
-        swagger = Path(os.getenv("swagger"))
-        with swagger.open("r") as fp:
-            self._spec = json.load(fp)
 
         logger.debug(f"target parameter list: {self._target_param}")
 

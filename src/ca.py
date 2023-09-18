@@ -16,7 +16,7 @@ from src.Dto.constraint import Constraint, Processor
 from src.Dto.keywords import Loc, DataType, Method
 from src.Dto.operation import Operation
 from src.Dto.parameter import AbstractParam, ValueType, Value, EnumParam
-from src.languagemodel.model import ParamValueModel
+from src.languagemodel.LanguageModel import ParamValueModel, ParamContainBodyModel
 
 
 def _saveChain(responseChains: List[dict], chain: dict, opStr: str, response):
@@ -326,25 +326,14 @@ class RuntimeInfoManager:
         else:
             pass
 
-    class EnumEncoder(json.JSONEncoder):
-        PUBLIC_ENUMS = {
-            'ValueType': ValueType,
-            'DataType': DataType
-        }
-
-        def default(self, obj):
-            if type(obj) in self.PUBLIC_ENUMS.values():
-                return {"__enum__": str(obj)}
-            return json.JSONEncoder.default(self, obj)
-
     def save_bug(self, operation, case, sc, response, chain, data_path):
         op_str_set = {d.get("method") + d.get("url") + str(d.get("statusCode")) for d in self._bug_list}
         if operation.method.name + operation.url + str(sc) in op_str_set:
             return
         bug_info = {
             "url": operation.url,
-            "method": operation.method,
-            "parameters": {paramName: dataclasses.asdict(value) for paramName, value in case.items()},
+            "method": operation.method.value,
+            "parameters": {paramName: (value.val, value.type.value, value.generator.value) for paramName, value in case.items()},
             "statusCode": sc,
             "response": response,
             "responseChain": chain
@@ -356,7 +345,7 @@ class RuntimeInfoManager:
             folder.mkdir(parents=True)
         bugFile = folder / "bug_{}.json".format(str(len(op_str_set)))
         with bugFile.open("w") as fp:
-            json.dump(bug_info, fp, cls=RuntimeInfoManager.EnumEncoder)
+            json.dump(bug_info, fp)
         return bug_info
 
     def save_success_seq(self, url_tuple):
@@ -454,7 +443,7 @@ class CA:
 
         self._stat.dump_snapshot()
 
-    def _handle_one_operation(self, index, operation: Operation, chain: dict, sequence) -> bool:
+    def _handle_one_operation(self, index, operation: Operation, chain: dict, sequence, loop_num) -> bool:
         """
         @return: should jump out the loop of chain_list?
         """
@@ -586,14 +575,16 @@ class CA:
         for index, operation in enumerate(sequence):
             logger.debug("{}-th operation: {}*{}", index + 1, operation.method.value, operation.url)
             chainList = self._manager.get_chains(self._maxChainItems)
+            loop_num = 0
             while len(chainList):
+                loop_num += 1
                 if self._timeout(self._start_time, budget):
                     self._stat.seq_executed_num += 1
                     self._stat.sum_len_of_executed_seq += index
                     self._stat.update_executed_c_way(sequence[:index])
                     return False
                 chain = chainList.pop(0)
-                is_break = self._handle_one_operation(index, operation, chain, sequence)
+                is_break = self._handle_one_operation(index, operation, chain, sequence, loop_num)
                 if is_break:
                     break
         self._stat.seq_executed_num += 1
@@ -608,18 +599,22 @@ class CAWithLLM(CA):
 
         self._is_regen = False
 
-    def _re_handle(self, index, operation, chain, sequence) -> bool:
+    def _re_handle(self, index, operation, chain, sequence, loop_num) -> bool:
         self._is_regen = True
+        if loop_num > 1:
+            logger.info("the previous example value did not work, clear and re call the language model")
+            self._manager.get_llm_examples().clear()
         success_url_tuple = tuple([op for op in sequence[:index] if op in chain.keys()] + [operation])
         if len(operation.parameterList) == 0:
             self._executes(operation, [{}], chain, success_url_tuple, [])
             return True
 
-        self._call_language_model(operation)
-
         history = []
 
         self._reset_constraints(operation, operation.parameterList)
+
+        if self._manager.get_llm_examples().get(operation) is None:
+            self._call_language_model(operation)
 
         e_ca = self._handle_essential_params(operation, sequence[:index], chain, history)
         logger.info(f"{index + 1}-th operation essential parameters covering array size: {len(e_ca)}, "
@@ -640,17 +635,23 @@ class CAWithLLM(CA):
 
     def _call_language_model(self, operation: Operation):
         param_to_ask = []
+        loc_set = set()
         for param in operation.parameterList:
             if not isinstance(param, EnumParam):
                 param_to_ask.append(param)
-        value_model = ParamValueModel(operation, param_to_ask, self._manager)
-        value_model.execute()
+                loc_set.add(param.loc)
+        if Loc.Body not in loc_set:
+            value_model = ParamValueModel(operation, param_to_ask, self._manager)
+            value_model.execute()
+        else:
+            value_model = ParamContainBodyModel(operation, param_to_ask, self._manager)
+            value_model.execute()
 
     def _re_count(self, e_ca, a_ca):
         self._stat.req_num -= (len(e_ca) + len(a_ca))
         self._stat.req_40x_num -= (len(e_ca) + len(a_ca))
 
-    def _handle_one_operation(self, index, operation: Operation, chain: dict, sequence) -> bool:
+    def _handle_one_operation(self, index, operation: Operation, chain: dict, sequence, loop_num) -> bool:
         self._is_regen = False
         success_url_tuple = tuple([op for op in sequence[:index] if op in chain.keys()] + [operation])
 
@@ -670,6 +671,9 @@ class CAWithLLM(CA):
         is_break = self._executes(operation, e_ca, chain, success_url_tuple, history, True)
 
         if all([p.isEssential for p in operation.parameterList]):
+            if not is_break:
+                logger.info("no success request, use llm to help re-generate")
+                is_break = self._re_handle(index, operation, chain, sequence, loop_num)
             return is_break
 
         a_ca = self._handle_all_params(operation, sequence[:index], chain, history)
@@ -681,7 +685,7 @@ class CAWithLLM(CA):
         if not is_break:
             logger.info("no success request, use llm to help re-generate")
             self._re_count(e_ca, a_ca)
-            is_break = self._re_handle(index, operation, chain, sequence)
+            is_break = self._re_handle(index, operation, chain, sequence, loop_num)
 
         return is_break
 
@@ -703,6 +707,7 @@ class CAWithLLM(CA):
 
         domain_map = defaultdict(list)
         for root_p in parameters:
+            root_p.domain.clear()
             p_with_children = root_p.genDomain(operation.__repr__(), chain, self._manager.get_ok_value_dict())
 
             for p in p_with_children:

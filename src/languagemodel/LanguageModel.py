@@ -6,10 +6,10 @@ from pathlib import Path
 from collections import defaultdict
 from typing import List, Dict, Tuple
 from loguru import logger
-from src.Dto.keywords import Template, TaskTemplate, Method
+from src.Dto.keywords import Template, TaskTemplate, Method, URL
 from src.Dto.operation import Operation
 from src.Dto.parameter import AbstractParam
-from src.languagemodel.OutputFixer import ValueOutputFixer
+from src.languagemodel.OutputFixer import ValueOutputFixer, BodyOutputFixer
 from src.languagemodel.outputprocessor import OutputProcessor
 import tiktoken
 import json
@@ -106,18 +106,20 @@ class ParamValueModel(BasicLanguageModel):
         self._target_param: List[AbstractParam] = target_param
         self._fixer = ValueOutputFixer(self._manager, self._operation)
 
+        swagger = Path(os.getenv("swagger"))
+        with swagger.open("r") as fp:
+            self._spec = json.load(fp)
+
         logger.debug(f"target parameter list: {self._target_param}")
 
     def build_prompt(self) -> str:
         pInfo = []
+        parameters = self._spec.get("paths").get(self._operation.url.replace(URL.baseurl, "")).get(
+            self._operation.method.value).get("parameters")
         for p in self._target_param:
-            info = {
-                "name": p.name,
-                "in": p.loc.value,
-                "type": p.type.value,
-                "description": p.description
-            }
-            pInfo.append(info)
+            for info in parameters:
+                if info.get("name") == p.name:
+                    pInfo.append(info)
         prompt = Template.EXPLANATION + Template.TEXT.format(self._operation, pInfo, self._operation.constraints,
                                                              self._target_param) + TaskTemplate.SPECIAL_VALUE
         return prompt
@@ -159,3 +161,13 @@ class FakerMethodModel(BasicLanguageModel):
         message.append({"role": "system", "content": Template.FAKER})
         message.append({"role": "user", "content": prompt})
         return message
+
+
+class ParamContainBodyModel(BasicLanguageModel):
+    def __init__(self, operation: Operation, target_param: List[AbstractParam], manager, temperature: float = 0.7):
+        super().__init__(operation, manager, temperature)
+
+        self._target_param: List[AbstractParam] = target_param
+        self._fixer = BodyOutputFixer(self._manager, self._operation)
+
+        logger.debug(f"target parameter list: {self._target_param}")

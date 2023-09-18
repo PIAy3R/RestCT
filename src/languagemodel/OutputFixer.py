@@ -41,5 +41,17 @@ class ValueOutputFixer(OutputFixer):
 
     def handle(self, output_to_process) -> dict:
         json_output = self.decode_to_json(output_to_process)
+        for p, vl in json_output.items():
+            for v in vl:
+                if isinstance(v, str):
+                    v = v.replace('|', ',')
+                    v = v.replace(";", ",")
         self._manager.save_language_model_response(self._operation, json_output)
         return json_output
+
+
+class BodyOutputFixer(OutputFixer):
+    def __init__(self, manager, operation: Operation):
+        super().__init__(manager)
+
+        self._operation = operation

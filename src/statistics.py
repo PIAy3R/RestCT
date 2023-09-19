@@ -25,6 +25,7 @@ class Snapshot:
     t_way_to_covered: int = 0
     t_way_covered: int = 0
     req_num: int = 0
+    req_num_all: int = 0
     req_20x_num: int = 0
     req_30x_num: int = 0
     req_40x_num: int = 0
@@ -63,6 +64,7 @@ class Statistics:
         self.t_way_to_covered: int = 0  #
         self.t_way_covered: set = set()  #
         self.req_num: int = 0  #
+        self.req_num_all: int = 0  #
         self.req_20x_num: int = 0  #
         self.req_30x_num: int = 0  #
         self.req_40x_num: int = 0  #
@@ -121,6 +123,7 @@ class Statistics:
                             self.t_way_to_covered,
                             len(self.t_way_covered),
                             self.req_num,
+                            self.req_num_all,
                             self.req_20x_num,
                             self.req_30x_num,
                             self.req_40x_num,

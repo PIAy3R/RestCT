@@ -27,7 +27,21 @@ def buildParam(info: dict, definitions: dict, specifiedName: str = None):
 
     if buildInfo["paramType"] is DataType.NULL:
         if ParamKey.SCHEMA in info.keys():
-            extraInfo = AbstractParam.getRef(info.get(ParamKey.SCHEMA, None).get(DocKey.REF_SIGN, None), definitions)
+            if DocKey.REF_SIGN in info.get(ParamKey.SCHEMA).keys():
+                extraInfo = AbstractParam.getRef(info.get(ParamKey.SCHEMA, None).get(DocKey.REF_SIGN, None), definitions)
+            else:
+                sInfo = info.get(ParamKey.SCHEMA)
+                childInfo = {
+                    "specifiedName": sInfo.get(ParamKey.NAME, "") if specifiedName is None else specifiedName,
+                    "paramType": DataType(sInfo.get(ParamKey.TYPE, DataType.NULL.value)),
+                    "paramFormat": DataType(sInfo.get(ParamKey.FORMAT, DataType.NULL.value).replace("-", "")),
+                    "default": [sInfo.get(ParamKey.DEFAULT)] if sInfo.get(ParamKey.DEFAULT) is not None else list(),
+                    "loc": Loc(sInfo.get(ParamKey.LOCATION, Loc.NULL.value)),
+                    "required": sInfo.get(ParamKey.REQUIRED, False),
+                    "description": sInfo.get(ParamKey.DESCRIPTION, "")
+                }
+                buildInfo["children"] = [StringParam(**childInfo)]
+                return ObjectParam(**buildInfo)
         elif DocKey.REF_SIGN in info.keys():
             extraInfo = AbstractParam.getRef(info.get(DocKey.REF_SIGN, None), definitions)
         elif DocKey.ALL_OF in info.keys() or DocKey.ANY_OF in info.keys() or DocKey.ONE_OF in info.keys() or DocKey.ADDITIONAL_PROPERTIES in info.keys():
@@ -431,9 +445,13 @@ class ObjectParam(AbstractParam):
                 assert isinstance(childrenInfo, dict)
                 if DocKey.REF_SIGN in childrenInfo.keys():
                     childrenInfo = AbstractParam.getRef(childrenInfo.get(DocKey.REF_SIGN), definitions)
-
-        children = [buildParam(pInfo, definitions, pName) for pName, pInfo in
-                    childrenInfo.get(DocKey.PROPERTIES).items()]
+                else:
+                    childrenInfo.update({"properties": {}})
+        try:
+            children = [buildParam(pInfo, definitions, pName) for pName, pInfo in
+                        childrenInfo.get(DocKey.PROPERTIES).items()]
+        except:
+            children = []
         info["children"] = children
         if isinstance(info.get("required"), list):
             for child in children:

@@ -326,17 +326,31 @@ class RuntimeInfoManager:
         else:
             pass
 
+    class EnumEncoder(json.JSONEncoder):
+        PUBLIC_ENUMS = {
+            'ValueType': ValueType,
+            'DataType': DataType,
+            'Method': Method,
+            'Operation': Operation
+        }
+
+        def default(self, obj):
+            if type(obj) in self.PUBLIC_ENUMS.values():
+                return {"__enum__": str(obj)}
+            return json.JSONEncoder.default(self, obj)
+
     def save_bug(self, operation, case, sc, response, chain, data_path):
-        op_str_set = {d.get("method") + d.get("url") + str(d.get("statusCode")) for d in self._bug_list}
+        op_str_set = {d.get("method").name + d.get("url") + str(d.get("statusCode")) for d in self._bug_list}
         if operation.method.name + operation.url + str(sc) in op_str_set:
             return
+        chain_save = [op.__repr__() for op in chain]
         bug_info = {
             "url": operation.url,
-            "method": operation.method.value,
-            "parameters": {paramName: (value.val, value.type.value, value.generator.value) for paramName, value in case.items()},
+            "method": operation.method,
+            "parameters": {paramName: dataclasses.asdict(value) for paramName, value in case.items()},
             "statusCode": sc,
             "response": response,
-            "responseChain": chain
+            "responseChain": chain_save
         }
         self._bug_list.append(bug_info)
 
@@ -345,7 +359,7 @@ class RuntimeInfoManager:
             folder.mkdir(parents=True)
         bugFile = folder / "bug_{}.json".format(str(len(op_str_set)))
         with bugFile.open("w") as fp:
-            json.dump(bug_info, fp)
+            json.dump(bug_info, fp, cls=RuntimeInfoManager.EnumEncoder)
         return bug_info
 
     def save_success_seq(self, url_tuple):
@@ -415,6 +429,7 @@ class CA:
         is_success = False
         for index, (sc, response) in enumerate(response_list):
             self._stat.req_num += 1
+            self._stat.req_num_all += 1
             if sc < 300:
                 self._manager.save_reuse(url_tuple, is_essential, ca[index])
                 self._manager.save_ok_value(ca[index])
@@ -602,8 +617,9 @@ class CAWithLLM(CA):
     def _re_handle(self, index, operation, chain, sequence, loop_num) -> bool:
         self._is_regen = True
         if loop_num > 1:
-            logger.info("the previous example value did not work, clear and re call the language model")
-            self._manager.get_llm_examples().clear()
+            logger.info(
+                "the previous example value of the operation did not work, clear and re call the language model")
+            self._manager.get_llm_examples().get(operation).clear()
         success_url_tuple = tuple([op for op in sequence[:index] if op in chain.keys()] + [operation])
         if len(operation.parameterList) == 0:
             self._executes(operation, [{}], chain, success_url_tuple, [])

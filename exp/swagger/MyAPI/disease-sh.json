@@ -1,0 +1,2766 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "version": "3.0.0",
+    "title": "disease.sh Docs - An open API for disease-related statistics",
+    "description": "Third Party API for reliable global disease information",
+    "contact": {}
+  },
+  "host": "corona.lmao.ninja",
+  "basePath": "/",
+  "securityDefinitions": {},
+  "schemes": [
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v3/covid-19/all": {
+      "get": {
+        "description": "Get global COVID-19 totals for today, yesterday and two days ago",
+        "summary": "Get global COVID-19 totals for today, yesterday and two days ago",
+        "tags": [
+          "COVID-19: Worldometers"
+        ],
+        "operationId": "GetglobalCOVID-19totalsfortoday,yesterdayandtwodaysago",
+        "deprecated": false,
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "yesterday",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Queries data reported a day ago"
+          },
+          {
+            "name": "twoDaysAgo",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Queries data reported two days ago"
+          },
+          {
+            "name": "allowNull",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "By default, if a value is missing, it is returned as 0. This allows nulls to be returned"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Status OK",
+            "schema": {
+              "$ref": "#/definitions/covidAll"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/v3/covid-19/states": {
+      "get": {
+        "description": "Get COVID-19 totals for all US States",
+        "summary": "Get COVID-19 totals for all US States",
+        "tags": [
+          "COVID-19: Worldometers"
+        ],
+        "operationId": "GetCOVID-19totalsforallUSStates",
+        "deprecated": false,
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Provided a key (e.g. cases, todayCases, deaths, active), result will be sorted from greatest to least"
+          },
+          {
+            "name": "yesterday",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Queries data reported a day ago"
+          },
+          {
+            "name": "allowNull",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "By default, if a value is missing, it is returned as 0. This allows nulls to be returned"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Status OK",
+            "schema": {
+              "type": "array",
+              "default": "",
+              "items": {
+                "$ref": "#/definitions/covidState"
+              }
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/v3/covid-19/states/{states}": {
+      "get": {
+        "description": "Get COVID-19 totals for specific US State(s)",
+        "summary": "Get COVID-19 totals for specific US State(s)",
+        "tags": [
+          "COVID-19: Worldometers"
+        ],
+        "operationId": "GetCOVID-19totalsforspecificUSState(s)",
+        "deprecated": false,
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "states",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "State name or comma separated names spelled correctly"
+          },
+          {
+            "name": "yesterday",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Queries data reported a day ago"
+          },
+          {
+            "name": "allowNull",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "By default, if a value is missing, it is returned as 0. This allows nulls to be returned"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Status OK",
+            "schema": {
+              "$ref": "#/definitions/covidState"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/v3/covid-19/continents": {
+      "get": {
+        "description": "Get COVID-19 totals for all continents",
+        "summary": "Get COVID-19 totals for all continents",
+        "tags": [
+          "COVID-19: Worldometers"
+        ],
+        "operationId": "GetCOVID-19totalsforallcontinents",
+        "deprecated": false,
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "yesterday",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Queries data reported a day ago"
+          },
+          {
+            "name": "twoDaysAgo",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Queries data reported two days ago"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Provided a key (e.g. cases, todayCases, deaths, recovered, active), results will be sorted from greatest to least"
+          },
+          {
+            "name": "allowNull",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "By default, if a value is missing, it is returned as 0. This allows nulls to be returned"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Status OK",
+            "schema": {
+              "type": "array",
+              "default": "",
+              "items": {
+                "$ref": "#/definitions/covidContinent"
+              }
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/v3/covid-19/continents/{continent}": {
+      "get": {
+        "description": "Get COVID-19 totals for a specific continent",
+        "summary": "Get COVID-19 totals for a specific continent",
+        "tags": [
+          "COVID-19: Worldometers"
+        ],
+        "operationId": "GetCOVID-19totalsforaspecificcontinent",
+        "deprecated": false,
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "continent",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Continent name"
+          },
+          {
+            "name": "yesterday",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Queries data reported a day ago"
+          },
+          {
+            "name": "twoDaysAgo",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Queries data reported two days ago"
+          },
+          {
+            "name": "strict",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Setting to false gives you the ability to fuzzy search continents (i.e. Oman vs. rOMANia)"
+          },
+          {
+            "name": "allowNull",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "By default, if a value is missing, it is returned as 0. This allows nulls to be returned"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Status OK",
+            "schema": {
+              "$ref": "#/definitions/covidContinent"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/v3/covid-19/countries": {
+      "get": {
+        "description": "Get COVID-19 totals for all countries",
+        "summary": "Get COVID-19 totals for all countries",
+        "tags": [
+          "COVID-19: Worldometers"
+        ],
+        "operationId": "GetCOVID-19totalsforallcountries",
+        "deprecated": false,
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "yesterday",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Queries data reported a day ago"
+          },
+          {
+            "name": "twoDaysAgo",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Queries data reported two days ago"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Provided a key (e.g. cases, todayCases, deaths, recovered, active), the result will be sorted from greatest to least"
+          },
+          {
+            "name": "allowNull",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "By default, if a value is missing, it is returned as 0. This allows nulls to be returned"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Status OK",
+            "schema": {
+              "type": "array",
+              "default": "",
+              "items": {
+                "$ref": "#/definitions/covidCountry"
+              }
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/v3/covid-19/countries/{country}": {
+      "get": {
+        "description": "Get COVID-19 totals for a specific country",
+        "summary": "Get COVID-19 totals for a specific country",
+        "tags": [
+          "COVID-19: Worldometers"
+        ],
+        "operationId": "GetCOVID-19totalsforaspecificcountry",
+        "deprecated": false,
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "country",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "A country name, iso2, iso3, or country ID code"
+          },
+          {
+            "name": "yesterday",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Queries data reported a day ago"
+          },
+          {
+            "name": "twoDaysAgo",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Queries data reported two days ago"
+          },
+          {
+            "name": "strict",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Setting to false gives you the ability to fuzzy search countries (i.e. Oman vs. rOMANia)"
+          },
+          {
+            "name": "allowNull",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "By default, if a value is missing, it is returned as 0. This allows nulls to be returned"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Status OK",
+            "schema": {
+              "$ref": "#/definitions/covidCountry"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/v3/covid-19/countries/{countries}": {
+      "get": {
+        "description": "Get COVID-19 totals for a specific set of countries",
+        "summary": "Get COVID-19 totals for a specific set of countries",
+        "tags": [
+          "COVID-19: Worldometers"
+        ],
+        "operationId": "GetCOVID-19totalsforaspecificsetofcountries",
+        "deprecated": false,
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "countries",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Multiple country names, iso2, iso3, or country IDs separated by commas"
+          },
+          {
+            "name": "yesterday",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Queries data reported a day ago"
+          },
+          {
+            "name": "twoDaysAgo",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Queries data reported two days ago"
+          },
+          {
+            "name": "allowNull",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "By default, if a value is missing, it is returned as 0. This allows nulls to be returned"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Status OK",
+            "schema": {
+              "type": "array",
+              "default": "",
+              "items": {
+                "$ref": "#/definitions/covidCountry"
+              }
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/v3/covid-19/jhucsse": {
+      "get": {
+        "description": "Get COVID-19 totals for all countries and their provinces",
+        "summary": "Get COVID-19 totals for all countries and their provinces",
+        "tags": [
+          "COVID-19: JHUCSSE"
+        ],
+        "operationId": "GetCOVID-19totalsforallcountriesandtheirprovinces",
+        "deprecated": false,
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Status OK",
+            "schema": {
+              "$ref": "#/definitions/covidJHUCountries"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/v3/covid-19/jhucsse/counties": {
+      "get": {
+        "description": "Get COVID-19 totals for all US counties",
+        "summary": "Get COVID-19 totals for all US counties",
+        "tags": [
+          "COVID-19: JHUCSSE"
+        ],
+        "operationId": "GetCOVID-19totalsforallUScounties",
+        "deprecated": false,
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Status OK",
+            "schema": {
+              "type": "array",
+              "default": "",
+              "items": {
+                "$ref": "#/definitions/covidJHUCounty"
+              }
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/v3/covid-19/jhucsse/counties/{county}": {
+      "get": {
+        "description": "Get COVID-19 totals for a specific county",
+        "summary": "Get COVID-19 totals for a specific county",
+        "tags": [
+          "COVID-19: JHUCSSE"
+        ],
+        "operationId": "GetCOVID-19totalsforaspecificcounty",
+        "deprecated": false,
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "county",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Name of any county in the USA. All counties are listed in the /v3/covid-19/jhucsse/counties/ endpoint"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Status OK",
+            "schema": {
+              "type": "array",
+              "default": "",
+              "items": {
+                "$ref": "#/definitions/covidJHUCounty"
+              }
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/v3/covid-19/historical": {
+      "get": {
+        "description": "Get COVID-19 time series data for all countries and their provinces",
+        "summary": "Get COVID-19 time series data for all countries and their provinces",
+        "tags": [
+          "COVID-19: JHUCSSE"
+        ],
+        "operationId": "GetCOVID-19timeseriesdataforallcountriesandtheirprovinces",
+        "deprecated": false,
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "lastdays",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Number of days to return. Use 'all' for the full data set (e.g. 15, all, 24)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Status OK",
+            "schema": {
+              "type": "array",
+              "default": "",
+              "items": {
+                "$ref": "#/definitions/covidHistoricalProvince"
+              }
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/v3/covid-19/historical/all": {
+      "get": {
+        "description": "Get global accumulated COVID-19 time series data",
+        "summary": "Get global accumulated COVID-19 time series data",
+        "tags": [
+          "COVID-19: JHUCSSE"
+        ],
+        "operationId": "GetglobalaccumulatedCOVID-19timeseriesdata",
+        "deprecated": false,
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "lastdays",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Number of days to return. Use 'all' for the full data set (e.g. 15, all, 24)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Status Ok",
+            "schema": {
+              "$ref": "#/definitions/covidHistoricalAll"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/v3/covid-19/historical/{country}": {
+      "get": {
+        "description": "Get COVID-19 time series data for a specific country",
+        "summary": "Get COVID-19 time series data for a specific country",
+        "tags": [
+          "COVID-19: JHUCSSE"
+        ],
+        "operationId": "GetCOVID-19timeseriesdataforaspecificcountry",
+        "deprecated": false,
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "country",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "A country name, iso2, iso3, or country ID code"
+          },
+          {
+            "name": "lastdays",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Number of days to return. Use 'all' for the full data set (e.g. 15, all, 24)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Status Ok",
+            "schema": {
+              "$ref": "#/definitions/covidHistoricalCountry"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/v3/covid-19/historical/{countries}": {
+      "get": {
+        "description": "Get COVID-19 time series data for a specific set of countries",
+        "summary": "Get COVID-19 time series data for a specific set of countries",
+        "tags": [
+          "COVID-19: JHUCSSE"
+        ],
+        "operationId": "GetCOVID-19timeseriesdataforaspecificsetofcountries",
+        "deprecated": false,
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "countries",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Multiple country names, iso2, iso3, or country IDs separated by commas"
+          },
+          {
+            "name": "lastdays",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Number of days to return. Use 'all' for the full data set (e.g. 15, all, 24)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Status Ok",
+            "schema": {
+              "type": "array",
+              "default": "",
+              "items": {
+                "$ref": "#/definitions/covidHistoricalCountry"
+              }
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/v3/covid-19/historical/{country}/{province}": {
+      "get": {
+        "description": "Get COVID-19 time series data for a specific province in a country",
+        "summary": "Get COVID-19 time series data for a specific province in a country",
+        "tags": [
+          "COVID-19: JHUCSSE"
+        ],
+        "operationId": "GetCOVID-19timeseriesdataforaspecificprovinceinacountry",
+        "deprecated": false,
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "country",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "A country name, iso2, iso3, or country ID code"
+          },
+          {
+            "name": "province",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Province name. All available names can be found in the /v3/covid-19/historical/{query} endpoint"
+          },
+          {
+            "name": "lastdays",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Number of days to return. Use 'all' for the full data set (e.g. 15, all, 24)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Status Ok",
+            "schema": {
+              "$ref": "#/definitions/covidHistoricalProvince"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/v3/covid-19/historical/{country}/{provinces}": {
+      "get": {
+        "description": "Get COVID-19 time series data for a set of provinces in a country",
+        "summary": "Get COVID-19 time series data for a set of provinces in a country",
+        "tags": [
+          "COVID-19: JHUCSSE"
+        ],
+        "operationId": "GetCOVID-19timeseriesdataforasetofprovincesinacountry",
+        "deprecated": false,
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "country",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "A country name, iso2, iso3, or country ID code"
+          },
+          {
+            "name": "provinces",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Provinces spelled correctly separated by ',' or '|' delimiters, never both in the same query"
+          },
+          {
+            "name": "lastdays",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Number of days to return. Use 'all' for the full data set (e.g. 15, all, 24)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Status Ok",
+            "schema": {
+              "type": "array",
+              "default": "",
+              "items": {
+                "$ref": "#/definitions/covidHistoricalProvince"
+              }
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/v3/covid-19/historical/usacounties": {
+      "get": {
+        "description": "Returns a list of US States and provinces",
+        "summary": "Get all possible US States to query the /historical/usacounties/{state} endpoint with",
+        "tags": [
+          "COVID-19: JHUCSSE"
+        ],
+        "operationId": "GetallpossibleUSStatestoquerythe/historical/usacounties/{state}endpointwith",
+        "deprecated": false,
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Status OK",
+            "schema": {
+              "type": "array",
+              "default": "",
+              "items": {
+                "type": "string"
+              }
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/v3/covid-19/historical/usacounties/{state}": {
+      "get": {
+        "description": "Get COVID-19 time series data for all counties in a specified US state",
+        "summary": "Get COVID-19 time series data for all counties in a specified US state",
+        "tags": [
+          "COVID-19: JHUCSSE"
+        ],
+        "operationId": "GetCOVID-19timeseriesdataforallcountiesinaspecifiedUSstate",
+        "deprecated": false,
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "state",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "US state name, validated in the array returned from the /v3/covid-19/historical/usacounties endpoint"
+          },
+          {
+            "name": "lastdays",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Number of days to return. Use 'all' for the full data set (e.g. 15, all, 24)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Status Ok",
+            "schema": {
+              "type": "array",
+              "default": "",
+              "items": {
+                "$ref": "#/definitions/covidHistoricalUSCounty"
+              }
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/v3/covid-19/nyt/states": {
+      "get": {
+        "description": "Get COVID-19 time series data for all states, with an entry for each day since the pandemic began",
+        "summary": "Get COVID-19 time series data for all states, with an entry for each day since the pandemic began",
+        "tags": [
+          "COVID-19: NYT"
+        ],
+        "operationId": "GetCOVID-19timeseriesdataforallstates,withanentryforeachdaysincethepandemicbegan",
+        "deprecated": false,
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "lastdays",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Number of days to return. Use 'all' for the full data set (e.g. 15, all, 24)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Status Ok",
+            "schema": {
+              "type": "array",
+              "default": "",
+              "items": {
+                "$ref": "#/definitions/covidNYTState"
+              }
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/v3/covid-19/nyt/states/{state}": {
+      "get": {
+        "description": "Get COVID-19 time series data for a state or set of states, with an entry for each day since the pandemic began",
+        "summary": "Get COVID-19 time series data for a state or set of states, with an entry for each day since the pandemic began",
+        "tags": [
+          "COVID-19: NYT"
+        ],
+        "operationId": "GetCOVID-19timeseriesdataforastateorsetofstates,withanentryforeachdaysincethepandemicbegan",
+        "deprecated": false,
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "state",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "State name(s), separated by commas (e.g. 'Illinois, California')"
+          },
+          {
+            "name": "lastdays",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Number of days to return. Use 'all' for the full data set (e.g. 15, all, 24)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Status Ok",
+            "schema": {
+              "type": "array",
+              "default": "",
+              "items": {
+                "$ref": "#/definitions/covidNYTState"
+              }
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/v3/covid-19/nyt/counties": {
+      "get": {
+        "description": "Get COVID-19 time series data for all available US counties, with an entry for each day since the pandemic began",
+        "summary": "Get COVID-19 time series data for all available US counties, with an entry for each day since the pandemic began",
+        "tags": [
+          "COVID-19: NYT"
+        ],
+        "operationId": "GetCOVID-19timeseriesdataforallavailableUScounties,withanentryforeachdaysincethepandemicbegan",
+        "deprecated": false,
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "lastdays",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Number of days to return. Use 'all' for the full data set (e.g. 15, all, 24)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Status Ok",
+            "schema": {
+              "type": "array",
+              "default": "",
+              "items": {
+                "$ref": "#/definitions/covidNYTCounty"
+              }
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/v3/covid-19/nyt/counties/{county}": {
+      "get": {
+        "description": "Get COVID-19 time series data for a county or set of counties, with an entry for each day since the pandemic began",
+        "summary": "Get COVID-19 time series data for a county or set of counties, with an entry for each day since the pandemic began",
+        "tags": [
+          "COVID-19: NYT"
+        ],
+        "operationId": "GetCOVID-19timeseriesdataforacountyorsetofcounties,withanentryforeachdaysincethepandemicbegan",
+        "deprecated": false,
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "county",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "County name(s), separated by commas (e.g. 'Alameda, Humboldt')"
+          },
+          {
+            "name": "lastdays",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Number of days to return. Use 'all' for the full data set (e.g. 15, all, 24)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Status Ok",
+            "schema": {
+              "type": "array",
+              "default": "",
+              "items": {
+                "$ref": "#/definitions/covidNYTCounty"
+              }
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/v3/covid-19/nyt/usa": {
+      "get": {
+        "description": "Get COVID-19 time series data for the entire USA, with an entry for each day since the pandemic began",
+        "summary": "Get COVID-19 time series data for the entire USA, with an entry for each day since the pandemic began",
+        "tags": [
+          "COVID-19: NYT"
+        ],
+        "operationId": "GetCOVID-19timeseriesdatafortheentireUSA,withanentryforeachdaysincethepandemicbegan",
+        "deprecated": false,
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Status Ok",
+            "schema": {
+              "type": "array",
+              "default": "",
+              "items": {
+                "$ref": "#/definitions/covidNYTUSA"
+              }
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/v3/covid-19/apple/countries": {
+      "get": {
+        "description": "Returns a list of supported country names",
+        "summary": "Get a list of supported countries for Apple mobility data",
+        "tags": [
+          "COVID-19: Apple"
+        ],
+        "operationId": "GetalistofsupportedcountriesforApplemobilitydata",
+        "deprecated": false,
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Status Ok",
+            "schema": {
+              "type": "array",
+              "default": "",
+              "items": {
+                "type": "string"
+              }
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/v3/covid-19/apple/countries/{country}": {
+      "get": {
+        "description": "Returns a list of supported subregions in a country where data is available",
+        "summary": "Get a list of supported subregions for specific country in the Apple mobility data set",
+        "tags": [
+          "COVID-19: Apple"
+        ],
+        "operationId": "GetalistofsupportedsubregionsforspecificcountryintheApplemobilitydataset",
+        "deprecated": false,
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "country",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "A valid country name from the /v3/covid-19/apple/countries endpoint"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Status Ok",
+            "schema": {
+              "$ref": "#/definitions/covidAppleSubregions"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/v3/covid-19/apple/countries/{country}/{subregions}": {
+      "get": {
+        "description": "Returns a list of mobility data entries for subregion(s) every day since January 13th. Each entry has driving, transit, and walking data with an associated number of percentage change since January 13th",
+        "summary": "Get COVID-19 Apple mobility data for subregions of a country",
+        "tags": [
+          "COVID-19: Apple"
+        ],
+        "operationId": "GetCOVID-19Applemobilitydataforsubregionsofacountry",
+        "deprecated": false,
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "country",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "A valid country name from the /v3/covid-19/apple/countries endpoint"
+          },
+          {
+            "name": "subregions",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Valid subregion(s) from the /v3/covid-19/apple/countries/{country} endpoint, separated by with commas"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Status Ok",
+            "schema": {
+              "$ref": "#/definitions/covidAppleData"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/v3/covid-19/gov/": {
+      "get": {
+        "description": "Returns a list of supported country names",
+        "summary": "Get a list of supported countries for government specific data",
+        "tags": [
+          "COVID-19: Government"
+        ],
+        "operationId": "Getalistofsupportedcountriesforgovernmentspecificdata",
+        "deprecated": false,
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Status Ok",
+            "schema": {
+              "type": "array",
+              "default": "",
+              "items": {
+                "type": "string"
+              }
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/v3/covid-19/gov/{country}": {
+      "get": {
+        "description": "Get COVID-19 government reported data for a specific country",
+        "summary": "Get COVID-19 government reported data for a specific country",
+        "tags": [
+          "COVID-19: Government"
+        ],
+        "operationId": "GetCOVID-19governmentreporteddataforaspecificcountry",
+        "deprecated": false,
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "country",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "A valid country name from the /v3/covid-19/gov endpoint"
+          },
+          {
+            "name": "allowNull",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "By default, if a value is missing, it is returned as 0. This allows nulls to be returned"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Status Ok",
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/v3/covid-19/vaccine": {
+      "get": {
+        "description": "Get vaccine trial data from RAPS (Regulatory Affairs Professional Society). Specifically published by Jeff Craven at https://www.raps.org/news-and-articles/news-articles/2020/3/covid-19-vaccine-tracker",
+        "summary": "Get vaccine trial data from RAPS (Regulatory Affairs Professional Society). Specifically published by Jeff Craven at https://www.raps.org/news-and-articles/news-articles/2020/3/covid-19-vaccine-tracker",
+        "tags": [
+          "COVID-19: Vaccine"
+        ],
+        "operationId": "GetvaccinetrialdatafromRAPS(RegulatoryAffairsProfessionalSociety).SpecificallypublishedbyJeffCravenathttps://www.raps.org/news-and-articles/news-articles/2020/3/covid-19-vaccine-tracker",
+        "deprecated": false,
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Status Ok",
+            "schema": {
+              "$ref": "#/definitions/vaccines"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/v3/covid-19/vaccine/coverage": {
+      "get": {
+        "description": "Get total global COVID-19 vaccine doses administered. Sourced from https://covid.ourworldindata.org/",
+        "summary": "Get total global COVID-19 vaccine doses administered. Sourced from https://covid.ourworldindata.org/",
+        "tags": [
+          "COVID-19: Vaccine"
+        ],
+        "operationId": "GettotalglobalCOVID-19vaccinedosesadministered.Sourcedfromhttps://covid.ourworldindata.org/",
+        "deprecated": false,
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "lastdays",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Number of days to return. Use 'all' for the full data set (e.g. 15, all, 24)"
+          },
+          {
+            "name": "fullData",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Flag indicating whether to return data type as simpleVaccineTimeline (false) or fullVaccineTimeline (true)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Status Ok",
+            "schema": {
+              "default": ""
+            },
+            "examples": {
+              "application/json": {
+                "4/25/2021": 1000
+              }
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/v3/covid-19/vaccine/coverage/countries": {
+      "get": {
+        "description": "Get COVID-19 vaccine doses administered for all countries that have reported rolling out vaccination. Sourced  from https://covid.ourworldindata.org/",
+        "summary": "Get COVID-19 vaccine doses administered for all countries that have reported rolling out vaccination. Sourced  from https://covid.ourworldindata.org/",
+        "tags": [
+          "COVID-19: Vaccine"
+        ],
+        "operationId": "GetCOVID-19vaccinedosesadministeredforallcountriesthathavereportedrollingoutvaccination.Sourcedfromhttps://covid.ourworldindata.org/",
+        "deprecated": false,
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "lastdays",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Number of days to return. Use 'all' for the full data set (e.g. 15, all, 24)"
+          },
+          {
+            "name": "fullData",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Flag indicating whether to return timeline data type as simpleVaccineTimeline (false) or fullVaccineTimeline (true)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Status Ok",
+            "schema": {
+              "type": "array",
+              "default": "",
+              "items": {
+                "$ref": "#/definitions/vaccineCountryCoverage"
+              }
+            },
+            "examples": {
+              "application/json": [
+                {
+                  "country": "USA",
+                  "timeline": {
+                    "4/25/2021": 1000
+                  }
+                }
+              ]
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/v3/covid-19/vaccine/coverage/countries/{country}": {
+      "get": {
+        "description": "Get COVID-19 vaccine doses administered for a country that has reported vaccination rollout. Sourced from https://covid.ourworldindata.org/",
+        "summary": "Get COVID-19 vaccine doses administered for a country that has reported vaccination rollout. Sourced from https://covid.ourworldindata.org/",
+        "tags": [
+          "COVID-19: Vaccine"
+        ],
+        "operationId": "GetCOVID-19vaccinedosesadministeredforacountrythathasreportedvaccinationrollout.Sourcedfromhttps://covid.ourworldindata.org/",
+        "deprecated": false,
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "country",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "A valid country name, iso2, iso3"
+          },
+          {
+            "name": "lastdays",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Number of days to return. Use 'all' for the full data set (e.g. 15, all, 24)"
+          },
+          {
+            "name": "fullData",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Flag indicating whether to return timeline data type as simpleVaccineTimeline (false) or fullVaccineTimeline (true)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Status Ok",
+            "schema": {
+              "$ref": "#/definitions/vaccineCountryCoverage"
+            },
+            "examples": {
+              "application/json": {
+                "country": "USA",
+                "timeline": {
+                  "4/25/2021": 1000
+                }
+              }
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/v3/covid-19/vaccine/coverage/states": {
+      "get": {
+        "description": "Get COVID-19 vaccine doses administered for all states that have reported rolling out vaccination. Sourced  from https://covid.ourworldindata.org/",
+        "summary": "Get COVID-19 vaccine doses administered for all states that have reported rolling out vaccination. Sourced  from https://covid.ourworldindata.org/",
+        "tags": [
+          "COVID-19: Vaccine"
+        ],
+        "operationId": "GetCOVID-19vaccinedosesadministeredforallstatesthathavereportedrollingoutvaccination.Sourcedfromhttps://covid.ourworldindata.org/",
+        "deprecated": false,
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "lastdays",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Number of days to return. Use 'all' for the full data set (e.g. 15, all, 24)"
+          },
+          {
+            "name": "fullData",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Flag indicating whether to return timeline data type as simpleVaccineTimeline (false) or fullVaccineTimeline (true)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Status Ok",
+            "schema": {
+              "type": "array",
+              "default": "",
+              "items": {
+                "$ref": "#/definitions/vaccineStateCoverage"
+              }
+            },
+            "examples": {
+              "application/json": [
+                {
+                  "state": "California",
+                  "timeline": {
+                    "4/25/2021": 1000
+                  }
+                }
+              ]
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/v3/covid-19/vaccine/coverage/states/{state}": {
+      "get": {
+        "description": "Get COVID-19 vaccine doses administered for a state that has reported vaccination rollout. Sourced from https://covid.ourworldindata.org/",
+        "summary": "Get COVID-19 vaccine doses administered for a state that has reported vaccination rollout. Sourced from https://covid.ourworldindata.org/",
+        "tags": [
+          "COVID-19: Vaccine"
+        ],
+        "operationId": "GetCOVID-19vaccinedosesadministeredforastatethathasreportedvaccinationrollout.Sourcedfromhttps://covid.ourworldindata.org/",
+        "deprecated": false,
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "state",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "A valid state name"
+          },
+          {
+            "name": "lastdays",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Number of days to return. Use 'all' for the full data set (e.g. 15, all, 24)"
+          },
+          {
+            "name": "fullData",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Flag indicating whether to return timeline data type as simpleVaccineTimeline (false) or fullVaccineTimeline (true)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Status Ok",
+            "schema": {
+              "$ref": "#/definitions/vaccineStateCoverage"
+            },
+            "examples": {
+              "application/json": {
+                "state": "California",
+                "timeline": {
+                  "4/25/2021": 1000
+                }
+              }
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/v3/covid-19/therapeutics": {
+      "get": {
+        "description": "Get therapeutics trial data from RAPS (Regulatory Affairs Professional Society). Specifically published by Jeff Craven at https://www.raps.org/news-and-articles/news-articles/2020/3/covid-19-therapeutics-tracker",
+        "summary": "Get therapeutics trial data from RAPS (Regulatory Affairs Professional Society). Specifically published by Jeff Craven at https://www.raps.org/news-and-articles/news-articles/2020/3/covid-19-therapeutics-tracker",
+        "tags": [
+          "COVID-19: Therapeutics"
+        ],
+        "operationId": "GettherapeuticstrialdatafromRAPS(RegulatoryAffairsProfessionalSociety).SpecificallypublishedbyJeffCravenathttps://www.raps.org/news-and-articles/news-articles/2020/3/covid-19-therapeutics-tracker",
+        "deprecated": false,
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Status Ok",
+            "schema": {
+              "$ref": "#/definitions/therapeutics"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/v3/covid-19/variants/countries/": {
+      "get": {
+        "description": "Returns a list of supported country names",
+        "summary": "Get a list of supported countries for ECDC specific data",
+        "tags": [
+          "COVID-19: Variants"
+        ],
+        "operationId": "GetalistofsupportedcountriesforECDCspecificdata",
+        "deprecated": false,
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Status Ok",
+            "schema": {
+              "type": "array",
+              "default": "",
+              "items": {
+                "type": "string"
+              }
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/v3/covid-19/variants/countries/{country}": {
+      "get": {
+        "description": "Get COVID-19 ECDC reported data for a specific country",
+        "summary": "Get COVID-19 ECDC reported data for a specific country",
+        "tags": [
+          "COVID-19: Variants"
+        ],
+        "operationId": "GetCOVID-19ECDCreporteddataforaspecificcountry",
+        "deprecated": false,
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "country",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "A valid country name from the /v3/covid-19/variants/countries/ endpoint"
+          },
+          {
+            "name": "allowNull",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "By default, if a value is missing, it is returned as 0. This allows nulls to be returned"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Status Ok",
+            "schema": {
+              "type": "array",
+              "default": "",
+              "items": {
+                "$ref": "#/definitions/variantsCountriesECDC"
+              }
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/v3/influenza/cdc/ILINet": {
+      "get": {
+        "description": "Get Influenza-like-illness data for the 2019 and 2020 outbreaks from the US Center for Disease Control",
+        "summary": "Get Influenza-like-illness data for the 2019 and 2020 outbreaks from the US Center for Disease Control",
+        "tags": [
+          "Influenza: CDC"
+        ],
+        "operationId": "GetInfluenza-like-illnessdataforthe2019and2020outbreaksfromtheUSCenterforDiseaseControl",
+        "deprecated": false,
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Status Ok",
+            "schema": {
+              "$ref": "#/definitions/influenzaILINet"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/v3/influenza/cdc/USCL": {
+      "get": {
+        "description": "Get Influenza report data for the 2019 and 2020 outbreaks from the US Center for Disease Control, reported by US clinical labs",
+        "summary": "Get Influenza report data for the 2019 and 2020 outbreaks from the US Center for Disease Control, reported by US clinical labs",
+        "tags": [
+          "Influenza: CDC"
+        ],
+        "operationId": "GetInfluenzareportdataforthe2019and2020outbreaksfromtheUSCenterforDiseaseControl,reportedbyUSclinicallabs",
+        "deprecated": false,
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Status Ok",
+            "schema": {
+              "$ref": "#/definitions/influenzaUSCL"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/v3/influenza/cdc/USPHL": {
+      "get": {
+        "description": "Get Influenza report data for the 2019 and 2020 outbreaks from the US Center for Disease Control, reported by US public health labs",
+        "summary": "Get Influenza report data for the 2019 and 2020 outbreaks from the US Center for Disease Control, reported by US public health labs",
+        "tags": [
+          "Influenza: CDC"
+        ],
+        "operationId": "GetInfluenzareportdataforthe2019and2020outbreaksfromtheUSCenterforDiseaseControl,reportedbyUSpublichealthlabs",
+        "deprecated": false,
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Status Ok",
+            "schema": {
+              "$ref": "#/definitions/influenzaUSPHL"
+            },
+            "headers": {}
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "covidAll": {
+      "title": "covidAll",
+      "type": "object",
+      "properties": {
+        "updated": {
+          "type": "number",
+          "format": "double"
+        },
+        "cases": {
+          "type": "number",
+          "format": "double"
+        },
+        "todayCases": {
+          "type": "number",
+          "format": "double"
+        },
+        "deaths": {
+          "type": "number",
+          "format": "double"
+        },
+        "recovered": {
+          "type": "number",
+          "format": "double"
+        },
+        "todayRecovered": {
+          "type": "number",
+          "format": "double"
+        },
+        "active": {
+          "type": "number",
+          "format": "double"
+        },
+        "critical": {
+          "type": "number",
+          "format": "double"
+        },
+        "casesPerOneMillion": {
+          "type": "number",
+          "format": "double"
+        },
+        "deathsPerOneMillion": {
+          "type": "number",
+          "format": "double"
+        },
+        "tests": {
+          "type": "number",
+          "format": "double"
+        },
+        "testsPerOneMillion": {
+          "type": "number",
+          "format": "double"
+        },
+        "population": {
+          "type": "number",
+          "format": "double"
+        },
+        "oneCasePerPeople": {
+          "type": "number",
+          "format": "double"
+        },
+        "oneDeathPerPeople": {
+          "type": "number",
+          "format": "double"
+        },
+        "oneTestPerPeople": {
+          "type": "number",
+          "format": "double"
+        },
+        "activePerOneMillion": {
+          "type": "number",
+          "format": "double"
+        },
+        "recoveredPerOneMillion": {
+          "type": "number",
+          "format": "double"
+        },
+        "criticalPerOneMillion": {
+          "type": "number",
+          "format": "double"
+        },
+        "affectedCountries": {
+          "type": "number",
+          "format": "double"
+        }
+      }
+    },
+    "covidState": {
+      "title": "covidState",
+      "type": "object",
+      "properties": {
+        "state": {
+          "type": "string"
+        },
+        "updated": {
+          "type": "number",
+          "format": "double"
+        },
+        "cases": {
+          "type": "number",
+          "format": "double"
+        },
+        "todayCases": {
+          "type": "number",
+          "format": "double"
+        },
+        "deaths": {
+          "type": "number",
+          "format": "double"
+        },
+        "todayDeaths": {
+          "type": "number",
+          "format": "double"
+        },
+        "active": {
+          "type": "number",
+          "format": "double"
+        },
+        "casesPerOneMillion": {
+          "type": "number",
+          "format": "double"
+        },
+        "deathsPerOneMillion": {
+          "type": "number",
+          "format": "double"
+        },
+        "tests": {
+          "type": "number",
+          "format": "double"
+        },
+        "testsPerOneMillion": {
+          "type": "number",
+          "format": "double"
+        },
+        "population": {
+          "type": "number",
+          "format": "double"
+        }
+      }
+    },
+    "covidContinent": {
+      "title": "covidContinent",
+      "type": "object",
+      "properties": {
+        "updated": {
+          "type": "number",
+          "format": "double"
+        },
+        "cases": {
+          "type": "number",
+          "format": "double"
+        },
+        "todayCases": {
+          "type": "number",
+          "format": "double"
+        },
+        "deaths": {
+          "type": "number",
+          "format": "double"
+        },
+        "todayDeaths": {
+          "type": "number",
+          "format": "double"
+        },
+        "recovered": {
+          "type": "number",
+          "format": "double"
+        },
+        "todayRecovered": {
+          "type": "number",
+          "format": "double"
+        },
+        "active": {
+          "type": "number",
+          "format": "double"
+        },
+        "critical": {
+          "type": "number",
+          "format": "double"
+        },
+        "casesPerOneMillion": {
+          "type": "number",
+          "format": "double"
+        },
+        "deathsPerOneMillion": {
+          "type": "number",
+          "format": "double"
+        },
+        "tests": {
+          "type": "number",
+          "format": "double"
+        },
+        "testsPerOneMillion": {
+          "type": "number",
+          "format": "double"
+        },
+        "population": {
+          "type": "number",
+          "format": "double"
+        },
+        "continent": {
+          "type": "string"
+        },
+        "activePerOneMillion": {
+          "type": "number",
+          "format": "double"
+        },
+        "recoveredPerOneMillion": {
+          "type": "number",
+          "format": "double"
+        },
+        "criticalPerOneMillion": {
+          "type": "number",
+          "format": "double"
+        },
+        "continentInfo": {
+          "$ref": "#/definitions/ContinentInfo"
+        },
+        "countries": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "covidCountry": {
+      "title": "covidCountry",
+      "type": "object",
+      "properties": {
+        "updated": {
+          "type": "number",
+          "format": "double"
+        },
+        "country": {
+          "type": "string"
+        },
+        "countryInfo": {
+          "$ref": "#/definitions/CountryInfo"
+        },
+        "cases": {
+          "type": "number",
+          "format": "double"
+        },
+        "todayCases": {
+          "type": "number",
+          "format": "double"
+        },
+        "deaths": {
+          "type": "number",
+          "format": "double"
+        },
+        "todayDeaths": {
+          "type": "number",
+          "format": "double"
+        },
+        "recovered": {
+          "type": "number",
+          "format": "double"
+        },
+        "todayRecovered": {
+          "type": "number",
+          "format": "double"
+        },
+        "active": {
+          "type": "number",
+          "format": "double"
+        },
+        "critical": {
+          "type": "number",
+          "format": "double"
+        },
+        "casesPerOneMillion": {
+          "type": "number",
+          "format": "double"
+        },
+        "deathsPerOneMillion": {
+          "type": "number",
+          "format": "double"
+        },
+        "tests": {
+          "type": "number",
+          "format": "double"
+        },
+        "testsPerOneMillion": {
+          "type": "number",
+          "format": "double"
+        },
+        "population": {
+          "type": "number",
+          "format": "double"
+        },
+        "continent": {
+          "type": "number",
+          "format": "double"
+        },
+        "oneCasePerPeople": {
+          "type": "number",
+          "format": "double"
+        },
+        "oneDeathPerPeople": {
+          "type": "number",
+          "format": "double"
+        },
+        "oneTestPerPeople": {
+          "type": "number",
+          "format": "double"
+        },
+        "activePerOneMillion": {
+          "type": "number",
+          "format": "double"
+        },
+        "recoveredPerOneMillion": {
+          "type": "number",
+          "format": "double"
+        },
+        "criticalPerOneMillion": {
+          "type": "number",
+          "format": "double"
+        }
+      }
+    },
+    "covidJHUCountries": {
+      "title": "covidJHUCountries",
+      "type": "object",
+      "properties": {
+        "country": {
+          "type": "string"
+        },
+        "county": {
+          "type": "string"
+        },
+        "updatedAt": {
+          "type": "string"
+        },
+        "stats": {
+          "$ref": "#/definitions/Stats"
+        },
+        "coordinates": {
+          "$ref": "#/definitions/Coordinates"
+        },
+        "province": {
+          "type": "string"
+        }
+      }
+    },
+    "covidJHUCounty": {
+      "title": "covidJHUCounty",
+      "type": "object",
+      "properties": {
+        "country": {
+          "type": "string"
+        },
+        "province": {
+          "type": "string"
+        },
+        "county": {
+          "type": "string"
+        },
+        "updatedAt": {
+          "type": "string"
+        },
+        "stats": {
+          "$ref": "#/definitions/Stats"
+        },
+        "coordinates": {
+          "$ref": "#/definitions/Coordinates"
+        }
+      }
+    },
+    "covidHistoricalAll": {
+      "title": "covidHistoricalAll",
+      "description": "The amount of key-value pairs in 'cases', 'deaths' and 'recovered' is dependent on the 'lastdays' query",
+      "type": "object",
+      "properties": {
+        "cases": {
+          "$ref": "#/definitions/simpleVaccineTimeline"
+        },
+        "deaths": {
+          "$ref": "#/definitions/simpleVaccineTimeline"
+        },
+        "recovered": {
+          "$ref": "#/definitions/simpleVaccineTimeline"
+        }
+      }
+    },
+    "covidHistoricalCountry": {
+      "title": "covidHistoricalCountry",
+      "type": "object",
+      "properties": {
+        "country": {
+          "type": "string"
+        },
+        "province": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "timeline": {
+          "type": "object",
+          "allOf": [
+            {
+              "$ref": "#/definitions/covidHistoricalAll"
+            },
+            {
+              "description": "The amount of key-value pairs in 'cases', 'deaths' and 'recovered' is dependent on the 'lastdays' query"
+            }
+          ]
+        }
+      }
+    },
+    "covidHistoricalProvince": {
+      "title": "covidHistoricalProvince",
+      "type": "object",
+      "properties": {
+        "country": {
+          "type": "string"
+        },
+        "province": {
+          "type": "string"
+        },
+        "timeline": {
+          "type": "object",
+          "allOf": [
+            {
+              "$ref": "#/definitions/covidHistoricalAll"
+            },
+            {
+              "description": "The amount of key-value pairs in 'cases', 'deaths' and 'recovered' is dependent on the 'lastdays' query"
+            }
+          ]
+        }
+      }
+    },
+    "covidAppleSubregions": {
+      "title": "covidAppleSubregions",
+      "type": "object",
+      "properties": {
+        "country": {
+          "type": "string"
+        },
+        "subregions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "covidAppleData": {
+      "title": "covidAppleData",
+      "type": "object",
+      "properties": {
+        "country": {
+          "type": "string"
+        },
+        "subregion": {
+          "type": "string"
+        },
+        "data": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Datum"
+          }
+        }
+      }
+    },
+    "influenzaILINet": {
+      "title": "influenzaILINet",
+      "type": "object",
+      "properties": {
+        "updated": {
+          "type": "number",
+          "format": "double"
+        },
+        "source": {
+          "type": "string"
+        },
+        "data": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ILINet"
+          }
+        }
+      }
+    },
+    "ILINet": {
+      "title": "ILINet",
+      "type": "object",
+      "properties": {
+        "week": {
+          "type": "string"
+        },
+        "age 5-24": {
+          "type": "number",
+          "format": "double"
+        },
+        "age 25-49": {
+          "type": "number",
+          "format": "double"
+        },
+        "age 50-64": {
+          "type": "number",
+          "format": "double"
+        },
+        "age 64+": {
+          "type": "number",
+          "format": "double"
+        },
+        "totalILI": {
+          "type": "number",
+          "format": "double"
+        },
+        "totalPatients": {
+          "type": "number",
+          "format": "double"
+        },
+        "percentUnweightedILI": {
+          "type": "number",
+          "format": "double"
+        },
+        "percentWeightedILI": {
+          "type": "number",
+          "format": "double"
+        }
+      }
+    },
+    "influenzaUSCL": {
+      "title": "influenzaUSCL",
+      "type": "object",
+      "properties": {
+        "updated": {
+          "type": "number",
+          "format": "double"
+        },
+        "source": {
+          "type": "string"
+        },
+        "data": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/USCL"
+          }
+        }
+      }
+    },
+    "USCL": {
+      "title": "USCL",
+      "type": "object",
+      "properties": {
+        "week": {
+          "type": "string"
+        },
+        "totalA": {
+          "type": "number",
+          "format": "double"
+        },
+        "totalB": {
+          "type": "number",
+          "format": "double"
+        },
+        "percentPositiveA": {
+          "type": "number",
+          "format": "double"
+        },
+        "percentPositiveB": {
+          "type": "number",
+          "format": "double"
+        },
+        "totalTests": {
+          "type": "number",
+          "format": "double"
+        },
+        "percentPositive": {
+          "type": "number",
+          "format": "double"
+        }
+      }
+    },
+    "vaccines": {
+      "title": "vaccines",
+      "type": "object",
+      "properties": {
+        "source": {
+          "type": "string"
+        },
+        "totalCandidates": {
+          "type": "string"
+        },
+        "phases": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/phases"
+          }
+        },
+        "data": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/vaccine"
+          }
+        }
+      }
+    },
+    "vaccine": {
+      "title": "vaccine",
+      "type": "object",
+      "properties": {
+        "candidate": {
+          "type": "string"
+        },
+        "mechanism": {
+          "type": "string"
+        },
+        "sponsors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "details": {
+          "type": "string"
+        },
+        "trialPhase": {
+          "type": "string"
+        },
+        "institutions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "phases": {
+      "title": "phases",
+      "type": "object",
+      "properties": {
+        "phase": {
+          "type": "string"
+        },
+        "candidates": {
+          "type": "string"
+        }
+      }
+    },
+    "vaccineCountryCoverage": {
+      "title": "vaccineCountryCoverage",
+      "type": "object",
+      "properties": {
+        "country": {
+          "type": "string"
+        },
+        "timeline": {}
+      }
+    },
+    "vaccineStateCoverage": {
+      "title": "vaccineStateCoverage",
+      "type": "object",
+      "properties": {
+        "state": {
+          "type": "string"
+        },
+        "timeline": {}
+      }
+    },
+    "simpleVaccineTimeline": {
+      "title": "simpleVaccineTimeline",
+      "type": "object",
+      "properties": {
+        "date": {
+          "type": "number",
+          "format": "double"
+        }
+      }
+    },
+    "therapeutics": {
+      "title": "therapeutics",
+      "type": "object",
+      "properties": {
+        "source": {
+          "type": "string"
+        },
+        "totalCandidates": {
+          "type": "string"
+        },
+        "phases": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/phases"
+          }
+        },
+        "data": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/therapeutic"
+          }
+        }
+      }
+    },
+    "therapeutic": {
+      "title": "therapeutic",
+      "type": "object",
+      "properties": {
+        "medicationClass": {
+          "type": "string"
+        },
+        "tradeName": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "details": {
+          "type": "string"
+        },
+        "developerResearcher": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "sponsors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "trialPhase": {
+          "type": "string"
+        },
+        "lastUpdate": {
+          "type": "string"
+        }
+      }
+    },
+    "influenzaUSPHL": {
+      "title": "influenzaUSPHL",
+      "type": "object",
+      "properties": {
+        "updated": {
+          "type": "number",
+          "format": "double"
+        },
+        "source": {
+          "type": "string"
+        },
+        "data": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/USPHL"
+          }
+        }
+      }
+    },
+    "USPHL": {
+      "title": "USPHL",
+      "type": "object",
+      "properties": {
+        "week": {
+          "type": "string"
+        },
+        "A(H3N2v)": {
+          "type": "number",
+          "format": "double"
+        },
+        "A(H1N1)": {
+          "type": "number",
+          "format": "double"
+        },
+        "A(H3)": {
+          "type": "number",
+          "format": "double"
+        },
+        "A(unable to sub-type)+": {
+          "type": "number",
+          "format": "double"
+        },
+        "A(Subtyping not performed)": {
+          "type": "number",
+          "format": "double"
+        },
+        "B": {
+          "type": "number",
+          "format": "double"
+        },
+        "BVIC": {
+          "type": "number",
+          "format": "double"
+        },
+        "totalTests": {
+          "type": "number",
+          "format": "double"
+        }
+      }
+    },
+    "ContinentInfo": {
+      "title": "ContinentInfo",
+      "type": "object",
+      "properties": {
+        "lat": {
+          "type": "number",
+          "format": "double"
+        },
+        "long": {
+          "type": "number",
+          "format": "double"
+        }
+      }
+    },
+    "Coordinates": {
+      "title": "Coordinates",
+      "type": "object",
+      "properties": {
+        "latitude": {
+          "type": "string"
+        },
+        "longitude": {
+          "type": "string"
+        }
+      }
+    },
+    "CountryInfo": {
+      "title": "CountryInfo",
+      "type": "object",
+      "properties": {
+        "_id": {
+          "type": "number",
+          "format": "double"
+        },
+        "iso2": {
+          "type": "string"
+        },
+        "iso3": {
+          "type": "string"
+        },
+        "lat": {
+          "type": "number",
+          "format": "double"
+        },
+        "long": {
+          "type": "number",
+          "format": "double"
+        },
+        "flag": {
+          "type": "string"
+        }
+      }
+    },
+    "covidHistoricalUSCounty": {
+      "title": "covidHistoricalUSCounty",
+      "type": "object",
+      "properties": {
+        "province": {
+          "type": "string"
+        },
+        "county": {
+          "type": "string"
+        },
+        "timeline": {
+          "type": "object",
+          "allOf": [
+            {
+              "$ref": "#/definitions/covidHistoricalAll"
+            },
+            {
+              "description": "The amount of key-value pairs in 'cases', 'deaths' and 'recovered' is dependent on the 'lastdays' query"
+            }
+          ]
+        }
+      }
+    },
+    "covidNYTCounty": {
+      "title": "covidNYTCounty",
+      "type": "object",
+      "properties": {
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "county": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "fips": {
+          "type": "string"
+        },
+        "cases": {
+          "type": "number",
+          "format": "double"
+        },
+        "deaths": {
+          "type": "number",
+          "format": "double"
+        }
+      }
+    },
+    "covidNYTState": {
+      "title": "covidNYTState",
+      "type": "object",
+      "properties": {
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "state": {
+          "type": "string"
+        },
+        "fips": {
+          "type": "string"
+        },
+        "cases": {
+          "type": "number",
+          "format": "double"
+        },
+        "deaths": {
+          "type": "number",
+          "format": "double"
+        }
+      }
+    },
+    "covidNYTUSA": {
+      "title": "covidNYTUSA",
+      "type": "object",
+      "properties": {
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "cases": {
+          "type": "number",
+          "format": "double"
+        },
+        "deaths": {
+          "type": "number",
+          "format": "double"
+        }
+      }
+    },
+    "Datum": {
+      "title": "Datum",
+      "type": "object",
+      "properties": {
+        "sub-region": {
+          "type": "string"
+        },
+        "subregion_and_city": {
+          "type": "string"
+        },
+        "geo_type": {
+          "type": "string"
+        },
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "driving": {
+          "type": "number",
+          "format": "double"
+        },
+        "transit": {
+          "type": "number",
+          "format": "double"
+        },
+        "walking": {
+          "type": "number",
+          "format": "double"
+        }
+      }
+    },
+    "fullVaccineTimeline": {
+      "title": "fullVaccineTimeline",
+      "type": "object",
+      "properties": {
+        "total": {
+          "type": "number",
+          "format": "double"
+        },
+        "daily": {
+          "type": "number",
+          "format": "double"
+        },
+        "totalPerHundred": {
+          "type": "number",
+          "format": "double"
+        },
+        "dailyPerMillion": {
+          "type": "number",
+          "format": "double"
+        },
+        "date": {
+          "type": "string"
+        }
+      }
+    },
+    "Stats": {
+      "title": "Stats",
+      "type": "object",
+      "properties": {
+        "confirmed": {
+          "type": "number",
+          "format": "double"
+        },
+        "deaths": {
+          "type": "number",
+          "format": "double"
+        },
+        "recovered": {
+          "type": "number",
+          "format": "double"
+        }
+      }
+    },
+    "variantsCountriesECDC": {
+      "title": "variantsCountriesECDC",
+      "type": "object",
+      "properties": {
+        "updated": {
+          "type": "number",
+          "format": "double"
+        },
+        "country": {
+          "type": "string"
+        },
+        "yearWeek": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string"
+        },
+        "newCases": {
+          "type": "number",
+          "format": "double"
+        },
+        "numberSequenced": {
+          "type": "number",
+          "format": "double"
+        },
+        "percentSequenced": {
+          "type": "number",
+          "format": "double"
+        },
+        "validDenominator": {
+          "type": "string"
+        },
+        "variant": {
+          "type": "string"
+        },
+        "numberDetectionsVariant": {
+          "type": "number",
+          "format": "double"
+        },
+        "numberSequencedKnownVariant": {
+          "type": "number",
+          "format": "double"
+        },
+        "percentVariant": {
+          "type": "number",
+          "format": "double"
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "COVID-19: Worldometers",
+      "description": "(COVID-19 data sourced from Worldometers, updated every 10 minutes)"
+    },
+    {
+      "name": "COVID-19: JHUCSSE",
+      "description": "(COVID-19 data sourced from Johns Hopkins University, updated every 10 minutes)"
+    },
+    {
+      "name": "COVID-19: NYT",
+      "description": "(COVID-19 data sourced from the New York Times, updated every 24 hours)"
+    },
+    {
+      "name": "COVID-19: Apple",
+      "description": "(COVID-19 related mobility trend data from Apple, updated every 24 hours)"
+    },
+    {
+      "name": "COVID-19: Government",
+      "description": "(COVID-19 individual government reported data, updated every 24 hours)"
+    },
+    {
+      "name": "COVID-19: Vaccine",
+      "description": "(COVID-19 vaccine trial data from raps.org, updated every 24 hours)"
+    },
+    {
+      "name": "COVID-19: Therapeutics",
+      "description": "(COVID-19 therapeutic trial data from raps.org, updated every 24 hours)"
+    },
+    {
+      "name": "COVID-19: Variants",
+      "description": "(COVID-19 data from The European Surveillance System -TESSy, provided by [Austria, Belgium, Bulgaria, Croatia, Cyprus, Czechia, Denmark, Estonia, Finland, France, Germany, Greece, Hungary, Iceland, Ireland, Italy, Latvia, Liechtenstein, Lithuania, Luxembourg, Malta, Netherlands, Norway, Poland, Portugal, Romania, Slovakia, Slovenia, Spain and Sweden]  https://www.ecdc.europa.eu and released by ECDC updated every week)"
+    },
+    {
+      "name": "Influenza: CDC",
+      "description": "(Influenza data reported by the United States CDC, updated every 24 hours)"
+    }
+  ],
+  "externalDocs": {
+    "url": "https://github.com/disease-sh/API",
+    "description": "Find out more about this API"
+  }
+}

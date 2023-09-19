@@ -12,7 +12,7 @@ from src.ca import RuntimeInfoManager
 from src.languagemodel.LanguageModel import ParamValueModel
 from src.openapiParser import Parser
 
-swagger = "D:/Python_Codes/RestCT/exp/swagger/BingMap/Elevations.json"
+swagger = "D:/Python_Codes/RestCT/exp/swagger/MyAPI/disease-sh.json"
 os.environ["swagger"] = swagger
 os.environ["model"] = "gpt-3.5-turbo"
 os.environ["language_model_key"] = ""

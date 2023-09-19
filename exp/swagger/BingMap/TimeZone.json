@@ -64,7 +64,7 @@
                 }
             }
         },
-        "/TimeZone/": {
+        "/TimeZone": {
             "get": {
                 "description": "Time Zone from Location Name",
                 "parameters": [
@@ -256,7 +256,7 @@
                 }
             }
         },
-        "/TimeZone": {
+        "/TimeZone/List": {
             "get": {
                 "description": "Convert UTC Datetime to a Different Time Zone",
                 "parameters": [

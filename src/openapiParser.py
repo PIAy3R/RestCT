@@ -89,9 +89,9 @@ class Parser:
                         Example.members.add(example)
 
                 # process responses
-                for status_code, response_info in method_info.get(DocKey.RESPONSES, {}).items():
-                    operation.addResponse(
-                        Response.buildResponse(status_code, response_info, self._definitions, operation))
+                # for status_code, response_info in method_info.get(DocKey.RESPONSES, {}).items():
+                #     operation.addResponse(
+                #         Response.buildResponse(status_code, response_info, self._definitions, operation))
 
     def _parse_definition_example(self):
         """get example in definitions"""

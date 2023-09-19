@@ -32,12 +32,13 @@ def num_tokens_from_string(messages: List[Dict[str, str]], encoding_name: str = 
 
 class BasicLanguageModel:
 
-    def __init__(self, operation: Operation, manager, temperature: float = 0.7):
+    def __init__(self, operation: Operation, manager, data_path, temperature: float = 0.7):
         self._temperature: float = temperature
 
         self._operation = operation
         self._manager = manager
         self._constraint: list = operation.constraints
+        self._data_path = Path(data_path) / "prompt_response.json"
 
         self._max_query_len: int = 3900
 
@@ -97,10 +98,20 @@ class BasicLanguageModel:
         self._manager.register_llm_call()
         end_time = time.time()
         logger.info(f"call time: {end_time - start_time} s")
-        return response.choices[0].message["content"]
+        return response.choices[0].message["content"], message
 
     def execute(self):
         pass
+
+    def save_message_and_response(self, prompt, response):
+        pr_info = {
+            "operation": self.operation.__repr__(),
+            "temperature": self.temperature,
+            "prompt": prompt,
+            "llm_response": response
+        }
+        with self._data_path.open("a+") as fp:
+            json.dump(pr_info, fp)
 
 
 class ParamValueModel(BasicLanguageModel):
@@ -132,9 +143,10 @@ class ParamValueModel(BasicLanguageModel):
         return message
 
     def execute(self):
-        response_str = self.call()
+        response_str, message = self.call()
         formatted_output = self._fixer.handle(response_str)
         logger.info(f"Language model answer: {formatted_output}")
+        self.save_message_and_response(message, formatted_output)
 
 
 class FakerMethodModel(BasicLanguageModel):

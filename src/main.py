@@ -215,7 +215,7 @@ if __name__ == "__main__":
                         help='set if the forwarding proxy is running',
                         type=str, required=False, default="")
     parser.add_argument('--UseLLM',
-                        help='whether to use languae model',
+                        help='whether to use language model',
                         type=str, required=True, default="False")
     parser.add_argument('--LanguageModelKey',
                         help='api key of languae model',

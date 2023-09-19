@@ -641,10 +641,10 @@ class CAWithLLM(CA):
                 param_to_ask.append(param)
                 loc_set.add(param.loc)
         if Loc.Body not in loc_set:
-            value_model = ParamValueModel(operation, param_to_ask, self._manager)
+            value_model = ParamValueModel(operation, param_to_ask, self._manager, self._data_path)
             value_model.execute()
         else:
-            value_model = ParamContainBodyModel(operation, param_to_ask, self._manager)
+            value_model = ParamContainBodyModel(operation, param_to_ask, self._manager, self._data_path)
             value_model.execute()
 
     def _re_count(self, e_ca, a_ca):

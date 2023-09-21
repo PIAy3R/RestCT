@@ -200,7 +200,7 @@ class Executor:
 
         # for k, v in kwargs.items():
         #     logger.debug("{}: {}", k, v)
-
+        # todo:  more reasonable handling methods
         try:
             feedback = getattr(requests, operation.method.value.lower())(**kwargs, timeout=50,
                                                                          auth=self._auth)

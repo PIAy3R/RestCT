@@ -115,8 +115,9 @@ class BasicLanguageModel:
 
 
 class ParamValueModel(BasicLanguageModel):
-    def __init__(self, operation: Operation, target_param: List[AbstractParam], manager, temperature: float = 0.7):
-        super().__init__(operation, manager, temperature)
+    def __init__(self, operation: Operation, target_param: List[AbstractParam], manager, data_path,
+                 temperature: float = 0.7):
+        super().__init__(operation, manager, data_path, temperature)
 
         self._target_param: List[AbstractParam] = target_param
         self._fixer = ValueOutputFixer(self._manager, self._operation)
@@ -144,14 +145,17 @@ class ParamValueModel(BasicLanguageModel):
 
     def execute(self):
         response_str, message = self.call()
-        formatted_output = self._fixer.handle(response_str)
+        parameters = self._spec.get("paths").get(self._operation.url.replace(URL.baseurl, "")).get(
+            self._operation.method.value).get("parameters")
+        formatted_output = self._fixer.handle(response_str, parameters)
         logger.info(f"Language model answer: {formatted_output}")
         self.save_message_and_response(message, formatted_output)
 
 
 class FakerMethodModel(BasicLanguageModel):
-    def __init__(self, operation: Operation, target_param: List[AbstractParam], manager, temperature: float = 0.7):
-        super().__init__(operation, manager, temperature)
+    def __init__(self, operation: Operation, target_param: List[AbstractParam], manager, data_path,
+                 temperature: float = 0.7):
+        super().__init__(operation, manager, data_path, temperature)
 
         self._target_param: List[AbstractParam] = target_param
 

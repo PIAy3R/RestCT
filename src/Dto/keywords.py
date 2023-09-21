@@ -85,7 +85,7 @@ class DataType(Enum):
         elif value_type in [DataType.Byte]:
             value = bytes(value)
         elif value_type in [DataType.Bool]:
-            if value.lower() == "true":
+            if str(value).lower() == "true":
                 value = True
             else:
                 value = False

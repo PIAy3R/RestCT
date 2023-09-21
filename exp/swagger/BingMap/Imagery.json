@@ -1230,7 +1230,7 @@
                     },
                     {
                         "name": "address",
-                        "required": false,
+                        "required": true,
                         "in": "path",
                         "description": "A query string that is used to determine the map location to display.",
                         "type": "string",
@@ -1238,7 +1238,7 @@
                     },
                     {
                         "name": "zoomLevel",
-                        "required": true,
+                        "required": false,
                         "in": "query",
                         "description": "The level of zoom to display.",
                         "type": "integer",

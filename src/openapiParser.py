@@ -106,11 +106,14 @@ class Parser:
                 else:
                     raise Exception("{} can not be transferred to example".format(wholeExamples))
             if DataType(def_info.get(ParamKey.TYPE, DataType.NULL.value)) is DataType.Object:
-                for p_name, p_info in def_info.get(DocKey.PROPERTIES).items():
-                    singleExample = p_info.get(DocKey.EXAMPLE, None)
-                    if singleExample is not None:
-                        example = Example(p_name, singleExample)
-                        Example.members.add(example)
+                try:
+                    for p_name, p_info in def_info.get(DocKey.PROPERTIES).items():
+                        singleExample = p_info.get(DocKey.EXAMPLE, None)
+                        if singleExample is not None:
+                            example = Example(p_name, singleExample)
+                            Example.members.add(example)
+                except:
+                    pass
 
     def _parse_whole_example(self, exampleInfo: dict):
         if exampleInfo is None or len(exampleInfo) == 0:

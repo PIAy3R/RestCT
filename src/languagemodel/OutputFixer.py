@@ -43,6 +43,12 @@ class ValueOutputFixer(OutputFixer):
 
     def handle(self, output_to_process, parameter_list=None) -> dict:
         json_output = self.decode_to_json(output_to_process)
+        processed_output = self.del_existing_example(json_output, parameter_list)
+        self._manager.save_language_model_response(self._operation, processed_output)
+        return processed_output
+
+    @staticmethod
+    def del_existing_example(json_output, parameter_list):
         processed_output: Dict[str, List] = {}
         for p, vl in json_output.items():
             example = ""
@@ -56,12 +62,10 @@ class ValueOutputFixer(OutputFixer):
                 if isinstance(v, str):
                     v = v.replace('|', ',')
                     v = v.replace(";", ",")
-                if processed_output.get(p, None) == None:
+                if processed_output.get(p, None) is None:
                     processed_output.update({p: [v]})
                 else:
                     processed_output[p].append(v)
-
-        self._manager.save_language_model_response(self._operation, processed_output)
         return processed_output
 
 

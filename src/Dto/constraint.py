@@ -152,7 +152,7 @@ class Constraint:
                 paramName, op, value = self.ents[ord(matcher.group(1)) - 65], matcher.group(2), self.ents[
                     ord(matcher.group(4)) - 65]
             try:
-                valueList = [v[1] for v in valueDict.get(paramName)]
+                valueList = [v.val for v in valueDict.get(paramName)]
                 valueIndex = valueList.index(value)
             except (ValueError, TypeError):
                 return None

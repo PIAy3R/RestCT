@@ -179,11 +179,72 @@ class FakerMethodModel(BasicLanguageModel):
         return message
 
 
-class ParamContainBodyModel(BasicLanguageModel):
-    def __init__(self, operation: Operation, target_param: List[AbstractParam], manager, temperature: float = 0.7):
-        super().__init__(operation, manager, temperature)
+class BodyParamModel(BasicLanguageModel):
+    def __init__(self, operation: Operation, target_param: List[AbstractParam], manager, data_path,
+                 temperature: float = 0.7):
+        super().__init__(operation, manager, data_path, temperature)
 
         self._target_param: List[AbstractParam] = target_param
         self._fixer = BodyOutputFixer(self._manager, self._operation)
 
         logger.debug(f"target parameter list: {self._target_param}")
+
+    def build_prompt(self) -> str:
+
+        definition = self._spec["definitions"]
+
+        pInfo = []
+        parameters = self._spec.get("paths").get(self._operation.url.replace(URL.baseurl, "")).get(
+            self._operation.method.value).get("parameters")
+        for p in self._target_param:
+            for info in parameters:
+                if info.get("name") == p.name:
+                    pInfo.append(info)
+        prompt = Template.EXPLANATION + Template.TEXT.format(self.operation, pInfo, self._constraint,
+                                                             f"[{', '.join([p.name for p in self._target_param])}]")
+
+        def get_def(definition_dict: dict):
+            final_dict = dict()
+            # required_param_list = definition_dict["required"]
+            required_param_list = [p for p in definition_dict["properties"]]
+            properties = dict()
+            for param, info in definition_dict["properties"].items():
+                if param in required_param_list:
+                    properties.update({param: info})
+                    if properties[param].get("$ref") != None:
+                        new_def_dict = definition[properties[param].get("$ref").split("/")[-1]]
+                        new_def_dict_return = get_def(new_def_dict)
+                        properties[param] = new_def_dict_return
+                    elif properties[param].get("type") == "array" and properties[param].get("items"). \
+                            get("$ref") is not None:
+                        new_def_dict = definition[properties[param].get("items").get("$ref").split("/")[-1]]
+                        new_def_dict_return = get_def(new_def_dict)
+                        properties[param]["items"] = new_def_dict_return
+                final_dict.update(properties)
+            return final_dict
+
+        param_info = self._spec["paths"][self.operation.url.replace(URL.baseurl, '')][self.operation.method.value].get(
+            "parameters")
+        body_dict = dict()
+        body_ref = ""
+        for paramdict in param_info:
+            if paramdict.get("in") == "body":
+                body_ref = paramdict["schema"]["$ref"].split("/")[-1]
+        body_dict["body"] = get_def(definition[body_ref])
+        prompt += Template.BODY_EXPLANATION.format(body_dict) + TaskTemplate.BODY
+        return prompt
+
+    def build_message(self) -> List[Dict[str, str]]:
+        message = []
+        prompt = self.build_prompt()
+        message.append({"role": "system", "content": Template.SYS_ROLE})
+        message.append({"role": "user", "content": prompt})
+        return message
+
+    def execute(self):
+        response_str, message = self.call()
+        print(response_str)
+        # parameters = self._spec.get("paths").get(self._operation.url.replace(URL.baseurl, "")).get(
+        #     self._operation.method.value).get("parameters")
+        formatted_output = self._fixer.handle(response_str, self._target_param)
+        self.save_message_and_response(message, formatted_output)

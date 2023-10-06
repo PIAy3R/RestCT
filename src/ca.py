@@ -1,5 +1,6 @@
 import dataclasses
 import json
+import random
 import re
 import shlex
 import subprocess
@@ -16,7 +17,7 @@ from src.Dto.constraint import Constraint, Processor
 from src.Dto.keywords import Loc, DataType, Method
 from src.Dto.operation import Operation
 from src.Dto.parameter import AbstractParam, ValueType, Value, EnumParam
-from src.languagemodel.LanguageModel import ParamValueModel, ParamContainBodyModel
+from src.languagemodel.LanguageModel import ParamValueModel, BodyParamModel
 
 
 def _saveChain(responseChains: List[dict], chain: dict, opStr: str, response):
@@ -250,7 +251,7 @@ class RuntimeInfoManager:
         self._success_sequence: set = set()
         self._unresolved_params: Set[Tuple[Operation, str]] = set()
 
-        self._llm_example_value_dict: Dict[Operation, Dict[AbstractParam, List[str]]] = dict()
+        self._llm_example_value_dict: Dict[Operation, Dict[AbstractParam, Union[dict, list]]] = dict()
 
     def essential_executed(self, operations: Tuple[Operation]):
         return operations in self._reused_essential_seq_dict.keys()
@@ -370,7 +371,10 @@ class RuntimeInfoManager:
         return sortedList[:maxChainItems] if maxChainItems < len(sortedList) else sortedList
 
     def save_language_model_response(self, operation, json_output):
-        self._llm_example_value_dict[operation] = json_output
+        if self._llm_example_value_dict.get(operation) is None:
+            self._llm_example_value_dict[operation] = {}
+        for k, v in json_output.items():
+            self._llm_example_value_dict[operation][k] = v
 
 
 class CA:
@@ -660,7 +664,17 @@ class CAWithLLM(CA):
             value_model = ParamValueModel(operation, param_to_ask, self._manager, self._data_path)
             value_model.execute()
         else:
-            value_model = ParamContainBodyModel(operation, param_to_ask, self._manager, self._data_path)
+            no_nody = []
+            body_param = []
+            for p in param_to_ask:
+                if p.loc != Loc.Body:
+                    no_nody.append(p)
+                else:
+                    body_param.append(p)
+            if len(no_nody) != 0:
+                value_model = ParamValueModel(operation, no_nody, self._manager, self._data_path)
+                value_model.execute()
+            value_model = BodyParamModel(operation, body_param, self._manager, self._data_path)
             value_model.execute()
 
     def _re_count(self, e_ca, a_ca):
@@ -728,9 +742,24 @@ class CAWithLLM(CA):
 
             for p in p_with_children:
                 if self._is_regen:
-                    if p.name in example_dict.keys():
-                        for value in example_dict.get(p.name):
-                            value = DataType.from_string(value, p.type)
+                    if root_p.loc is not Loc.Body:
+                        if p.name in example_dict.keys():
+                            for value in example_dict.get(p.name):
+                                value = DataType.from_string(value, p.type)
+                                p.domain.append(Value(value, ValueType.Example, p.type))
+                    else:
+                        pgn = p.getGlobalName()
+                        v = example_dict.copy()
+                        value = ""
+                        for param_name in pgn.split("@"):
+                            if param_name != "_item":
+                                v = v.get(param_name)
+                                value = v
+                            else:
+                                i = random.randint(0, len(v) - 1)
+                                v = v[i]
+                        value = DataType.from_string(value, p.type)
+                        if not isinstance(p, EnumParam):
                             p.domain.append(Value(value, ValueType.Example, p.type))
 
                 if not self._manager.is_unresolved(operation.__repr__() + p.name):

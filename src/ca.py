@@ -16,7 +16,7 @@ from loguru import logger
 from src.Dto.constraint import Constraint, Processor
 from src.Dto.keywords import Loc, DataType, Method
 from src.Dto.operation import Operation
-from src.Dto.parameter import AbstractParam, ValueType, Value, EnumParam
+from src.Dto.parameter import AbstractParam, ValueType, Value, EnumParam, BoolParam
 from src.languagemodel.LanguageModel import ParamValueModel, BodyParamModel
 
 
@@ -207,6 +207,8 @@ class Executor:
                                                                          auth=self._auth)
         except TypeError:
             raise Exception("request type error: {}".format(operation.method.value.lower()))
+        except ValueError:
+            return 700, None
         except requests.exceptions.Timeout:
             return 700, "timeout"
         except requests.exceptions.TooManyRedirects:
@@ -491,7 +493,7 @@ class CA:
         logger.info(f"{index + 1}-th operation all parameters covering array size: {len(a_ca)}, "
                     f"parameters: {len(a_ca[0]) if len(a_ca) > 0 else 0}, constraints: {len(operation.constraints)}")
 
-        return self._executes(operation, a_ca, chain, success_url_tuple, history, False)
+        return is_break or self._executes(operation, a_ca, chain, success_url_tuple, history, False)
 
     def _handle_essential_params(self, operation, exec_ops, chain, history):
         """
@@ -620,21 +622,22 @@ class CAWithLLM(CA):
 
     def _re_handle(self, index, operation, chain, sequence, loop_num) -> bool:
         self._is_regen = True
-        if loop_num > 1:
-            logger.info(
-                "the previous example value of the operation did not work, clear and re call the language model")
-            self._manager.get_llm_examples().get(operation).clear()
         success_url_tuple = tuple([op for op in sequence[:index] if op in chain.keys()] + [operation])
         if len(operation.parameterList) == 0:
             self._executes(operation, [{}], chain, success_url_tuple, [])
             return True
 
         history = []
+        flag = False
 
         self._reset_constraints(operation, operation.parameterList)
 
-        if self._manager.get_llm_examples().get(operation) is None:
-            self._call_language_model(operation)
+        if self._manager.get_llm_examples().get(operation) is None or len(
+                self._manager.get_llm_examples().get(operation)) == 0:
+            flag = self._call_language_model(operation)
+
+        if not flag:
+            return False
 
         e_ca = self._handle_essential_params(operation, sequence[:index], chain, history)
         logger.info(f"{index + 1}-th operation essential parameters covering array size: {len(e_ca)}, "
@@ -649,7 +652,12 @@ class CAWithLLM(CA):
         logger.info(f"{index + 1}-th operation all parameters covering array size: {len(a_ca)}, "
                     f"parameters: {len(a_ca[0]) if len(a_ca) > 0 else 0}, constraints: {len(operation.constraints)}")
 
-        is_break = self._executes(operation, a_ca, chain, success_url_tuple, history, False)
+        is_break = is_break or self._executes(operation, a_ca, chain, success_url_tuple, history, False)
+
+        if loop_num == 3 and self._manager.get_llm_examples().get(operation) is not None and not is_break:
+            logger.info(
+                "the previous example value of the operation did not work, clear the language model value")
+            self._manager.get_llm_examples().get(operation).clear()
 
         return is_break
 
@@ -657,25 +665,30 @@ class CAWithLLM(CA):
         param_to_ask = []
         loc_set = set()
         for param in operation.parameterList:
-            if not isinstance(param, EnumParam):
+            if not isinstance(param, EnumParam) and not isinstance(param, BoolParam) and param.loc != Loc.Path:
                 param_to_ask.append(param)
                 loc_set.add(param.loc)
-        if Loc.Body not in loc_set:
-            value_model = ParamValueModel(operation, param_to_ask, self._manager, self._data_path)
-            value_model.execute()
-        else:
-            no_nody = []
-            body_param = []
-            for p in param_to_ask:
-                if p.loc != Loc.Body:
-                    no_nody.append(p)
-                else:
-                    body_param.append(p)
-            if len(no_nody) != 0:
-                value_model = ParamValueModel(operation, no_nody, self._manager, self._data_path)
+        if len(param_to_ask) != 0:
+            if Loc.Body not in loc_set:
+                value_model = ParamValueModel(operation, param_to_ask, self._manager, self._data_path)
                 value_model.execute()
-            value_model = BodyParamModel(operation, body_param, self._manager, self._data_path)
-            value_model.execute()
+            else:
+                no_nody = []
+                body_param = []
+                for p in param_to_ask:
+                    if p.loc != Loc.Body:
+                        no_nody.append(p)
+                    else:
+                        body_param.append(p)
+                if len(no_nody) != 0:
+                    value_model = ParamValueModel(operation, no_nody, self._manager, self._data_path)
+                    value_model.execute()
+                value_model = BodyParamModel(operation, body_param, self._manager, self._data_path)
+                value_model.execute()
+        else:
+            logger.info("no param to ask")
+            return False
+        return True
 
     def _re_count(self, e_ca, a_ca):
         self._stat.req_num -= (len(e_ca) + len(a_ca))
@@ -710,7 +723,7 @@ class CAWithLLM(CA):
         logger.info(f"{index + 1}-th operation all parameters covering array size: {len(a_ca)}, "
                     f"parameters: {len(a_ca[0]) if len(a_ca) > 0 else 0}, constraints: {len(operation.constraints)}")
 
-        is_break = self._executes(operation, a_ca, chain, success_url_tuple, history, False)
+        is_break = is_break or self._executes(operation, a_ca, chain, success_url_tuple, history, False)
 
         if not is_break:
             logger.info("no success request, use llm to help re-generate")
@@ -750,14 +763,15 @@ class CAWithLLM(CA):
                     else:
                         pgn = p.getGlobalName()
                         v = example_dict.copy()
-                        value = ""
                         for param_name in pgn.split("@"):
-                            if param_name != "_item":
-                                v = v.get(param_name)
+                            try:
+                                if param_name != "_item":
+                                    v = v.get(param_name)
+                                else:
+                                    v = v[0]
                                 value = v
-                            else:
-                                i = random.randint(0, len(v) - 1)
-                                v = v[i]
+                            except:
+                                continue
                         value = DataType.from_string(value, p.type)
                         if not isinstance(p, EnumParam):
                             p.domain.append(Value(value, ValueType.Example, p.type))

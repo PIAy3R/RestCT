@@ -243,7 +243,6 @@ class BodyParamModel(BasicLanguageModel):
 
     def execute(self):
         response_str, message = self.call()
-        print(response_str)
         # parameters = self._spec.get("paths").get(self._operation.url.replace(URL.baseurl, "")).get(
         #     self._operation.method.value).get("parameters")
         formatted_output = self._fixer.handle(response_str, self._target_param)

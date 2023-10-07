@@ -626,7 +626,8 @@
             "in": "query",
             "description": "When used withoutuse_custom_template, name of abuilt-in project template. When used withuse_custom_template, name of a custom project template.",
             "required": false,
-            "type": "string"
+            "type": "string",
+            "example": ""
           },
           {
             "name": "visibility",

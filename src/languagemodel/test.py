@@ -12,7 +12,7 @@ from src.ca import RuntimeInfoManager
 from src.languagemodel.LanguageModel import ParamValueModel, BodyParamModel
 from src.openapiParser import Parser
 
-swagger = "D:/Python_Codes/RestCT/exp/swagger/BingMap/Route.json"
+swagger = "D:/Python_Codes/RestCT/exp/swagger/GitLab/Groups.json"
 os.environ["swagger"] = swagger
 os.environ["model"] = "gpt-3.5-turbo"
 os.environ["language_model_key"] = "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"
@@ -30,17 +30,4 @@ print()
 t = r.get_llm_examples().get(op)
 # print(t)
 print()
-for p in ep[0].seeAllParameters():
-    pgn = p.getGlobalName()
-    print(pgn)
-    v = t.copy()
-    for param_name in pgn.split("@"):
-        if param_name != "_item":
-            v = v.get(param_name)
-            value = v
-        else:
-            v = v[0]
-        value = v
-    value = DataType.from_string(value, p.type)
-    print(value)
-    print()
+

@@ -139,7 +139,7 @@ class Executor:
     def assemble(operation, responses) -> dict:
         url = operation.url
         headers = {
-            'Content-Type': 'application/json',
+            'Content-Type': operation.header[0] if operation.header is not None else "applications/json",
             'user-agent': 'my-app/0.0.1'
         }
         params = dict()
@@ -483,17 +483,18 @@ class CA:
         logger.info(f"{index + 1}-th operation essential parameters covering array size: {len(e_ca)}, "
                     f"parameters: {len(e_ca[0]) if len(e_ca) > 0 else 0}, constraints: {len(operation.constraints)}")
 
-        is_break = self._executes(operation, e_ca, chain, success_url_tuple, history, True)
+        is_break_e = self._executes(operation, e_ca, chain, success_url_tuple, history, True)
 
         if all([p.isEssential for p in operation.parameterList]):
-            return is_break
+            return is_break_e
 
-        # todo history is not None, add return values of executes
         a_ca = self._handle_all_params(operation, sequence[:index], chain, history)
         logger.info(f"{index + 1}-th operation all parameters covering array size: {len(a_ca)}, "
                     f"parameters: {len(a_ca[0]) if len(a_ca) > 0 else 0}, constraints: {len(operation.constraints)}")
 
-        return is_break or self._executes(operation, a_ca, chain, success_url_tuple, history, False)
+        is_break_a = self._executes(operation, a_ca, chain, success_url_tuple, history, False)
+
+        return is_break_e or is_break_a
 
     def _handle_essential_params(self, operation, exec_ops, chain, history):
         """
@@ -643,16 +644,18 @@ class CAWithLLM(CA):
         logger.info(f"{index + 1}-th operation essential parameters covering array size: {len(e_ca)}, "
                     f"parameters: {len(e_ca[0]) if len(e_ca) > 0 else 0}, constraints: {len(operation.constraints)}")
 
-        is_break = self._executes(operation, e_ca, chain, success_url_tuple, history, True)
+        is_break_e = self._executes(operation, e_ca, chain, success_url_tuple, history, True)
 
         if all([p.isEssential for p in operation.parameterList]):
-            return is_break
+            return is_break_e
 
         a_ca = self._handle_all_params(operation, sequence[:index], chain, history)
         logger.info(f"{index + 1}-th operation all parameters covering array size: {len(a_ca)}, "
                     f"parameters: {len(a_ca[0]) if len(a_ca) > 0 else 0}, constraints: {len(operation.constraints)}")
 
-        is_break = is_break or self._executes(operation, a_ca, chain, success_url_tuple, history, False)
+        is_break_a = self._executes(operation, a_ca, chain, success_url_tuple, history, False)
+
+        is_break = is_break_e or is_break_a
 
         if loop_num == 3 and self._manager.get_llm_examples().get(operation) is not None and not is_break:
             logger.info(
@@ -711,19 +714,20 @@ class CAWithLLM(CA):
         logger.info(f"{index + 1}-th operation essential parameters covering array size: {len(e_ca)}, "
                     f"parameters: {len(e_ca[0]) if len(e_ca) > 0 else 0}, constraints: {len(operation.constraints)}")
 
-        is_break = self._executes(operation, e_ca, chain, success_url_tuple, history, True)
+        is_break_e = self._executes(operation, e_ca, chain, success_url_tuple, history, True)
 
         if all([p.isEssential for p in operation.parameterList]):
-            if not is_break:
+            if not is_break_e:
                 logger.info("no success request, use llm to help re-generate")
                 is_break = self._re_handle(index, operation, chain, sequence, loop_num)
-            return is_break
+            return is_break_e
 
         a_ca = self._handle_all_params(operation, sequence[:index], chain, history)
         logger.info(f"{index + 1}-th operation all parameters covering array size: {len(a_ca)}, "
                     f"parameters: {len(a_ca[0]) if len(a_ca) > 0 else 0}, constraints: {len(operation.constraints)}")
+        is_break_a = self._executes(operation, a_ca, chain, success_url_tuple, history, False)
 
-        is_break = is_break or self._executes(operation, a_ca, chain, success_url_tuple, history, False)
+        is_break = is_break_e or is_break_a
 
         if not is_break:
             logger.info("no success request, use llm to help re-generate")

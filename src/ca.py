@@ -139,7 +139,7 @@ class Executor:
     def assemble(operation, responses) -> dict:
         url = operation.url
         headers = {
-            'Content-Type': operation.header[0] if operation.header is not None else "applications/json",
+            'Content-Type': operation.header[0] if operation.header is not None else "application/json",
             'user-agent': 'my-app/0.0.1'
         }
         params = dict()
@@ -686,8 +686,8 @@ class CAWithLLM(CA):
                 if len(no_nody) != 0:
                     value_model = ParamValueModel(operation, no_nody, self._manager, self._data_path)
                     value_model.execute()
-                value_model = BodyParamModel(operation, body_param, self._manager, self._data_path)
-                value_model.execute()
+                # value_model = BodyParamModel(operation, body_param, self._manager, self._data_path)
+                # value_model.execute()
         else:
             logger.info("no param to ask")
             return False

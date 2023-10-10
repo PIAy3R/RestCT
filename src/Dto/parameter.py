@@ -28,7 +28,8 @@ def buildParam(info: dict, definitions: dict, specifiedName: str = None):
     if buildInfo["paramType"] is DataType.NULL:
         if ParamKey.SCHEMA in info.keys():
             if DocKey.REF_SIGN in info.get(ParamKey.SCHEMA).keys():
-                extraInfo = AbstractParam.getRef(info.get(ParamKey.SCHEMA, None).get(DocKey.REF_SIGN, None), definitions)
+                extraInfo = AbstractParam.getRef(info.get(ParamKey.SCHEMA, None).get(DocKey.REF_SIGN, None),
+                                                 definitions)
             else:
                 sInfo = info.get(ParamKey.SCHEMA)
                 childInfo = {
@@ -635,7 +636,7 @@ class FileParam(AbstractParam):
 
 class NumberParam(AbstractParam):
     def __init__(self, specifiedName: str, default: list, loc: Loc, required: bool, paramType: DataType,
-                 paramFormat: DataType, description: str, maximum=100, minimum=0, exclusiveMinimum=False,
+                 paramFormat: DataType, description: str, maximum=100, minimum=-50, exclusiveMinimum=False,
                  exclusiveMaxiMum=False, multipleOf=0):
         super().__init__(specifiedName, default, loc, required, paramType, paramFormat, description)
 

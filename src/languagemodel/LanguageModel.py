@@ -205,22 +205,29 @@ class BodyParamModel(BasicLanguageModel):
         def get_def(definition_dict: dict):
             final_dict = dict()
             # required_param_list = definition_dict["required"]
-            required_param_list = [p for p in definition_dict["properties"]]
-            properties = dict()
-            for param, info in definition_dict["properties"].items():
-                if param in required_param_list:
-                    properties.update({param: info})
-                    if properties[param].get("$ref") != None:
-                        new_def_dict = definition[properties[param].get("$ref").split("/")[-1]]
-                        new_def_dict_return = get_def(new_def_dict)
-                        properties[param] = new_def_dict_return
-                    elif properties[param].get("type") == "array" and properties[param].get("items"). \
-                            get("$ref") is not None:
-                        new_def_dict = definition[properties[param].get("items").get("$ref").split("/")[-1]]
-                        new_def_dict_return = get_def(new_def_dict)
-                        properties[param]["items"] = new_def_dict_return
-                final_dict.update(properties)
-            return final_dict
+            if definition_dict.get("properties") is not None:
+                required_param_list = [p for p in definition_dict["properties"]]
+                properties = dict()
+                for param, info in definition_dict["properties"].items():
+                    if param in required_param_list:
+                        properties.update({param: info})
+                        if properties[param].get("$ref") != None:
+                            new_def_dict = definition[properties[param].get("$ref").split("/")[-1]]
+                            new_def_dict_return = get_def(new_def_dict)
+                            properties[param] = new_def_dict_return
+                        elif properties[param].get("type") == "array" and properties[param].get("items"). \
+                                get("$ref") is not None:
+                            new_def_dict = definition[properties[param].get("items").get("$ref").split("/")[-1]]
+                            new_def_dict_return = get_def(new_def_dict)
+                            properties[param]["items"] = new_def_dict_return
+                    final_dict.update(properties)
+                return final_dict
+            elif definition_dict.get("items") is not None:
+                new_ref = definition_dict.get("items").get("$ref").split("/")[-1]
+                new_def_dict = definition[new_ref]
+                definition_dict["items"] = get_def(new_def_dict)
+                final_dict.update(definition_dict)
+                return final_dict
 
         param_info = self._spec["paths"][self.operation.url.replace(URL.baseurl, '')][self.operation.method.value].get(
             "parameters")

@@ -9,13 +9,13 @@ from src.Dto.keywords import DataType, URL
 from src.Dto.operation import Operation
 from src.Dto.parameter import ValueType, EnumParam
 from src.ca import RuntimeInfoManager
-from src.languagemodel.LanguageModel import ParamValueModel, BodyParamModel
+from src.languagemodel.LanguageModel import ParamValueModel
 from src.openapiParser import Parser
 
 swagger = "D:/Python_Codes/RestCT/exp/swagger/BingMap/Route.json"
 os.environ["swagger"] = swagger
 os.environ["model"] = "gpt-3.5-turbo"
-os.environ["language_model_key"] = "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"
+os.environ["language_model_key"] = "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"
 
 with Path(swagger).open("r") as fp:
     spec = json.load(fp)
@@ -53,12 +53,12 @@ def get_info(param, definition, def_dict, body):
 i = get_info(p0, definition, def_dict, bp)
 print(i)
 
-# r = RuntimeInfoManager()
-# m = BodyParamModel(op, ep, r, "C:/Users/NaaRiAh/Desktop/test/restcttest")
-# pt = m.build_prompt()
-# print(pt)
-# a = m.execute()
-# print()
-# t = r.get_llm_examples().get(op)
-# print(t)
+r = RuntimeInfoManager()
+m = ParamValueModel(op, ep, r, "D:/TestData")
+pt = m.build_prompt()
+print(pt)
+a = m.execute()
+print()
+t = r.get_llm_examples().get(op)
+print(t)
 print()

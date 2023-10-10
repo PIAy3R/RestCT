@@ -17,7 +17,7 @@ from src.Dto.constraint import Constraint, Processor
 from src.Dto.keywords import Loc, DataType, Method
 from src.Dto.operation import Operation
 from src.Dto.parameter import AbstractParam, ValueType, Value, EnumParam, BoolParam
-from src.languagemodel.LanguageModel import ParamValueModel, BodyParamModel
+from src.languagemodel.LanguageModel import ParamValueModel
 
 
 def _saveChain(responseChains: List[dict], chain: dict, opStr: str, response):
@@ -672,22 +672,8 @@ class CAWithLLM(CA):
                 param_to_ask.append(param)
                 loc_set.add(param.loc)
         if len(param_to_ask) != 0:
-            if Loc.Body not in loc_set:
-                value_model = ParamValueModel(operation, param_to_ask, self._manager, self._data_path)
-                value_model.execute()
-            else:
-                no_nody = []
-                body_param = []
-                for p in param_to_ask:
-                    if p.loc != Loc.Body:
-                        no_nody.append(p)
-                    else:
-                        body_param.append(p)
-                if len(no_nody) != 0:
-                    value_model = ParamValueModel(operation, no_nody, self._manager, self._data_path)
-                    value_model.execute()
-                # value_model = BodyParamModel(operation, body_param, self._manager, self._data_path)
-                # value_model.execute()
+            value_model = ParamValueModel(operation, param_to_ask, self._manager, self._data_path)
+            value_model.execute()
         else:
             logger.info("no param to ask")
             return False
@@ -759,26 +745,11 @@ class CAWithLLM(CA):
 
             for p in p_with_children:
                 if self._is_regen:
-                    if root_p.loc is not Loc.Body:
-                        if p.name in example_dict.keys():
-                            for value in example_dict.get(p.name):
-                                value = DataType.from_string(value, p.type)
+                    if p.getGlobalName() in example_dict.keys():
+                        for value in example_dict.get(p.getGlobalName()):
+                            value = DataType.from_string(value, p.type)
+                            if not isinstance(p, EnumParam):
                                 p.domain.append(Value(value, ValueType.Example, p.type))
-                    else:
-                        pgn = p.getGlobalName()
-                        v = example_dict.copy()
-                        for param_name in pgn.split("@"):
-                            try:
-                                if param_name != "_item":
-                                    v = v.get(param_name)
-                                else:
-                                    v = v[0]
-                                value = v
-                            except:
-                                continue
-                        value = DataType.from_string(value, p.type)
-                        if not isinstance(p, EnumParam):
-                            p.domain.append(Value(value, ValueType.Example, p.type))
 
                 if not self._manager.is_unresolved(operation.__repr__() + p.name):
                     domain_map[p.getGlobalName()] = p.domain
@@ -803,3 +774,23 @@ class CAWithLLM(CA):
             logger.debug(f"            {p}: {len(v)} - {v}")
 
         return self._call_acts(domain_map, constraints, self._eStrength, history_ca_of_current_op)
+
+    def _handle_essential_params(self, operation, exec_ops, chain, history):
+        """
+
+        :param operation:
+        :param exec_ops: sequence[:i]
+        :param chain:
+        :return:
+        """
+        parameter_list = list(filter(lambda p: p.isEssential, operation.parameterList))
+        if len(parameter_list) == 0:
+            return [{}]
+
+        return self._cover_params(operation, parameter_list, operation.constraints, chain, history)
+
+    def _handle_all_params(self, operation, exec_ops, chain, history):
+
+        parameter_list = operation.parameterList
+
+        return self._cover_params(operation, parameter_list, operation.constraints, chain, history)

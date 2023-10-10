@@ -34,10 +34,20 @@ def get_info(param, definition, def_dict, body):
         if split_name == body.name:
             continue
         elif split_name == "_item":
-            ref = def_dict.get("items").get("$ref").split("/")[-1]
-            def_dict = definition.get(ref)
+            if def_dict.get("items").get("$ref") is not None:
+                ref = def_dict.get("items").get("$ref").split("/")[-1]
+                def_dict = definition.get(ref)
+            else:
+                def_dict = def_dict.get("items")
         else:
-            info = def_dict.get("properties").get(split_name)
+            if def_dict.get("properties") is not None:
+                info = def_dict.get("properties").get(split_name)
+            elif def_dict.get("$ref") is not None:
+                ref = def_dict.get("$ref").split("/")[-1]
+                def_dict = definition.get(ref)
+                info = def_dict.get("properties").get(split_name)
+            else:
+                info = def_dict
             def_dict = info
     return info
 
@@ -138,6 +148,7 @@ class ParamValueModel(BasicLanguageModel):
 
     def build_prompt(self) -> str:
         pInfo = []
+        param_to_ask = []
         parameters = self._spec.get("paths").get(self._operation.url.replace(URL.baseurl, "")).get(
             self._operation.method.value).get("parameters")
         definitions = self._spec.get("definitions")
@@ -146,16 +157,19 @@ class ParamValueModel(BasicLanguageModel):
                 if info.get("name") == p.name:
                     if p.loc is not Loc.Body:
                         pInfo.append(info)
+                        param_to_ask.append(p.getGlobalName())
                     else:
                         all_param = p.seeAllParameters()
                         ref = info["schema"].get("$ref").split("/")[-1]
                         def_dict = definitions[ref]
                         for ap in all_param:
                             add_info = get_info(ap, definitions, def_dict, p)
-                            add_info.update({"name": ap.getGlobalName()})
-                            pInfo.append(add_info)
+                            if add_info.get('enum') is None and add_info.get('type') != "boolean":
+                                add_info.update({"name": ap.getGlobalName()})
+                                pInfo.append(add_info)
+                                param_to_ask.append(ap.getGlobalName())
         prompt = Template.EXPLANATION + Template.TEXT.format(self._operation, pInfo, self._operation.constraints,
-                                                             self.real_param()) + TaskTemplate.SPECIAL_VALUE
+                                                             param_to_ask) + TaskTemplate.SPECIAL_VALUE
         return prompt
 
     def build_message(self) -> List[Dict[str, str]]:

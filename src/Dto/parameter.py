@@ -57,7 +57,7 @@ def buildParam(info: dict, definitions: dict, specifiedName: str = None):
     elif buildInfo["paramType"] in [DataType.Double, DataType.Integer, DataType.Number, DataType.Int32, DataType.Int64,
                                     DataType.Float, DataType.Long]:
         buildInfo["maximum"] = info.get(ParamKey.MAXIMUM, 100)
-        buildInfo["minimum"] = info.get(ParamKey.MINIMUM, 0)
+        buildInfo["minimum"] = info.get(ParamKey.MINIMUM, -100)
         buildInfo["exclusiveMinimum"] = info.get(ParamKey.EXCLUSIVEMINIMUM, False)
         buildInfo["exclusiveMaxiMum"] = info.get(ParamKey.EXCLUSIVEMAXIMUM, False)
         return NumberParam(**buildInfo)
@@ -636,7 +636,7 @@ class FileParam(AbstractParam):
 
 class NumberParam(AbstractParam):
     def __init__(self, specifiedName: str, default: list, loc: Loc, required: bool, paramType: DataType,
-                 paramFormat: DataType, description: str, maximum=100, minimum=-50, exclusiveMinimum=False,
+                 paramFormat: DataType, description: str, maximum=100, minimum=-100, exclusiveMinimum=False,
                  exclusiveMaxiMum=False, multipleOf=0):
         super().__init__(specifiedName, default, loc, required, paramType, paramFormat, description)
 
@@ -656,6 +656,14 @@ class NumberParam(AbstractParam):
             randomValues = [random.uniform(minV, maxV) for _ in range(AbstractParam.randomCount)]
         else:
             randomValues = [random.randint(minV, maxV) for _ in range(AbstractParam.randomCount)]
+
+        if maxV > 0 and all([r < 0 for r in randomValues]):
+            randomValues.append(random.randint(1, maxV))
+        if minV < 0 and all([r > 0 for r in randomValues]):
+            randomValues.append(random.randint(minV, -1))
+
+        if minV <= 0 and 0 <= maxV and 0 not in randomValues:
+            randomValues.append(0)
 
         if self._multipleOf != 0:
             randomValues = map(lambda n: n * self._multipleOf, randomValues)

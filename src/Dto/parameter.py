@@ -249,6 +249,9 @@ class AbstractParam(metaclass=abc.ABCMeta):
 
             if len(self.default) > 0:
                 self.domain = [Value(d, ValueType.Default, self.type) for d in self.default]
+                randomValue = self.genRandom()
+                for r in randomValue:
+                    self.domain.append(Value(r, ValueType.Random, self.type))
                 if len(self.domain) > 0:
                     if not self.required:
                         self.domain.append(Value(None, ValueType.NULL, self.type))

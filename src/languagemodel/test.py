@@ -12,7 +12,7 @@ from src.ca import RuntimeInfoManager
 from src.languagemodel.LanguageModel import ParamValueModel
 from src.openapiParser import Parser
 
-swagger = "D:/Python_Codes/RestCT/exp/swagger/BingMap/Route.json"
+swagger = "D:/Python_Codes/RestCT/exp/swagger/GitLab/Groups.json"
 os.environ["swagger"] = swagger
 os.environ["model"] = "gpt-3.5-turbo"
 os.environ["language_model_key"] = "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"

@@ -265,7 +265,7 @@ class RuntimeInfoManager:
         self._bug_list: list = list()
         self._success_sequence: set = set()
         self._unresolved_params: Set[Tuple[Operation, str]] = set()
-        # self._postman_bug_info: list = list()
+        self._postman_bug_info: list = list()
 
         self._llm_example_value_dict: Dict[Operation, Dict[AbstractParam, Union[dict, list]]] = dict()
 
@@ -357,7 +357,7 @@ class RuntimeInfoManager:
             return json.JSONEncoder.default(self, obj)
 
     def save_bug(self, operation, case, sc, response, chain, data_path, kwargs):
-        # self.add_postman_list(operation, case, chain, data_path, kwargs)
+        self.add_postman_list(operation, case, chain, data_path, kwargs)
         op_str_set = {d.get("method").name + d.get("url") + str(d.get("statusCode")) for d in self._bug_list}
         if operation.method.name + operation.url + str(sc) in op_str_set:
             return
@@ -381,37 +381,45 @@ class RuntimeInfoManager:
         return bug_info
 
     # todo finish the save_postman
-    # def save_to_postman(self, data_path):
-    #     folder = Path(data_path) / "bug/postman"
-    #     files = [f for f in os.listdir(folder) if os.path.isfile(os.path.join(folder, f))]
-    #     number_of_files = len(files)
-    #     post_json = folder / "postman_collection.json".format(str(number_of_files + 1))
-    #     postman_request = {
-    #         "collection": {
-    #             "info": {
-    #                 "name": "postman_bugs",
-    #                 "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-    #             },
-    #             "item": self._postman_bug_info
-    #         }
-    #     }
-    #
-    #     with post_json.open("w") as fp:
-    #         json.dump(postman_request, fp)
-    #
-    # def add_postman_list(self, operation, case, chain, data_path, kwargs):
-    #     info = {
-    #         "name": "Request{}".format(str(len(self._postman_bug_info) + 1)),
-    #         "request": {
-    #             "url": kwargs["url"],
-    #             "method": operation.method.value.upper(),
-    #             "header": kwargs["headers"],
-    #             "query": kwargs.get("param"),
-    #             "body": kwargs.get("data")
-    #         }
-    #     }
-    #     self._postman_bug_info.append(info)
+    def save_to_postman(self, data_path):
+        folder = Path(data_path) / "bug/postman"
+        files = [f for f in os.listdir(folder) if os.path.isfile(os.path.join(folder, f))]
+        number_of_files = len(files)
+        post_json = folder / "postman_collection.json".format(str(number_of_files + 1))
+        postman_request = {
+            "collection": {
+                "info": {
+                    "name": "postman_bugs",
+                    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+                },
+                "item": self._postman_bug_info
+            }
+        }
 
+        with post_json.open("w") as fp:
+            json.dump(postman_request, fp)
+
+    def add_postman_list(self, operation, case, chain, data_path, kwargs):
+        param_string = "&".join(
+            [f"{k}={v}" for k, v in kwargs.get("params").items()] if kwargs.get("params") is not None else [])
+        info = {
+            "name": "Request{}".format(str(len(self._postman_bug_info) + 1)),
+            "request": {
+                "url": (kwargs["url"] + "?" + param_string) if param_string != "" else kwargs["url"],
+                "method": operation.method.value.upper(),
+                "header": [{"key": k, "value": v} for k, v in kwargs["headers"].items()],
+                "body": {
+                    "mode": "formdata" if "json" not in kwargs["headers"]["Content-Type"] else "raw"
+                }
+            }
+        }
+        if kwargs.get("data") is None:
+            info["request"].pop("body")
+        elif info["request"]["body"]["mode"] == "formdata":
+            info["request"]["body"]["formdata"] = [{"key": k, "value": v} for k, v in kwargs["data"].items()]
+        else:
+            info["request"]["body"]["raw"] = json.dumps(kwargs["data"])
+        self._postman_bug_info.append(info)
 
     def save_success_seq(self, url_tuple):
         self._success_sequence.add(url_tuple)
@@ -508,7 +516,7 @@ class CA:
             elif sc >= 600:
                 self._stat.req_60x_num += 1
 
-        # self._manager.save_to_postman(self._data_path)
+        self._manager.save_to_postman(self._data_path)
         if is_success:
             self._manager.save_success_seq(url_tuple)
             self._stat.update_success_c_way(url_tuple)

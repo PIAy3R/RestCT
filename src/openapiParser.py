@@ -57,7 +57,10 @@ class Parser:
         protocol = spec.get(DocKey.SCHEMES, ["http"])[0]
         baseurl = spec.get(DocKey.BASEPATH, "")
         host = spec.get(DocKey.HOST, "")
-        base_path = "{}://{}/{}".format(protocol, host.strip("/"), baseurl.strip("/"))
+        if baseurl == "/":
+            base_path = "{}://{}".format(protocol, host.strip("/"))
+        else:
+            base_path = "{}://{}/{}".format(protocol, host.strip("/"), baseurl.strip("/"))
         URL.baseurl = base_path
 
         if self._forwarding_url is not None and len(self._forwarding_url) == 0:

@@ -1,5 +1,6 @@
 import dataclasses
 import json
+import os
 import random
 import re
 import shlex
@@ -190,6 +191,18 @@ class Executor:
             kwargs["data"] = json.dumps(body)
         return kwargs
 
+    def get_kwargs(self, operation, ca_item, previous_responses):
+        """
+        Executor的任务只有发送请求，不处理CA相关的东西
+        @param operation: the target operation
+        @param ca_item: assignment
+        @param previous_responses: the chain
+        @return: status code and response info
+        """
+        self.setParamValue(operation, ca_item)
+        kwargs = self.assemble(operation, previous_responses)
+        return kwargs
+
     @staticmethod
     def setParamValue(operation, case):
         # parameters: List[AbstractParam] = self._operation.genDomain(dict(), dict())
@@ -342,7 +355,8 @@ class RuntimeInfoManager:
                 return {"__enum__": str(obj)}
             return json.JSONEncoder.default(self, obj)
 
-    def save_bug(self, operation, case, sc, response, chain, data_path):
+    def save_bug(self, operation, case, sc, response, chain, data_path, kwargs):
+        self.save_postman(operation, case, chain, data_path, kwargs)
         op_str_set = {d.get("method").name + d.get("url") + str(d.get("statusCode")) for d in self._bug_list}
         if operation.method.name + operation.url + str(sc) in op_str_set:
             return
@@ -364,6 +378,34 @@ class RuntimeInfoManager:
         with bugFile.open("w") as fp:
             json.dump(bug_info, fp, cls=RuntimeInfoManager.EnumEncoder)
         return bug_info
+
+    def save_postman(self, operation, case, chain,data_path, kwargs):
+        folder = Path(data_path) / "bug/postman"
+
+        files = [f for f in os.listdir(folder) if os.path.isfile(os.path.join(folder, f))]
+        number_of_files = len(files)
+        postman_request = {
+            "collection": {
+                "info": {
+                    "name": "Sample Collection",
+                    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+                },
+                "item": [
+                    {
+                        "name": "Request",
+                        "request": {
+                            "url": kwargs["url"],
+                            "method": operation.method.value.upper(),
+                            "header": kwargs["headers"],
+                            "body": kwargs["body"]
+                        }
+                    }
+                ]
+            }
+        }
+        bugFile = folder / "post_{}.json".format(str(number_of_files+1))
+        with bugFile.open("w") as fp:
+            json.dumps(postman_request, fp)
 
     def save_success_seq(self, url_tuple):
         self._success_sequence.add(url_tuple)
@@ -434,6 +476,7 @@ class CA:
     def _handle_feedback(self, url_tuple, operation, response_list, chain, ca, is_essential):
         is_success = False
         for index, (sc, response) in enumerate(response_list):
+            kwargs = self._executor.get_kwargs(operation, ca[index], chain)
             self._stat.req_num += 1
             self._stat.req_num_all += 1
             if sc < 300:
@@ -451,9 +494,10 @@ class CA:
             elif sc in range(400, 500):
                 self._stat.req_40x_num += 1
             elif sc in range(500, 600):
-                self._manager.save_bug(operation, ca[index], sc, response, chain, self._data_path)
+                self._manager.save_bug(operation, ca[index], sc, response, chain, self._data_path, kwargs)
                 is_success = True
                 self._stat.req_50x_num += 1
+                # self._stat.op_success_num.add(operation)
                 self._stat.bug.add(f"{operation.__repr__()}-{sc}-{response}")
             elif sc >= 600:
                 self._stat.req_60x_num += 1

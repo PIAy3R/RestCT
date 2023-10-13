@@ -160,14 +160,18 @@ class ParamValueModel(BasicLanguageModel):
                         param_to_ask.append(p.getGlobalName())
                     else:
                         all_param = p.seeAllParameters()
-                        ref = info["schema"].get("$ref").split("/")[-1]
-                        def_dict = definitions[ref]
-                        for ap in all_param:
-                            add_info = get_info(ap, definitions, def_dict, p)
-                            if add_info.get('enum') is None and add_info.get('type') != "boolean":
-                                add_info.update({"name": ap.getGlobalName()})
-                                pInfo.append(add_info)
-                                param_to_ask.append(ap.getGlobalName())
+                        if len(all_param) > 0:
+                            ref = info["schema"].get("$ref").split("/")[-1]
+                            def_dict = definitions[ref]
+                            for ap in all_param:
+                                add_info = get_info(ap, definitions, def_dict, p)
+                                if add_info.get('enum') is None and add_info.get('type') != "boolean":
+                                    add_info.update({"name": ap.getGlobalName()})
+                                    pInfo.append(add_info)
+                                    param_to_ask.append(ap.getGlobalName())
+                        else:
+                            pInfo.append(info)
+                            param_to_ask.append(p.getGlobalName())
         prompt = Template.EXPLANATION + Template.TEXT.format(self._operation, pInfo, self._operation.constraints,
                                                              param_to_ask) + TaskTemplate.SPECIAL_VALUE
         return prompt

@@ -357,7 +357,7 @@ class RuntimeInfoManager:
             return json.JSONEncoder.default(self, obj)
 
     def save_bug(self, operation, case, sc, response, chain, data_path, kwargs):
-        self.add_postman_list(operation, case, chain, data_path, kwargs)
+        self.add_postman_list(operation, kwargs)
         op_str_set = {d.get("method").name + d.get("url") + str(d.get("statusCode")) for d in self._bug_list}
         if operation.method.name + operation.url + str(sc) in op_str_set:
             return
@@ -383,9 +383,11 @@ class RuntimeInfoManager:
     # todo finish the save_postman
     def save_to_postman(self, data_path):
         folder = Path(data_path) / "bug/postman"
+        if not folder.exists():
+            folder.mkdir(parents=True)
         files = [f for f in os.listdir(folder) if os.path.isfile(os.path.join(folder, f))]
         number_of_files = len(files)
-        post_json = folder / "postman_collection.json".format(str(number_of_files + 1))
+        post_json = folder / "postman_collection_{}.json".format(str(number_of_files + 1))
         postman_request = {
             "collection": {
                 "info": {
@@ -395,11 +397,12 @@ class RuntimeInfoManager:
                 "item": self._postman_bug_info
             }
         }
+        if len(self._postman_bug_info) > 0:
+            with post_json.open("w") as fp:
+                json.dump(postman_request, fp)
+        self._postman_bug_info.clear()
 
-        with post_json.open("w") as fp:
-            json.dump(postman_request, fp)
-
-    def add_postman_list(self, operation, case, chain, data_path, kwargs):
+    def add_postman_list(self, operation, kwargs):
         param_string = "&".join(
             [f"{k}={v}" for k, v in kwargs.get("params").items()] if kwargs.get("params") is not None else [])
         info = {

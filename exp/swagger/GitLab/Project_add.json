@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "title": "GitLab Commit API"
   },
-  "host": "127.0.0.1:30083",
+  "host": "127.0.0.1:30084",
   "basePath": "/api/v4",
   "schemes": [
     "http"
@@ -677,583 +677,331 @@
         }
       }
     },
-    "/issues": {
-      "get": {
-        "tags": [
-          "Issue"
-        ],
-        "description": "Get all issues the authenticated user has access to. By default it returns only issues created by the current user. To get all issues, use parameter scope=all.",
-        "produces": [
-          "application/json"
-        ],
-        "parameters": [
-
-          {
-            "name": "page",
-            "in": "query",
-            "description": "Page number",
-            "required": false,
-            "type": "integer",
-            "default": 1
-          },
-          {
-            "name": "per_page",
-            "in": "query",
-            "description": "Number of items to list per page",
-            "required": false,
-            "type": "integer",
-            "default": 20,
-            "maximum": 100
-          },
-          {
-            "name": "assignee_id",
-            "in": "query",
-            "description": "Return issues assigned to the given user id . Mutually exclusive with assignee_username . None returns unassigned issues. Any returns issues with an assignee. ( Introduced in GitLab 9.5)",
-            "required": false,
-            "type": "integer"
-          },
-          {
-            "name": "assignee_username",
-            "in": "query",
-            "description": "Return issues assigned to the given username . Either assignee_username or assignee_id is required, not both. In GitLab CE, the assignee_username array should only contain a single value. Otherwise, an invalid parameter error is returned.",
-            "required": false,
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "collectionFormat": "multi"
-          },
-          {
-            "name": "author_id",
-            "in": "query",
-            "description": "Return issues created by the given user id . Either author_id or author_username is required, not both. Combine with scope=all or scope=assigned_to_me . ( Introduced in GitLab 9.5)",
-            "required": false,
-            "type": "integer"
-          },
-          {
-            "name": "author_username",
-            "in": "query",
-            "description": "Return issues created by the given username . Similar to author_id and mutually exclusive with author_id .",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "name": "confidential",
-            "in": "query",
-            "description": "Filter confidential or public issues.",
-            "required": false,
-            "type": "boolean"
-          },
-          {
-            "name": "created_after",
-            "in": "query",
-            "description": "Return issues created on or after the given time. Expected in ISO 8601 format ( 2019-03-15T08:00:00Z )",
-            "required": false,
-            "type": "string",
-            "format": "date-time"
-          },
-          {
-            "name": "created_before",
-            "in": "query",
-            "description": "Return issues created on or before the given time. Expected in ISO 8601 format ( 2019-03-15T08:00:00Z )",
-            "required": false,
-            "type": "string",
-            "format": "date-time"
-          },
-          {
-            "name": "due_date",
-            "in": "query",
-            "description": "Return issues that have no due date, are overdue, or whose due date is this week, this month, or between two weeks ago and next month. Accepts: 0 (no due date), overdue , week , month , next_month_and_previous_two_weeks . (Introduced in GitLab 13.3 )",
-            "required": false,
-            "type": "string",
-            "enum": [
-              "0",
-              "overdue",
-              "week",
-              "month",
-              "next_month_and_previous_two_weeks"
-            ]
-          },
-          {
-            "name": "iids[]",
-            "in": "query",
-            "description": "Return only the issues having the given iid",
-            "required": false,
-            "type": "array",
-            "items": {
-              "type": "integer"
-            },
-            "collectionFormat": "multi"
-          },
-          {
-            "name": "in",
-            "in": "query",
-            "description": "Modify the scope of the search attribute. title , description , or a string joining them with comma. Default is title,description",
-            "required": false,
-            "type": "string",
-            "enum": [
-              "title",
-              "description",
-              "title,description"
-            ]
-          },
-          {
-            "name": "milestone",
-            "in": "query",
-            "description": "The milestone title. None lists all issues with no milestone. Any lists all issues that have an assigned milestone.",
-            "required": false,
-            "type": "string",
-            "enum": [
-              "None",
-              "Any"
-            ]
-          },
-          {
-            "name": "labels",
-            "in": "query",
-            "description": "Comma-separated list of label names, issues must have all labels to be returned. None lists all issues with no labels. Any lists all issues with at least one label. No+Label (Deprecated) lists all issues with no labels. Predefined names are case-insensitive.",
-            "required": false,
-            "type": "string",
-            "enum": [
-              "None",
-              "Any",
-              "No+Label"
-            ]
-          },
-          {
-            "name": "my_reaction_emoji",
-            "in": "query",
-            "description": "Return issues reacted by the authenticated user by the given emoji . None returns issues not given a reaction. Any returns issues given at least one reaction. ( Introduced in GitLab 10.0)",
-            "required": false,
-            "type": "string",
-            "enum": [
-              "None",
-              "Any"
-            ]
-          },
-          {
-            "name": "non_archived",
-            "in": "query",
-            "description": "Return issues only from non-archived projects. If false , the response returns issues from both archived and non-archived projects. Default is true . (Introduced in GitLab 13.0 )",
-            "required": false,
-            "type": "boolean"
-          },
-          {
-            "in": "body",
-            "name": "not",
-            "description": "Return issues that do not match the parameters supplied. Accepts: labels , milestone , author_id , author_username , assignee_id , assignee_username , my_reaction_emoji",
-            "required": false,
-            "schema": {
-              "$ref": "#/definitions/NotIssue"
-            }
-          },
-          {
-            "name": "order_by",
-            "in": "query",
-            "description": "Return issues ordered by created_at , updated_at , priority , due_date , relative_position , label_priority , milestone_due , popularity , weight fields. Default is created_at",
-            "required": false,
-            "type": "string",
-            "default": "created_at",
-            "enum": [
-              "created_at",
-              "updated_at",
-              "priority",
-              "due_date",
-              "relative_position",
-              "label_priority",
-              "milestone_due",
-              "popularity"
-            ]
-          },
-          {
-            "name": "scope",
-            "in": "query",
-            "description": "Return issues for the given scope: created_by_me , assigned_to_me or all . Defaults to created_by_me For versions before 11.0, use the now deprecated created-by-me or assigned-to-me scopes instead. ( Introduced in GitLab 9.5. Changed to snake_case in GitLab 11.0)",
-            "required": false,
-            "type": "string",
-            "default": "created_by_me",
-            "enum": [
-              "created_by_me",
-              "assigned_to_me",
-              "all"
-            ]
-          },
-          {
-            "name": "search",
-            "in": "query",
-            "description": "Search issues against their title and description",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "name": "sort",
-            "in": "query",
-            "description": "Return issues sorted in asc or desc order. Default is desc",
-            "required": false,
-            "type": "string",
-            "default": "desc",
-            "enum": [
-              "asc",
-              "desc"
-            ]
-          },
-          {
-            "name": "state",
-            "in": "query",
-            "description": "Return all issues or just those that are opened or closed",
-            "required": false,
-            "type": "string",
-            "enum": [
-              "all",
-              "opened",
-              "closed"
-            ]
-          },
-          {
-            "name": "updated_after",
-            "in": "query",
-            "description": "Return issues updated on or after the given time. Expected in ISO 8601 format ( 2019-03-15T08:00:00Z )",
-            "required": false,
-            "type": "string",
-            "format": "date-time"
-          },
-          {
-            "name": "updated_before",
-            "in": "query",
-            "description": "Return issues updated on or before the given time. Expected in ISO 8601 format ( 2019-03-15T08:00:00Z )",
-            "required": false,
-            "type": "string",
-            "format": "date-time"
-          },
-          {
-            "name": "with_labels_details",
-            "in": "query",
-            "description": "If true , the response returns more details for each label in labels field: :name , :color , :description , :description_html , :text_color . Default is false . The description_html attribute was introduced in GitLab 12.7",
-            "required": false,
-            "type": "boolean",
-            "default": false
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Get all issues the authenticated user has access to. By default it returns only issues created by the current user. To get all issues, use parameter scope=all.",
-            "schema": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/Issue"
-              }
-            }
-          },
-          "default": {
-            "description": "bad input parameter",
-            "schema": {
-              "$ref": "#/definitions/Error"
-            }
-          }
-        }
-      }
-    },
-    "/issues/{id}": {
-      "get": {
-        "tags": [
-          "Issue"
-        ],
-        "description": "Only for administrators. Get a single issue.",
-        "produces": [
-          "application/json"
-        ],
-        "parameters": [
-
-          {
-            "name": "id",
-            "in": "path",
-            "description": "The ID of the issue",
-            "required": true,
-            "type": "integer"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Only for administrators. Get a single issue.",
-            "schema": {
-              "$ref": "#/definitions/Issue"
-            }
-          },
-          "default": {
-            "description": "bad input parameter",
-            "schema": {
-              "$ref": "#/definitions/Error"
-            }
-          }
-        }
-      }
-    },
-    "/groups": {
-      "get": {
-        "tags": [
-          "Group"
-        ],
-        "description": "Get a list of visible groups for the authenticated user. When accessed without authentication, only public groups are returned.",
-        "produces": [
-          "application/json"
-        ],
-        "parameters": [
-
-          {
-            "name": "page",
-            "in": "query",
-            "description": "Page number",
-            "required": false,
-            "type": "integer",
-            "default": 1
-          },
-          {
-            "name": "per_page",
-            "in": "query",
-            "description": "Number of items to list per page",
-            "required": false,
-            "type": "integer",
-            "default": 20,
-            "maximum": 100
-          },
-          {
-            "name": "skip_groups",
-            "in": "query",
-            "description": "Skip the group IDs passed",
-            "required": false,
-            "type": "array",
-            "items": {
-              "type": "integer"
-            },
-            "collectionFormat": "multi"
-          },
-          {
-            "name": "all_available",
-            "in": "query",
-            "description": "Show all the groups you have access to (defaults tofalsefor authenticated users,truefor admin); Attributesownedandmin_access_levelhave precedence",
-            "required": false,
-            "type": "boolean"
-          },
-          {
-            "name": "search",
-            "in": "query",
-            "description": "Return the list of authorized groups matching the search criteria",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "name": "order_by",
-            "in": "query",
-            "description": "Order groups byname,pathorid. Default is name",
-            "required": false,
-            "type": "string",
-            "default": "name",
-            "enum": [
-              "name",
-              "path",
-              "id"
-            ]
-          },
-          {
-            "name": "sort",
-            "in": "query",
-            "description": "Order groups in asc or desc order. Default is asc",
-            "required": false,
-            "type": "string",
-            "default": "asc",
-            "enum": [
-              "desc",
-              "asc"
-            ]
-          },
-          {
-            "name": "statistics",
-            "in": "query",
-            "description": "Include group statistics (admins only)",
-            "required": false,
-            "type": "boolean"
-          },
-          {
-            "name": "with_custom_attributes",
-            "in": "query",
-            "description": "Includecustom attributesin response (admins only)",
-            "required": false,
-            "type": "boolean"
-          },
-          {
-            "name": "owned",
-            "in": "query",
-            "description": "Limit to groups explicitly owned by the current user",
-            "required": false,
-            "type": "boolean"
-          },
-          {
-            "name": "min_access_level",
-            "in": "query",
-            "description": "Limit to groups where current user has at least this access level",
-            "required": false,
-            "type": "integer",
-            "enum": [
-              0,
-              10,
-              20,
-              30,
-              40,
-              50
-            ]
-          },
-          {
-            "name": "top_level_only",
-            "in": "query",
-            "description": "Limit to top level groups, excluding all subgroups",
-            "required": false,
-            "type": "boolean"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Get a list of visible groups for the authenticated user. When accessed without authentication, only public groups are returned.",
-            "schema": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/Group"
-              }
-            }
-          },
-          "default": {
-            "description": "bad input parameter",
-            "schema": {
-              "$ref": "#/definitions/Error"
-            }
-          }
-        }
-      },
+    "/projects/user/{user_id}": {
       "post": {
         "tags": [
-          "Group"
+          "Project"
         ],
-        "description": "Creates a new project group. Available only for users who can create groups.",
+        "description": "Creates a new project owned by the specified user. Available only for admins.",
         "consumes": [
-          "application/x-www-form-urlencoded",
-          "multipart/form-data"
+          "application/x-www-form-urlencoded"
         ],
         "produces": [
           "application/json"
         ],
         "parameters": [
-
           {
-            "name": "name",
-            "in": "formData",
-            "description": "The name of the group.",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "path",
-            "in": "formData",
-            "description": "The path of the group.",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "description",
-            "in": "formData",
-            "description": "The group's description.",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "name": "visibility",
+            "name": "allow_merge_on_skipped_pipeline",
             "in": "query",
-            "description": "The group's visibility. Can be private,internal, orpublic.",
+            "description": "Set whether or not merge requests can be merged with skipped jobs.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "auto_cancel_pending_pipelines",
+            "in": "query",
+            "description": "Auto-cancel pending pipelines. This isn\u2019t a boolean, but enabled/disabled.",
             "required": false,
             "type": "string",
             "enum": [
-              "private",
-              "internal",
-              "public"
+              "enabled",
+              "disabled"
             ]
           },
           {
-            "name": "share_with_group_lock",
+            "name": "auto_devops_deploy_strategy",
             "in": "query",
-            "description": "Prevent sharing a project with another group within this group.",
-            "required": false,
-            "type": "boolean"
-          },
-          {
-            "name": "require_two_factor_authentication",
-            "in": "query",
-            "description": "Require all users in this group to setup Two-factor authentication.",
-            "required": false,
-            "type": "boolean"
-          },
-          {
-            "name": "two_factor_grace_period",
-            "in": "query",
-            "description": "Time before Two-factor authentication is enforced (in hours).",
-            "required": false,
-            "type": "integer"
-          },
-          {
-            "name": "project_creation_level",
-            "in": "query",
-            "description": "Determine if developers can create projects in the group. Can benoone(No one),maintainer(Maintainers), or developer(Developers + Maintainers).",
+            "description": "Auto Deploy strategy",
             "required": false,
             "type": "string",
             "enum": [
-              "noone",
-              "maintainer",
-              "developer"
+              "continuous",
+              "manual",
+              "timed_incremental"
             ]
           },
           {
             "name": "auto_devops_enabled",
             "in": "query",
-            "description": "Default to Auto DevOps pipeline for all projects within this group.",
+            "description": "Enable Auto DevOps for this project.",
             "required": false,
             "type": "boolean"
           },
           {
-            "name": "subgroup_creation_level",
+            "name": "autoclose_referenced_issues",
             "in": "query",
-            "description": "Allowed to create subgroups. Can be owner(Owners), or maintainer(Maintainers).",
-            "required": false,
-            "type": "string",
-            "enum": [
-              "owner",
-              "maintainer"
-            ]
-          },
-          {
-            "name": "emails_disabled",
-            "in": "query",
-            "description": "Disable email notifications",
+            "description": "Set whether auto-closing referenced issues on default branch.",
             "required": false,
             "type": "boolean"
           },
           {
             "name": "avatar",
-            "in": "formData",
-            "description": "Image file for avatar of the group.Introduced in GitLab 12.9",
+            "in": "query",
+            "description": "Image file for avatar of the project.",
             "required": false,
-            "format": "file",
+            "type": "string",
+            "format": "file"
+          },
+          {
+            "name": "build_coverage_regex",
+            "in": "query",
+            "description": "Test coverage parsing.",
+            "required": false,
             "type": "string"
           },
           {
-            "name": "mentions_disabled",
+            "name": "build_git_strategy",
             "in": "query",
-            "description": "Disable the capability of a group from getting mentioned",
+            "description": "The Git strategy. Defaults to fetch.",
+            "required": false,
+            "type": "string",
+            "default": "fetch"
+          },
+          {
+            "name": "build_timeout",
+            "in": "query",
+            "description": "The maximum amount of time in minutes that a job is able run (in seconds).",
+            "required": false,
+            "type": "integer"
+          },
+          {
+            "name": "builds_access_level",
+            "in": "query",
+            "description": "One of disabled, private, or enabled.",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "disabled",
+              "private",
+              "enabled"
+            ]
+          },
+          {
+            "name": "ci_config_path",
+            "in": "query",
+            "description": "The path to CI configuration file.",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "container_registry_enabled",
+            "in": "query",
+            "description": "Enable container registry for this project.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "description",
+            "in": "query",
+            "description": "Short project description.",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "emails_disabled",
+            "in": "query",
+            "description": "Disable email notifications.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "forking_access_level",
+            "in": "query",
+            "description": "One of disabled,private, or enabled.",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "disabled",
+              "private",
+              "enabled"
+            ]
+          },
+          {
+            "name": "import_url",
+            "in": "query",
+            "description": "URL to import repository from. Either import_url or template_name is required, not both",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "initialize_with_readme",
+            "in": "query",
+            "description": "false by default.",
+            "required": false,
+            "type": "boolean",
+            "default": false
+          },
+          {
+            "name": "issues_access_level",
+            "in": "query",
+            "description": "One of disabled, private, or enabled.",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "disabled",
+              "private",
+              "enabled"
+            ]
+          },
+          {
+            "name": "issues_enabled",
+            "in": "query",
+            "description": "(Deprecated)Enable issues for this project. Use issues_access_level instead.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "jobs_enabled",
+            "in": "query",
+            "description": "(Deprecated)Enable jobs for this project. Use builds_access_level instead.",
             "required": false,
             "type": "boolean"
           },
           {
             "name": "lfs_enabled",
             "in": "query",
-            "description": "Enable/disable Large File Storage (LFS) for the projects in this group.",
+            "description": "Enable LFS.",
             "required": false,
             "type": "boolean"
+          },
+          {
+            "name": "merge_method",
+            "in": "query",
+            "description": "Set the merge method used.",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "merge",
+              "rebase_merge",
+              "ff"
+            ]
+          },
+          {
+            "name": "merge_requests_access_level",
+            "in": "query",
+            "description": "One of disabled, private, or enabled.",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "disabled",
+              "private",
+              "enabled"
+            ]
+          },
+          {
+            "name": "merge_requests_enabled",
+            "in": "query",
+            "description": "(Deprecated)Enable merge requests for this project. Use merge_requests_access_level instead.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "description": "The name of the new project. Equals path if not provided.",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "namespace_id",
+            "in": "query",
+            "description": "Namespace for the new project (defaults to the current user's namespace).",
+            "required": false,
+            "type": "integer"
+          },
+          {
+            "name": "only_allow_merge_if_all_discussions_are_resolved",
+            "in": "query",
+            "description": "Set whether merge requests can only be merged when all the discussions are resolved.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "only_allow_merge_if_pipeline_succeeds",
+            "in": "query",
+            "description": "Set whether merge requests can only be merged with successful jobs.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "packages_enabled",
+            "in": "query",
+            "description": "Enable or disable packages repository feature.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "pages_access_level",
+            "in": "query",
+            "description": "One of disabled, private,enabled, or public.",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "disabled",
+              "private",
+              "enabled",
+              "public"
+            ]
+          },
+          {
+            "name": "requirements_access_level",
+            "in": "query",
+            "description": "One of disabled,private,enabled or public",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "disabled",
+              "private",
+              "enabled",
+              "public"
+            ]
+          },
+          {
+            "name": "path",
+            "in": "query",
+            "description": "Repository name for new project. Either path or name is required, not both.",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "printing_merge_request_link_enabled",
+            "in": "query",
+            "description": "Show link to create/view merge request when pushing from the command line.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "public_builds",
+            "in": "query",
+            "description": "If true, jobs can be viewed by non-project members.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "remove_source_branch_after_merge",
+            "in": "query",
+            "description": "Enable Delete source branch option by default for all new merge requests.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "repository_access_level",
+            "in": "query",
+            "description": "One of disabled, private, or enabled.",
+            "required": false,
+            "enum": [
+              "disabled",
+              "private",
+              "enabled"
+            ],
+            "type": "string"
+          },
+          {
+            "name": "repository_storage",
+            "in": "query",
+            "description": "Which storage shard the repository is on.(admins only)",
+            "required": false,
+            "type": "string"
           },
           {
             "name": "request_access_enabled",
@@ -1263,92 +1011,56 @@
             "type": "boolean"
           },
           {
-            "name": "parent_id",
+            "name": "resolve_outdated_diff_discussions",
             "in": "query",
-            "description": "The parent group ID for creating nested group.",
+            "description": "Automatically resolve merge request diffs discussions on lines changed with a push.",
             "required": false,
-            "type": "integer"
+            "type": "boolean"
           },
           {
-            "name": "default_branch_protection",
+            "name": "shared_runners_enabled",
             "in": "query",
-            "description": "SeeOptions fordefault_branch_protection. Default to the global level default branch protection setting.",
+            "description": "Enable shared runners for this project.",
             "required": false,
-            "type": "integer",
-            "enum": [
-              0,
-              1,
-              2
-            ]
+            "type": "boolean"
           },
           {
-            "name": "shared_runners_setting",
+            "name": "show_default_award_emojis",
             "in": "query",
-            "description": "SeeOptions forshared_runners_setting. Enable or disable shared runners for a group’s subgroups and projects.",
+            "description": "Show default award emojis.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "snippets_access_level",
+            "in": "query",
+            "description": "One of disabled, private, or enabled.",
             "required": false,
             "type": "string",
             "enum": [
-              "enabled",
-              "disabled_with_override",
-              "disabled_and_unoverridable"
+              "disabled",
+              "private",
+              "enabled"
             ]
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": "Get a list of visible groups for the authenticated user. When accessed without authentication, only public groups are returned.",
-            "schema": {
-              "$ref": "#/definitions/Group"
-            }
           },
-          "default": {
-            "description": "bad input parameter",
-            "schema": {
-              "$ref": "#/definitions/Error"
-            }
-          }
-        }
-      }
-    },
-    "/groups/{id}/issues": {
-      "get": {
-        "tags": [
-          "Issue"
-        ],
-        "description": "Get a list of a group’s issues.",
-        "produces": [
-          "application/json"
-        ],
-        "parameters": [
-
           {
-            "name": "page",
+            "name": "snippets_enabled",
             "in": "query",
-            "description": "Page number",
+            "description": "(Deprecated)Enable snippets for this project. Use snippets_access_level instead.",
             "required": false,
-            "type": "integer",
-            "default": 1
+            "type": "boolean"
           },
           {
-            "name": "per_page",
+            "name": "suggestion_commit_message",
             "in": "query",
-            "description": "Number of items to list per page",
+            "description": "The commit message used to apply merge request suggestions.",
             "required": false,
-            "type": "integer",
-            "default": 20,
-            "maximum": 100
+            "type": "string"
           },
           {
-            "name": "assignee_id",
+            "name": "tag_list",
             "in": "query",
-            "description": "Return issues assigned to the given user id . Mutually exclusive with assignee_username . None returns unassigned issues. Any returns issues with an assignee. ( Introduced in GitLab 9.5)",
-            "required": false,
-            "type": "integer"
-          },
-          {
-            "name": "assignee_username",
-            "in": "query",
-            "description": "Return issues assigned to the given username . Either assignee_username or assignee_id is required, not both.. In GitLab CE, the assignee_username array should only contain a single value. Otherwise, an invalid parameter error is returned.",
+            "description": "The list of tags for a project; put array of tags, that should be finally assigned to a project.",
             "required": false,
             "type": "array",
             "items": {
@@ -1357,594 +1069,57 @@
             "collectionFormat": "multi"
           },
           {
-            "name": "author_id",
+            "name": "template_name",
             "in": "query",
-            "description": "Return issues created by the given user id . Mutually exclusive with author_username . Combine with scope=all or scope=assigned_to_me . ( Introduced in GitLab 9.5)",
-            "required": false,
-            "type": "integer"
-          },
-          {
-            "name": "author_username",
-            "in": "query",
-            "description": "Return issues created by the given username . Either author_username or author_id is required, not both.",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "name": "confidential",
-            "in": "query",
-            "description": "Filter confidential or public issues.",
-            "required": false,
-            "type": "boolean"
-          },
-          {
-            "name": "created_after",
-            "in": "query",
-            "description": "Return issues created on or after the given time. Expected in ISO 8601 format ( 2019-03-15T08:00:00Z )",
+            "description": "When used without use_custom_template, name of abuilt-in project template. When used with use_custom_template, name of a custom project template.",
             "required": false,
             "type": "string",
-            "format": "date-time"
+            "example": ""
           },
           {
-            "name": "created_before",
-            "in": "query",
-            "description": "Return issues created on or before the given time. Expected in ISO 8601 format ( 2019-03-15T08:00:00Z )",
-            "required": false,
-            "type": "string",
-            "format": "date-time"
-          },
-          {
-            "name": "due_date",
-            "in": "query",
-            "description": "Return issues that have no due date, are overdue, or whose due date is this week, this month, or between two weeks ago and next month. Accepts: 0 (no due date), overdue , week , month , next_month_and_previous_two_weeks . (Introduced in GitLab 13.3 )",
-            "required": false,
-            "type": "string",
-            "enum": [
-              "0",
-              "overdue",
-              "week",
-              "month",
-              "next_month_and_previous_two_weeks"
-            ]
-          },
-          {
-            "name": "id",
+            "name": "user_id",
             "in": "path",
-            "description": "The ID or URL-encoded path of the group owned by the authenticated user",
+            "description": "The user ID of the project owner.",
             "required": true,
             "type": "integer"
           },
           {
-            "name": "iids[]",
+            "name": "visibility",
             "in": "query",
-            "description": "Return only the issues having the given iid",
-            "required": false,
-            "type": "array",
-            "items": {
-              "type": "integer"
-            },
-            "collectionFormat": "multi"
-          },
-          {
-            "name": "labels",
-            "in": "query",
-            "description": "Comma-separated list of label names, issues must have all labels to be returned. None lists all issues with no labels. Any lists all issues with at least one label. No+Label (Deprecated) lists all issues with no labels. Predefined names are case-insensitive.",
+            "description": "See project visibility level.",
             "required": false,
             "type": "string",
             "enum": [
-              "None",
-              "Any",
-              "No+Label"
+              "private",
+              "internal",
+              "public"
             ]
           },
           {
-            "name": "milestone",
+            "name": "wiki_access_level",
             "in": "query",
-            "description": "The milestone title. None lists all issues with no milestone. Any lists all issues that have an assigned milestone.",
+            "description": "One of disabled, private, or enabled.",
             "required": false,
             "type": "string",
             "enum": [
-              "None",
-              "Any"
+              "disabled",
+              "private",
+              "enabled"
             ]
           },
           {
-            "name": "my_reaction_emoji",
+            "name": "wiki_enabled",
             "in": "query",
-            "description": "Return issues reacted by the authenticated user by the given emoji . None returns issues not given a reaction. Any returns issues given at least one reaction. ( Introduced in GitLab 10.0)",
-            "required": false,
-            "type": "string",
-            "enum": [
-              "None",
-              "Any"
-            ]
-          },
-          {
-            "name": "non_archived",
-            "in": "query",
-            "description": "Return issues from non archived projects. Default is true. (Introduced in GitLab 12.8 )",
+            "description": "(Deprecated)Enable wiki for this project. Use wiki_access_levelinstead.",
             "required": false,
             "type": "boolean"
-          },
-          {
-            "in": "body",
-            "name": "not",
-            "description": "Return issues that do not match the parameters supplied. Accepts: labels , milestone , author_id , author_username , assignee_id , assignee_username , my_reaction_emoji , search , in",
-            "required": false,
-            "schema": {
-              "$ref": "#/definitions/NotGroupsIssue"
-            }
-          },
-          {
-            "name": "order_by",
-            "in": "query",
-            "description": "Return issues ordered by created_at , updated_at , priority , due_date , relative_position , label_priority , milestone_due , popularity , weight fields. Default is created_at",
-            "required": false,
-            "type": "string",
-            "default": "created_at",
-            "enum": [
-              "created_at",
-              "updated_at",
-              "priority",
-              "due_date",
-              "relative_position",
-              "label_priority",
-              "milestone_due",
-              "popularity"
-            ]
-          },
-          {
-            "name": "scope",
-            "in": "query",
-            "description": "Return issues for the given scope: created_by_me , assigned_to_me or all . For versions before 11.0, use the now deprecated created-by-me or assigned-to-me scopes instead. ( Introduced in GitLab 9.5. Changed to snake_case in GitLab 11.0)",
-            "required": false,
-            "type": "string",
-            "enum": [
-              "created_by_me",
-              "assigned_to_me",
-              "all"
-            ]
-          },
-          {
-            "name": "search",
-            "in": "query",
-            "description": "Search group issues against their title and description",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "name": "sort",
-            "in": "query",
-            "description": "Return issues sorted in asc or desc order. Default is desc",
-            "required": false,
-            "type": "string",
-            "default": "desc",
-            "enum": [
-              "asc",
-              "desc"
-            ]
-          },
-          {
-            "name": "state",
-            "in": "query",
-            "description": "Return all issues or just those that are opened or closed",
-            "required": false,
-            "type": "string",
-            "enum": [
-              "opened",
-              "closed"
-            ]
-          },
-          {
-            "name": "updated_after",
-            "in": "query",
-            "description": "Return issues updated on or after the given time. Expected in ISO 8601 format ( 2019-03-15T08:00:00Z )",
-            "required": false,
-            "type": "string",
-            "format": "date-time"
-          },
-          {
-            "name": "updated_before",
-            "in": "query",
-            "description": "Return issues updated on or before the given time. Expected in ISO 8601 format ( 2019-03-15T08:00:00Z )",
-            "required": false,
-            "type": "string",
-            "format": "date-time"
-          },
-          {
-            "name": "with_labels_details",
-            "in": "query",
-            "description": "If true , the response returns more details for each label in labels field: :name , :color , :description , :description_html , :text_color . Default is false . The description_html attribute was introduced in GitLab 12.7",
-            "required": false,
-            "type": "boolean"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Get all issues the authenticated user has access to. By default it returns only issues created by the current user. To get all issues, use parameter scope=all.",
-            "schema": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/Issue"
-              }
-            }
-          },
-          "default": {
-            "description": "bad input parameter",
-            "schema": {
-              "$ref": "#/definitions/Error"
-            }
-          }
-        }
-      }
-    },
-    "/projects/{id}/issues": {
-      "get": {
-        "tags": [
-          "Issue"
-        ],
-        "description": "Get a list of a project’s issues.",
-        "produces": [
-          "application/json"
-        ],
-        "parameters": [
-
-          {
-            "name": "page",
-            "in": "query",
-            "description": "Page number",
-            "required": false,
-            "type": "integer",
-            "default": 1
-          },
-          {
-            "name": "per_page",
-            "in": "query",
-            "description": "Number of items to list per page",
-            "required": false,
-            "type": "integer",
-            "default": 20,
-            "maximum": 100
-          },
-          {
-            "name": "assignee_id",
-            "in": "query",
-            "description": "Return issues assigned to the given user id . Mutually exclusive with assignee_username . None returns unassigned issues. Any returns issues with an assignee. ( Introduced in GitLab 9.5)",
-            "required": false,
-            "type": "integer"
-          },
-          {
-            "name": "assignee_username",
-            "in": "query",
-            "description": "Return issues assigned to the given username . Either assignee_id or assignee_username is required, not both. In GitLab CE, the assignee_username array should only contain a single value. Otherwise, an invalid parameter error is returned.",
-            "required": false,
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "collectionFormat": "multi"
-          },
-          {
-            "name": "author_id",
-            "in": "query",
-            "description": "Return issues created by the given user id . Mutually exclusive with author_username . Combine with scope=all or scope=assigned_to_me . ( Introduced in GitLab 9.5)",
-            "required": false,
-            "type": "integer"
-          },
-          {
-            "name": "author_username",
-            "in": "query",
-            "description": "Return issues created by the given username . Either author_id or author_username is required, not both.",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "name": "confidential",
-            "in": "query",
-            "description": "Filter confidential or public issues.",
-            "required": false,
-            "type": "boolean"
-          },
-          {
-            "name": "created_after",
-            "in": "query",
-            "description": "Return issues created on or after the given time. Expected in ISO 8601 format ( 2019-03-15T08:00:00Z )",
-            "required": false,
-            "type": "string",
-            "format": "date-time"
-          },
-          {
-            "name": "created_before",
-            "in": "query",
-            "description": "Return issues created on or before the given time. Expected in ISO 8601 format ( 2019-03-15T08:00:00Z )",
-            "required": false,
-            "type": "string",
-            "format": "date-time"
-          },
-          {
-            "name": "due_date",
-            "in": "query",
-            "description": "Return issues that have no due date, are overdue, or whose due date is this week, this month, or between two weeks ago and next month. Accepts: 0 (no due date), overdue , week , month , next_month_and_previous_two_weeks . (Introduced in GitLab 13.3 )",
-            "required": false,
-            "type": "string",
-            "enum": [
-              "0",
-              "overdue",
-              "week",
-              "month",
-              "next_month_and_previous_two_weeks"
-            ]
-          },
-          {
-            "name": "id",
-            "in": "path",
-            "description": "The ID or URL-encoded path of the project owned by the authenticated user user",
-            "required": true,
-            "type": "integer"
-          },
-          {
-            "name": "iids[]",
-            "in": "query",
-            "description": "Return only the issues having the given iid",
-            "required": false,
-            "type": "array",
-            "items": {
-              "type": "integer"
-            },
-            "collectionFormat": "multi"
-          },
-          {
-            "name": "labels",
-            "in": "query",
-            "description": "Comma-separated list of label names, issues must have all labels to be returned. None lists all issues with no labels. Any lists all issues with at least one label. No+Label (Deprecated) lists all issues with no labels. Predefined names are case-insensitive.",
-            "required": false,
-            "type": "string",
-            "enum": [
-              "None",
-              "Any",
-              "No+Label"
-            ]
-          },
-          {
-            "name": "milestone",
-            "in": "query",
-            "description": "The milestone title. None lists all issues with no milestone. Any lists all issues that have an assigned milestone.",
-            "required": false,
-            "type": "string",
-            "enum": [
-              "None",
-              "Any"
-            ]
-          },
-          {
-            "name": "my_reaction_emoji",
-            "in": "query",
-            "description": "Return issues reacted by the authenticated user by the given emoji . None returns issues not given a reaction. Any returns issues given at least one reaction. ( Introduced in GitLab 10.0)",
-            "required": false,
-            "type": "string",
-            "enum": [
-              "None",
-              "Any"
-            ]
-          },
-          {
-            "in": "body",
-            "name": "not",
-            "description": "Return issues that do not match the parameters supplied. Accepts: labels , milestone , author_id , author_username , assignee_id , assignee_username , my_reaction_emoji , search , in",
-            "required": false,
-            "schema": {
-              "$ref": "#/definitions/NotGroupsIssue"
-            }
-          },
-          {
-            "name": "order_by",
-            "in": "query",
-            "description": "Return issues ordered by created_at , updated_at , priority , due_date , relative_position , label_priority , milestone_due , popularity , weight fields. Default is created_at",
-            "required": false,
-            "type": "string",
-            "default": "created_at",
-            "enum": [
-              "created_at",
-              "updated_at",
-              "priority",
-              "due_date",
-              "relative_position",
-              "label_priority",
-              "milestone_due",
-              "popularity"
-            ]
-          },
-          {
-            "name": "scope",
-            "in": "query",
-            "description": "Return issues for the given scope: created_by_me , assigned_to_me or all . For versions before 11.0, use the now deprecated created-by-me or assigned-to-me scopes instead. ( Introduced in GitLab 9.5. Changed to snake_case in GitLab 11.0)",
-            "required": false,
-            "type": "string",
-            "enum": [
-              "created_by_me",
-              "assigned_to_me",
-              "all"
-            ]
-          },
-          {
-            "name": "search",
-            "in": "query",
-            "description": "Search group issues against their title and description",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "name": "sort",
-            "in": "query",
-            "description": "Return issues sorted in asc or desc order. Default is desc",
-            "required": false,
-            "type": "string",
-            "default": "desc",
-            "enum": [
-              "asc",
-              "desc"
-            ]
-          },
-          {
-            "name": "state",
-            "in": "query",
-            "description": "Return all issues or just those that are opened or closed",
-            "required": false,
-            "type": "string",
-            "enum": [
-              "opened",
-              "closed"
-            ]
-          },
-          {
-            "name": "updated_after",
-            "in": "query",
-            "description": "Return issues updated on or after the given time. Expected in ISO 8601 format ( 2019-03-15T08:00:00Z )",
-            "required": false,
-            "type": "string",
-            "format": "date-time"
-          },
-          {
-            "name": "updated_before",
-            "in": "query",
-            "description": "Return issues updated on or before the given time. Expected in ISO 8601 format ( 2019-03-15T08:00:00Z )",
-            "required": false,
-            "type": "string",
-            "format": "date-time"
-          },
-          {
-            "name": "with_labels_details",
-            "in": "query",
-            "description": "If true , the response returns more details for each label in labels field: :name , :color , :description , :description_html , :text_color . Default is false . The description_html attribute was introduced in GitLab 12.7",
-            "required": false,
-            "type": "boolean"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Get all issues the authenticated user has access to. By default it returns only issues created by the current user. To get all issues, use parameter scope=all.",
-            "schema": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/Issue"
-              }
-            }
-          },
-          "default": {
-            "description": "bad input parameter",
-            "schema": {
-              "$ref": "#/definitions/Error"
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "Issue"
-        ],
-        "description": "Creates a new project issue.",
-        "produces": [
-          "application/json"
-        ],
-        "parameters": [
-
-          {
-            "name": "assignee_ids",
-            "in": "query",
-            "description": "The ID of the user(s) to assign the issue to.",
-            "required": false,
-            "type": "array",
-            "items": {
-              "type": "integer"
-            },
-            "collectionFormat": "multi"
-          },
-          {
-            "name": "confidential",
-            "in": "query",
-            "description": "Set an issue to be confidential. Default is false .",
-            "required": false,
-            "type": "boolean",
-            "default": false
-          },
-          {
-            "name": "created_at",
-            "in": "query",
-            "description": "When the issue was created. Date time string, ISO 8601 formatted, for example 2016-03-11T03:45:40Z . Requires administrator or project/group owner rights.",
-            "required": false,
-            "type": "string",
-            "format": "date-time"
-          },
-          {
-            "name": "description",
-            "in": "query",
-            "description": "The description of an issue. Limited to 1,048,576 characters.",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "name": "discussion_to_resolve",
-            "in": "query",
-            "description": "The ID of a discussion to resolve. This fills out the issue with a default description and mark the discussion as resolved. Use in combination with merge_request_to_resolve_discussions_of .",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "name": "due_date",
-            "in": "query",
-            "description": "The due date. Date time string in the format YYYY-MM-DD , for example 2016-03-11",
-            "required": false,
-            "type": "string",
-            "format": "date"
-          },
-          {
-            "name": "id",
-            "in": "path",
-            "description": "The ID or URL-encoded path of the project owned by the authenticated user",
-            "required": true,
-            "type": "integer"
-          },
-          {
-            "name": "iid",
-            "in": "query",
-            "description": "The internal ID of the project's issue (requires administratoror project owner rights)",
-            "required": false,
-            "type": "integer"
-          },
-          {
-            "name": "labels",
-            "in": "query",
-            "description": "Comma-separated label names for an issue",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "name": "merge_request_to_resolve_discussions_of",
-            "in": "query",
-            "description": "The IID of a merge request in which to resolve all issues. This fills out the issue with a default description and mark all discussions as resolved. When passing a description or title, these values take precedence over the default values.",
-            "required": false,
-            "type": "integer"
-          },
-          {
-            "name": "milestone_id",
-            "in": "query",
-            "description": "The global ID of a milestone to assign issue",
-            "required": false,
-            "type": "integer"
-          },
-          {
-            "name": "title",
-            "in": "query",
-            "description": "The title of an issue",
-            "required": true,
-            "type": "string"
           }
         ],
         "responses": {
           "201": {
-            "description": "Creates a new project issue.",
+            "description": "Creates a new project owned by the authenticated user.",
             "schema": {
-              "$ref": "#/definitions/Issue"
+              "$ref": "#/definitions/BasicProjectDetails"
             }
           },
           "default": {
@@ -1956,37 +1131,50 @@
         }
       }
     },
-    "/projects/{id}/issues/{issue_iid}": {
+    "/projects/{id}": {
       "get": {
         "tags": [
-          "Issue"
+          "Project"
         ],
-        "description": "Get a single project issue.",
+        "description": "Get a specific project. This endpoint can be accessed without authentication if the project is publicly accessible.",
         "produces": [
           "application/json"
         ],
         "parameters": [
-
           {
             "name": "id",
             "in": "path",
-            "description": "The ID or URL-encoded path of the project owned by the authenticated user",
+            "description": "The ID or URL-encoded path of the project.",
             "required": true,
-            "type": "integer"
+            "type": "string"
           },
           {
-            "name": "issue_iid",
-            "in": "path",
-            "description": "The internal ID of a project's issue",
-            "required": true,
-            "type": "integer"
+            "name": "license",
+            "in": "query",
+            "description": "Include project license data.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "statistics",
+            "in": "query",
+            "description": "Include project statistics.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "with_custom_attributes",
+            "in": "query",
+            "description": "Include custom attributes in response. (admins only)",
+            "required": false,
+            "type": "boolean"
           }
         ],
         "responses": {
           "200": {
-            "description": "Get a single project issue.",
+            "description": "Get a specific project. This endpoint can be accessed without authentication if the project is publicly accessible.",
             "schema": {
-              "$ref": "#/definitions/Issue"
+              "$ref": "#/definitions/ProjectWithAcess"
             }
           },
           "default": {
@@ -1999,127 +1187,456 @@
       },
       "put": {
         "tags": [
-          "Issue"
+          "Project"
         ],
-        "description": "Updates an existing project issue. This call is also used to mark an issue as closed.",
+        "description": "Updates an existing project.",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
         "produces": [
           "application/json"
         ],
         "parameters": [
-
           {
-            "name": "add_labels",
+            "name": "allow_merge_on_skipped_pipeline",
             "in": "query",
-            "description": "Comma-separated label names to add to an issue.",
+            "description": "Set whether or not merge requests can be merged with skipped jobs.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "auto_cancel_pending_pipelines",
+            "in": "query",
+            "description": "Auto-cancel pending pipelines. This isn\u2019t a boolean, but enabled/disabled.",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "enabled",
+              "disabled"
+            ]
+          },
+          {
+            "name": "auto_devops_deploy_strategy",
+            "in": "query",
+            "description": "Auto Deploy strategy",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "continuous",
+              "manual",
+              "timed_incremental"
+            ]
+          },
+          {
+            "name": "auto_devops_enabled",
+            "in": "query",
+            "description": "Enable Auto DevOps for this project.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "autoclose_referenced_issues",
+            "in": "query",
+            "description": "Set whether auto-closing referenced issues on default branch.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "avatar",
+            "in": "query",
+            "description": "Image file for avatar of the project.",
+            "required": false,
+            "type": "string",
+            "format": "file"
+          },
+          {
+            "name": "build_coverage_regex",
+            "in": "query",
+            "description": "Test coverage parsing.",
             "required": false,
             "type": "string"
           },
           {
-            "name": "assignee_ids",
+            "name": "build_git_strategy",
             "in": "query",
-            "description": "The ID of the user(s) to assign the issue to. Set to 0 or provide an empty value to unassign all assignees.",
+            "description": "The Git strategy. Defaults to fetch.",
             "required": false,
-            "type": "array",
-            "items": {
-              "type": "integer"
-            },
-            "collectionFormat": "multi"
+            "type": "string",
+            "default": "fetch"
           },
           {
-            "name": "confidential",
+            "name": "build_timeout",
             "in": "query",
-            "description": "Updates an issue to be confidential. At least one of the following parameters is required for the request to be successful: assignee_id, assignee_ids, confidential, created_at, description, discussion_locked, due_date, labels, milestone_id, state_event, title",
+            "description": "The maximum amount of time in minutes that a job is able run (in seconds).",
+            "required": false,
+            "type": "integer"
+          },
+          {
+            "name": "builds_access_level",
+            "in": "query",
+            "description": "One of disabled, private, or enabled.",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "disabled",
+              "private",
+              "enabled"
+            ]
+          },
+          {
+            "name": "ci_config_path",
+            "in": "query",
+            "description": "The path to CI configuration file.",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "ci_default_git_depth",
+            "in": "query",
+            "description": "Default number of revisions forshallow cloning.",
+            "required": false,
+            "type": "integer",
+            "default": 50,
+            "maximum": 1000
+          },
+          {
+            "name": "ci_forward_deployment_enabled",
+            "in": "query",
+            "description": "When a new deployment job starts,skip older deployment jobsthat are still pending",
             "required": false,
             "type": "boolean"
+          },
+          {
+            "in": "body",
+            "name": "container_expiration_policy_attributes",
+            "description": "Update the image cleanup policy for this project.",
+            "required": false,
+            "schema": {
+              "$ref": "#/definitions/ContainerExpirationPolicy"
+            }
+          },
+          {
+            "name": "container_registry_enabled",
+            "in": "query",
+            "description": "Enable container registry for this project.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "default_branch",
+            "in": "query",
+            "description": "master by default.",
+            "required": false,
+            "type": "string",
+            "default": "master"
           },
           {
             "name": "description",
             "in": "query",
-            "description": "The description of an issue. Limited to 1,048,576 characters.",
+            "description": "Short project description.",
             "required": false,
             "type": "string"
           },
           {
-            "name": "discussion_locked",
+            "name": "emails_disabled",
             "in": "query",
-            "description": "Flag indicating if the issue's discussion is locked. If the discussion is locked only project members can add or edit comments.",
+            "description": "Disable email notifications.",
             "required": false,
             "type": "boolean"
           },
           {
-            "name": "due_date",
+            "name": "forking_access_level",
             "in": "query",
-            "description": "The due date. Date time string in the format YYYY-MM-DD , for example 2016-03-11",
+            "description": "One of disabled,private, or enabled.",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "disabled",
+              "private",
+              "enabled"
+            ]
+          },
+          {
+            "name": "import_url",
+            "in": "query",
+            "description": "URL to import repository from.",
             "required": false,
             "type": "string"
+          },
+          {
+            "name": "issues_access_level",
+            "in": "query",
+            "description": "One of disabled, private, or enabled.",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "disabled",
+              "private",
+              "enabled"
+            ]
+          },
+          {
+            "name": "issues_enabled",
+            "in": "query",
+            "description": "(Deprecated)Enable issues for this project. Use issues_access_level instead.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "jobs_enabled",
+            "in": "query",
+            "description": "(Deprecated)Enable jobs for this project. Use builds_access_level instead.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "lfs_enabled",
+            "in": "query",
+            "description": "Enable LFS.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "merge_method",
+            "in": "query",
+            "description": "Set the merge method used.",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "merge",
+              "rebase_merge",
+              "ff"
+            ]
+          },
+          {
+            "name": "merge_requests_access_level",
+            "in": "query",
+            "description": "One of disabled, private, or enabled.",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "disabled",
+              "private",
+              "enabled"
+            ]
+          },
+          {
+            "name": "merge_requests_enabled",
+            "in": "query",
+            "description": "(Deprecated)Enable merge requests for this project. Use merge_requests_access_level instead.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "description": "The name of the new project. Equals path if not provided.",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "only_allow_merge_if_all_discussions_are_resolved",
+            "in": "query",
+            "description": "Set whether merge requests can only be merged when all the discussions are resolved.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "only_allow_merge_if_pipeline_succeeds",
+            "in": "query",
+            "description": "Set whether merge requests can only be merged with successful jobs.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "packages_enabled",
+            "in": "query",
+            "description": "Enable or disable packages repository feature.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "pages_access_level",
+            "in": "query",
+            "description": "One of disabled, private,enabled, or public.",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "disabled",
+              "private",
+              "enabled",
+              "public"
+            ]
+          },
+          {
+            "name": "requirements_access_level",
+            "in": "query",
+            "description": "One of disabled,private,enabled or public",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "disabled",
+              "private",
+              "enabled",
+              "public"
+            ]
+          },
+          {
+            "name": "path",
+            "in": "query",
+            "description": "Repository name for new project.Either path or name is required, not both. Generated based on name if not provided (generated as lowercase with dashes).",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "public_builds",
+            "in": "query",
+            "description": "If true, jobs can be viewed by non-project members.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "remove_source_branch_after_merge",
+            "in": "query",
+            "description": "Enable Delete source branch option by default for all new merge requests.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "repository_access_level",
+            "in": "query",
+            "description": "One of disabled, private, or enabled.",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "disabled",
+              "private",
+              "enabled"
+            ]
+          },
+          {
+            "name": "repository_storage",
+            "in": "query",
+            "description": "Which storage shard the repository is on.(admins only)",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "request_access_enabled",
+            "in": "query",
+            "description": "Allow users to request member access.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "resolve_outdated_diff_discussions",
+            "in": "query",
+            "description": "Automatically resolve merge request diffs discussions on lines changed with a push.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "service_desk_enabled",
+            "in": "query",
+            "description": "Enable or disable Service Desk feature.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "shared_runners_enabled",
+            "in": "query",
+            "description": "Enable shared runners for this project.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "show_default_award_emojis",
+            "in": "query",
+            "description": "Show default award emojis.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "snippets_access_level",
+            "in": "query",
+            "description": "One of disabled, private, or enabled.",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "disabled",
+              "private",
+              "enabled"
+            ]
+          },
+          {
+            "name": "snippets_enabled",
+            "in": "query",
+            "description": "(Deprecated)Enable snippets for this project. Use snippets_access_level instead.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "suggestion_commit_message",
+            "in": "query",
+            "description": "The commit message used to apply merge request suggestions.",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "tag_list",
+            "in": "query",
+            "description": "The list of tags for a project; put array of tags, that should be finally assigned to a project.",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "collectionFormat": "multi"
           },
           {
             "name": "id",
             "in": "path",
-            "description": "The ID or URL-encoded path of the project owned by the authenticated user",
+            "description": "The ID or URL-encoded path of the project.",
             "required": true,
             "type": "integer"
           },
           {
-            "name": "issue_iid",
-            "in": "path",
-            "description": "The internal ID of a project's issue",
-            "required": true,
-            "type": "integer"
-          },
-          {
-            "name": "labels",
+            "name": "visibility",
             "in": "query",
-            "description": "Comma-separated label names for an issue. Set to an empty string to unassign all labels.",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "name": "milestone_id",
-            "in": "query",
-            "description": "The global ID of a milestone to assign the issue to. Set to 0 or provide an empty value to unassign a milestone.",
-            "required": false,
-            "type": "integer"
-          },
-          {
-            "name": "remove_labels",
-            "in": "query",
-            "description": "Comma-separated label names to remove from an issue.",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "name": "state_event",
-            "in": "query",
-            "description": "The state event of an issue. Set close to close the issue and reopen to reopen it",
+            "description": "See project visibility level.",
             "required": false,
             "type": "string",
             "enum": [
-              "close",
-              "reopen"
+              "private",
+              "internal",
+              "public"
             ]
           },
           {
-            "name": "title",
+            "name": "wiki_access_level",
             "in": "query",
-            "description": "The title of an issue",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "name": "updated_at",
-            "in": "query",
-            "description": "When the issue was updated. Date time string, ISO 8601 formatted, for example 2016-03-11T03:45:40Z (requires administrator or project owner rights). Empty string or null values are not accepted.",
+            "description": "One of disabled, private, or enabled.",
             "required": false,
             "type": "string",
-            "format": "date-time"
+            "enum": [
+              "disabled",
+              "private",
+              "enabled"
+            ]
+          },
+          {
+            "name": "wiki_enabled",
+            "in": "query",
+            "description": "(Deprecated)Enable wiki for this project. Use wiki_access_levelinstead.",
+            "required": false,
+            "type": "boolean"
           }
         ],
         "responses": {
-          "200": {
-            "description": "Updates an existing project issue",
+          "201": {
+            "description": "Creates a new project owned by the authenticated user.",
             "schema": {
-              "$ref": "#/definitions/Issue"
+              "$ref": "#/definitions/BasicProjectDetails"
             }
           },
           "default": {
@@ -2132,32 +1649,24 @@
       },
       "delete": {
         "tags": [
-          "Issue"
+          "Project"
         ],
-        "description": "Only for administrators and project owners. Deletes an issue.",
+        "description": "Get a specific project. This endpoint can be accessed without authentication if the project is publicly accessible.",
         "produces": [
           "application/json"
         ],
         "parameters": [
-
           {
             "name": "id",
             "in": "path",
-            "description": "The ID or URL-encoded path of the project owned by the authenticated user",
+            "description": "The ID or URL-encoded path of the project.",
             "required": true,
-            "type": "integer"
-          },
-          {
-            "name": "issue_iid",
-            "in": "path",
-            "description": "The internal ID of a project's issue",
-            "required": true,
-            "type": "integer"
+            "type": "string"
           }
         ],
         "responses": {
           "204": {
-            "description": "Only for administrators and project owners. Deletes an issue."
+            "description": "Deletes a project"
           },
           "default": {
             "description": "bad input parameter",
@@ -2168,583 +1677,45 @@
         }
       }
     },
-    "/projects/{id}/issues/{issue_iid}/reorder": {
-      "put": {
+    "/projects/{id}/users": {
+      "get": {
         "tags": [
-          "Issue"
+          "Project"
         ],
-        "description": "Reorders an issue, you can see the results when sorting issues manually",
+        "description": "Get the users list of a project.",
         "produces": [
           "application/json"
         ],
         "parameters": [
-
           {
             "name": "id",
             "in": "path",
-            "description": "The ID or URL-encoded path of the project owned by the authenticated user",
-            "required": true,
-            "type": "integer"
-          },
-          {
-            "name": "issue_iid",
-            "in": "path",
-            "description": "The internal ID of the project's issue",
-            "required": true,
-            "type": "integer"
-          },
-          {
-            "name": "move_after_id",
-            "in": "query",
-            "description": "The ID of a project’s issue that should be placed after this issue, If move_after_id is not present, move_before_id is required",
-            "required": false,
-            "type": "integer"
-          },
-          {
-            "name": "move_before_id",
-            "in": "query",
-            "description": "The ID of a project’s issue that should be placed before this issue",
-            "required": false,
-            "type": "integer"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Reorders an issue, you can see the results when sorting issues manually",
-            "schema": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/Issue"
-              }
-            }
-          },
-          "default": {
-            "description": "bad input parameter",
-            "schema": {
-              "$ref": "#/definitions/Error"
-            }
-          }
-        }
-      }
-    },
-    "/projects/{id}/issues/{issue_iid}/move": {
-      "post": {
-        "tags": [
-          "Issue"
-        ],
-        "description": "Moves an issue to a different project.",
-        "produces": [
-          "application/json"
-        ],
-        "parameters": [
-
-          {
-            "name": "id",
-            "in": "path",
-            "description": "The ID or URL-encoded path of the project owned by the authenticated user",
-            "required": true,
-            "type": "integer"
-          },
-          {
-            "name": "issue_iid",
-            "in": "path",
-            "description": "The internal ID of the project's issue",
-            "required": true,
-            "type": "integer"
-          },
-          {
-            "name": "to_project_id",
-            "in": "query",
-            "description": "The ID of the new project",
-            "required": true,
-            "type": "integer"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Moves an issue to a different project.",
-            "schema": {
-              "$ref": "#/definitions/Issue"
-            }
-          },
-          "default": {
-            "description": "bad input parameter",
-            "schema": {
-              "$ref": "#/definitions/Error"
-            }
-          }
-        }
-      }
-    },
-    "/projects/{id}/issues/{issue_iid}/subscribe": {
-      "post": {
-        "tags": [
-          "Issue"
-        ],
-        "description": "Subscribes the authenticated user to an issue to receive notifications.",
-        "produces": [
-          "application/json"
-        ],
-        "parameters": [
-
-          {
-            "name": "id",
-            "in": "path",
-            "description": "The ID or URL-encoded path of the project owned by the authenticated user",
-            "required": true,
-            "type": "integer"
-          },
-          {
-            "name": "issue_iid",
-            "in": "path",
-            "description": "The internal ID of the project's issue",
-            "required": true,
-            "type": "integer"
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": "Subscribes the authenticated user to an issue to receive notifications.",
-            "schema": {
-              "$ref": "#/definitions/Issue"
-            }
-          },
-          "default": {
-            "description": "bad input parameter",
-            "schema": {
-              "$ref": "#/definitions/Error"
-            }
-          }
-        }
-      }
-    },
-    "/projects/{id}/issues/{issue_iid}/unsubscribe": {
-      "post": {
-        "tags": [
-          "Issue"
-        ],
-        "description": "Unsubscribes the authenticated user from the issue to not receive notifications from it",
-        "produces": [
-          "application/json"
-        ],
-        "parameters": [
-
-          {
-            "name": "id",
-            "in": "path",
-            "description": "The ID or URL-encoded path of the project owned by the authenticated user",
-            "required": true,
-            "type": "integer"
-          },
-          {
-            "name": "issue_iid",
-            "in": "path",
-            "description": "The internal ID of the project's issue",
-            "required": true,
-            "type": "integer"
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": "Subscribes the authenticated user to an issue to receive notifications.",
-            "schema": {
-              "$ref": "#/definitions/Issue"
-            }
-          },
-          "default": {
-            "description": "bad input parameter",
-            "schema": {
-              "$ref": "#/definitions/Error"
-            }
-          }
-        }
-      }
-    },
-    "/projects/{id}/issues/{issue_iid}/todo": {
-      "post": {
-        "tags": [
-          "Issue"
-        ],
-        "description": "Manually creates a to-do item for the current user on an issue.",
-        "produces": [
-          "application/json"
-        ],
-        "parameters": [
-
-          {
-            "name": "id",
-            "in": "path",
-            "description": "The ID or URL-encoded path of the project owned by the authenticated user",
-            "required": true,
-            "type": "integer"
-          },
-          {
-            "name": "issue_iid",
-            "in": "path",
-            "description": "The internal ID of the project's issue",
-            "required": true,
-            "type": "integer"
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": "Manually creates a to-do item for the current user on an issue.",
-            "schema": {
-              "$ref": "#/definitions/Todo"
-            }
-          },
-          "default": {
-            "description": "bad input parameter",
-            "schema": {
-              "$ref": "#/definitions/Error"
-            }
-          }
-        }
-      }
-    },
-    "/projects/{id}/issues/{issue_iid}/time_estimate": {
-      "post": {
-        "tags": [
-          "Issue"
-        ],
-        "description": "Sets an estimated time of work for this issue.",
-        "produces": [
-          "application/json"
-        ],
-        "parameters": [
-
-          {
-            "name": "id",
-            "in": "path",
-            "description": "The ID or URL-encoded path of the project owned by the authenticated user",
-            "required": true,
-            "type": "integer"
-          },
-          {
-            "name": "issue_iid",
-            "in": "path",
-            "description": "The internal ID of the project's issue",
-            "required": true,
-            "type": "integer"
-          },
-          {
-            "name": "duration",
-            "in": "query",
-            "description": "The duration in human format. e.g: 3h30m",
+            "description": "The ID or URL-encoded path of the project.",
             "required": true,
             "type": "string"
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": "Sets an estimated time of work for this issue.",
-            "schema": {
-              "$ref": "#/definitions/TimeEstimate"
-            }
-          },
-          "default": {
-            "description": "bad input parameter",
-            "schema": {
-              "$ref": "#/definitions/Error"
-            }
-          }
-        }
-      }
-    },
-    "/projects/{id}/issues/{issue_iid}/reset_time_estimate": {
-      "post": {
-        "tags": [
-          "Issue"
-        ],
-        "description": "Resets the estimated time for this issue to 0 seconds.",
-        "produces": [
-          "application/json"
-        ],
-        "parameters": [
-
-          {
-            "name": "id",
-            "in": "path",
-            "description": "The ID or URL-encoded path of the project owned by the authenticated user",
-            "required": true,
-            "type": "integer"
           },
           {
-            "name": "issue_iid",
-            "in": "path",
-            "description": "The internal ID of the project's issue",
-            "required": true,
-            "type": "integer"
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": "Resets the estimated time for this issue to 0 seconds.",
-            "schema": {
-              "$ref": "#/definitions/TimeEstimate"
-            }
-          },
-          "default": {
-            "description": "bad input parameter",
-            "schema": {
-              "$ref": "#/definitions/Error"
-            }
-          }
-        }
-      }
-    },
-    "/projects/{id}/issues/{issue_iid}/add_spent_time": {
-      "post": {
-        "tags": [
-          "Issue"
-        ],
-        "description": "Adds spent time for this issue",
-        "produces": [
-          "application/json"
-        ],
-        "parameters": [
-
-          {
-            "name": "id",
-            "in": "path",
-            "description": "The ID or URL-encoded path of the project owned by the authenticated user",
-            "required": true,
-            "type": "integer"
-          },
-          {
-            "name": "issue_iid",
-            "in": "path",
-            "description": "The internal ID of the project's issue",
-            "required": true,
-            "type": "integer"
-          },
-          {
-            "name": "duration",
+            "name": "search",
             "in": "query",
-            "description": "The duration in human format. e.g: 3h30m",
-            "required": true,
+            "description": "Search for specific users.",
+            "required": false,
             "type": "string"
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": "Adds spent time for this issue",
-            "schema": {
-              "$ref": "#/definitions/TimeEstimate"
-            }
-          },
-          "default": {
-            "description": "bad input parameter",
-            "schema": {
-              "$ref": "#/definitions/Error"
-            }
-          }
-        }
-      }
-    },
-    "/projects/{id}/issues/{issue_iid}/reset_spent_time": {
-      "post": {
-        "tags": [
-          "Issue"
-        ],
-        "description": "Resets the total spent time for this issue to 0 seconds.",
-        "produces": [
-          "application/json"
-        ],
-        "parameters": [
-
-          {
-            "name": "id",
-            "in": "path",
-            "description": "The ID or URL-encoded path of the project owned by the authenticated user",
-            "required": true,
-            "type": "integer"
           },
           {
-            "name": "issue_iid",
-            "in": "path",
-            "description": "The internal ID of the project's issue",
-            "required": true,
-            "type": "integer"
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": "Resets the total spent time for this issue to 0 seconds.",
-            "schema": {
-              "$ref": "#/definitions/TimeEstimate"
-            }
-          },
-          "default": {
-            "description": "bad input parameter",
-            "schema": {
-              "$ref": "#/definitions/Error"
-            }
-          }
-        }
-      }
-    },
-    "/projects/{id}/issues/{issue_iid}/time_stats": {
-      "get": {
-        "tags": [
-          "Issue"
-        ],
-        "description": "If the project is private or the issue is confidential, you need to provide credentials to authorize. The preferred way to do this, is by using personal access tokens.",
-        "produces": [
-          "application/json"
-        ],
-        "parameters": [
-
-          {
-            "name": "id",
-            "in": "path",
-            "description": "The ID or URL-encoded path of the project owned by the authenticated user",
-            "required": true,
-            "type": "integer"
-          },
-          {
-            "name": "issue_iid",
-            "in": "path",
-            "description": "The internal ID of the project's issue",
-            "required": true,
-            "type": "integer"
+            "name": "skip_users",
+            "in": "query",
+            "description": "Filter out users with the specified IDs.",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "collectionFormat": "multi"
           }
         ],
         "responses": {
           "200": {
-            "description": "If the project is private or the issue is confidential, you need to provide credentials to authorize. The preferred way to do this, is by using personal access tokens.",
-            "schema": {
-              "$ref": "#/definitions/TimeEstimate"
-            }
-          },
-          "default": {
-            "description": "bad input parameter",
-            "schema": {
-              "$ref": "#/definitions/Error"
-            }
-          }
-        }
-      }
-    },
-    "/projects/{id}/issues/{issue_iid}/related_merge_requests": {
-      "get": {
-        "tags": [
-          "Issue"
-        ],
-        "description": "Get all the merge requests that are related to the issue.",
-        "produces": [
-          "application/json"
-        ],
-        "parameters": [
-
-          {
-            "name": "id",
-            "in": "path",
-            "description": "The ID or URL-encoded path of the project owned by the authenticated user",
-            "required": true,
-            "type": "integer"
-          },
-          {
-            "name": "issue_iid",
-            "in": "path",
-            "description": "The internal ID of the project's issue",
-            "required": true,
-            "type": "integer"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Get all the merge requests that are related to the issue.",
-            "schema": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/MergeRequest"
-              }
-            }
-          },
-          "default": {
-            "description": "bad input parameter",
-            "schema": {
-              "$ref": "#/definitions/Error"
-            }
-          }
-        }
-      }
-    },
-    "/projects/{id}/issues/{issue_iid}/closed_by": {
-      "get": {
-        "tags": [
-          "Issue"
-        ],
-        "description": "Get all merge requests that close a particular issue when merged.",
-        "produces": [
-          "application/json"
-        ],
-        "parameters": [
-
-          {
-            "name": "id",
-            "in": "path",
-            "description": "The ID or URL-encoded path of the project owned by the authenticated user",
-            "required": true,
-            "type": "integer"
-          },
-          {
-            "name": "issue_iid",
-            "in": "path",
-            "description": "The internal ID of the project's issue",
-            "required": true,
-            "type": "integer"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Get all merge requests that close a particular issue when merged.",
-            "schema": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/MergeRequest"
-              }
-            }
-          },
-          "default": {
-            "description": "bad input parameter",
-            "schema": {
-              "$ref": "#/definitions/Error"
-            }
-          }
-        }
-      }
-    },
-    "/projects/{id}/issues/{issue_iid}/participants": {
-      "get": {
-        "tags": [
-          "Issue"
-        ],
-        "description": "Participants on issues",
-        "produces": [
-          "application/json"
-        ],
-        "parameters": [
-
-          {
-            "name": "id",
-            "in": "path",
-            "description": "The ID or URL-encoded path of the project owned by the authenticated user",
-            "required": true,
-            "type": "integer"
-          },
-          {
-            "name": "issue_iid",
-            "in": "path",
-            "description": "The internal ID of the project's issue",
-            "required": true,
-            "type": "integer"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Participants on issues",
+            "description": "Get the users list of a project.",
             "schema": {
               "type": "array",
               "items": {
@@ -2761,42 +1732,697 @@
         }
       }
     },
-    "/projects/{id}/issues/{issue_iid}/metric_images": {
-      "get": {
+    "/projects/{id}/fork": {
+      "post": {
         "tags": [
-          "Issue"
+          "Project"
         ],
-        "description": "List metric image",
+        "description": "Get a list of visible projects owned by the given user. When accessed without authentication, only public projects are returned.",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The ID orURL-encoded path of the project.",
+            "required": true,
+            "type": "integer"
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "description": "The name assigned to the resultant project after forking.",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "namespace_id",
+            "in": "query",
+            "description": "The ID of the namespace that the project is forked to.",
+            "required": false,
+            "type": "integer"
+          },
+          {
+            "name": "namespace_path",
+            "in": "query",
+            "description": "The path of the namespace that the project is forked to.",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "namespace",
+            "in": "query",
+            "description": "(Deprecated)The ID or path of the namespace that the project is forked to.",
+            "required": false,
+            "type": "integer"
+          },
+          {
+            "name": "path",
+            "in": "query",
+            "description": "The path assigned to the resultant project after forking. Either path or name is required, not both.",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Forks a project into the user namespace of the authenticated user or the one provided.",
+            "schema": {
+              "$ref": "#/definitions/BasicProjectDetails"
+            }
+          },
+          "default": {
+            "description": "bad input parameter",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Project"
+        ],
+        "description": "Delete an existing forked from relationship",
         "consumes": [
-          "multipart/form-data"
+          "application/x-www-form-urlencoded"
         ],
         "produces": [
           "application/json"
         ],
         "parameters": [
-
           {
             "name": "id",
             "in": "path",
-            "description": "The ID or URL-encoded path of the project owned by the authenticated user",
+            "description": "The ID or URL-encoded path of the project.",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Delete an existing forked from relationship"
+          },
+          "default": {
+            "description": "bad input parameter",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          }
+        }
+      }
+    },
+    "/projects/{id}/forks": {
+      "get": {
+        "tags": [
+          "Project"
+        ],
+        "description": "List the projects accessible to the calling user that have an established, forked relationship with the specified project",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "archived",
+            "in": "query",
+            "description": "Limit by archived status.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The ID orURL-encoded path of the project.",
             "required": true,
             "type": "integer"
           },
           {
-            "name": "issue_iid",
+            "name": "membership",
+            "in": "query",
+            "description": "Limit by projects that the current user is a member of.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "min_access_level",
+            "in": "query",
+            "description": "Limit by current user minimalaccess level.",
+            "required": false,
+            "type": "integer",
+            "enum": [
+              0,
+              10,
+              20,
+              30,
+              40,
+              50
+            ]
+          },
+          {
+            "name": "order_by",
+            "in": "query",
+            "description": "Return projects ordered byid,name,path,created_at,updated_at, orlast_activity_atfields. Default iscreated_at.",
+            "required": false,
+            "type": "string",
+            "default": "created_at",
+            "enum": [
+              "id",
+              "name",
+              "path",
+              "created_at",
+              "updated_at",
+              "last_activity_at"
+            ]
+          },
+          {
+            "name": "owned",
+            "in": "query",
+            "description": "Limit by projects explicitly owned by the current user.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "description": "Return list of projects matching the search criteria.",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "simple",
+            "in": "query",
+            "description": "Return only limited fields for each project. This is a no-op without authentication as thenonlysimple fields are returned.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Return projects sorted inascordescorder. Default isdesc.",
+            "required": false,
+            "type": "string",
+            "default": "desc",
+            "enum": [
+              "asc",
+              "desc"
+            ]
+          },
+          {
+            "name": "starred",
+            "in": "query",
+            "description": "Limit by projects starred by the current user.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "statistics",
+            "in": "query",
+            "description": "Include project statistics.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "visibility",
+            "in": "query",
+            "description": "Limit by visibilitypublic,internal, orprivate.",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "public",
+              "internal",
+              "private"
+            ]
+          },
+          {
+            "name": "with_custom_attributes",
+            "in": "query",
+            "description": "Include custom attributes in response.(admins only)",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "with_issues_enabled",
+            "in": "query",
+            "description": "Limit by enabled issues feature.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "with_merge_requests_enabled",
+            "in": "query",
+            "description": "Limit by enabled merge requests feature.",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Get a projects list for authenticated user",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Project"
+              }
+            }
+          },
+          "default": {
+            "description": "bad input parameter",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          }
+        }
+      }
+    },
+    "/projects/{id}/star": {
+      "post": {
+        "tags": [
+          "Project"
+        ],
+        "description": "Stars a given project. Returns status code 304 if the project is already starred.",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "id",
             "in": "path",
-            "description": "The internal ID of a project's issue",
+            "description": "The ID or URL-encoded path of the project.",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Stars a given project. Returns status code 304 if the project is already starred.",
+            "schema": {
+              "$ref": "#/definitions/StarProject"
+            }
+          },
+          "default": {
+            "description": "bad input parameter",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          }
+        }
+      }
+    },
+    "/projects/{id}/unstar": {
+      "post": {
+        "tags": [
+          "Project"
+        ],
+        "description": "Unstars a given project. Returns status code 304 if the project is not starred.",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The ID or URL-encoded path of the project.",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Stars a given project. Returns status code 304 if the project is already starred.",
+            "schema": {
+              "$ref": "#/definitions/StarProject"
+            }
+          },
+          "default": {
+            "description": "bad input parameter",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          }
+        }
+      }
+    },
+    "/projects/{id}/starrers": {
+      "get": {
+        "tags": [
+          "Project"
+        ],
+        "description": "List the users who starred the specified project.",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The ID or URL-encoded path of the project.",
+            "required": true,
+            "type": "integer"
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "description": "Search for specific users.",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List the users who starred the specified project.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Starrer"
+              }
+            }
+          },
+          "default": {
+            "description": "bad input parameter",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          }
+        }
+      }
+    },
+    "/projects/{id}/languages": {
+      "get": {
+        "tags": [
+          "Project"
+        ],
+        "description": "Get languages used in a project with percentage value.",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The ID or URL-encoded path of the project.",
             "required": true,
             "type": "integer"
           }
         ],
         "responses": {
           "200": {
-            "description": "List metric image",
+            "description": "List the users who starred the specified project.",
+            "schema": {
+              "$ref": "#/definitions/Language"
+            }
+          },
+          "default": {
+            "description": "bad input parameter",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          }
+        }
+      }
+    },
+    "/projects/{id}/archive": {
+      "post": {
+        "tags": [
+          "Project"
+        ],
+        "description": "Archives the project if the user is either an administrator or the owner of this project. This action is idempotent, thus archiving an already archived project does not change the project.",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The ID or URL-encoded path of the project.",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Archives the project if the user is either an administrator or the owner of this project. This action is idempotent, thus archiving an already archived project does not change the project.",
+            "schema": {
+              "$ref": "#/definitions/ArchiveProject"
+            }
+          },
+          "default": {
+            "description": "bad input parameter",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          }
+        }
+      }
+    },
+    "/projects/{id}/unarchive": {
+      "post": {
+        "tags": [
+          "Project"
+        ],
+        "description": "Unarchives the project if the user is either an administrator or the owner of this project. This action is idempotent, thus unarchiving a non-archived project doesn\u2019t change the project.",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The ID or URL-encoded path of the project.",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Unarchives the project if the user is either an administrator or the owner of this project. This action is idempotent, thus unarchiving a non-archived project doesn\u2019t change the project.",
+            "schema": {
+              "$ref": "#/definitions/ArchiveProject"
+            }
+          },
+          "default": {
+            "description": "bad input parameter",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          }
+        }
+      }
+    },
+    "/projects/{id}/restore": {
+      "post": {
+        "tags": [
+          "Project"
+        ],
+        "description": "Restores project marked for deletion.",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The ID or URL-encoded path of the project.",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Restores project marked for deletion.",
+            "schema": {
+              "$ref": "#/definitions/BasicProjectDetails"
+            }
+          },
+          "default": {
+            "description": "bad input parameter",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          }
+        }
+      }
+    },
+    "/projects/{id}/uploads": {
+      "post": {
+        "tags": [
+          "Project"
+        ],
+        "description": "Uploads a file to the specified project to be used in an issue or merge request description, or a comment.",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The ID or URL-encoded path of the project.",
+            "required": true,
+            "type": "integer"
+          },
+          {
+            "name": "file",
+            "in": "formData",
+            "description": "The file to be uploaded.",
+            "required": true,
+            "type": "string",
+            "format": "file"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Restores project marked for deletion.",
+            "schema": {
+              "$ref": "#/definitions/File"
+            }
+          },
+          "default": {
+            "description": "bad input parameter",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          }
+        }
+      }
+    },
+    "/projects/{id}/share": {
+      "post": {
+        "tags": [
+          "Project"
+        ],
+        "description": "Allow to share project with group.",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The ID or URL-encoded path of the project.",
+            "required": true,
+            "type": "integer"
+          },
+          {
+            "name": "expires_at",
+            "in": "query",
+            "description": "Share expiration date in ISO 8601 format: 2016-09-26",
+            "required": false,
+            "type": "string",
+            "format": "date"
+          },
+          {
+            "name": "group_access",
+            "in": "query",
+            "description": "Theaccess levelto grant the group.",
+            "required": true,
+            "type": "integer",
+            "enum": [
+              10,
+              20,
+              30,
+              40,
+              50
+            ]
+          },
+          {
+            "name": "group_id",
+            "in": "query",
+            "description": "The ID of the group to share with.",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Restores project marked for deletion.",
+            "schema": {
+              "$ref": "#/definitions/ProjectGroupLink"
+            }
+          },
+          "default": {
+            "description": "bad input parameter",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          }
+        }
+      }
+    },
+    "/projects/{id}/share/{group_id}": {
+      "delete": {
+        "tags": [
+          "Project"
+        ],
+        "description": "Unshare the project from the group. Returns 204 and no content on success.",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The ID or URL-encoded path of the project.",
+            "required": true,
+            "type": "integer"
+          },
+          {
+            "name": "group_id",
+            "in": "path",
+            "description": "The ID of the group to share with.",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Unshare the project from the group. Returns 204 and no content on success."
+          },
+          "default": {
+            "description": "bad input parameter",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          }
+        }
+      }
+    },
+    "/projects/{id}/hooks": {
+      "get": {
+        "tags": [
+          "Project"
+        ],
+        "description": "Get a list of project hooks.",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The ID or URL-encoded path of the project.",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Get a list of project hooks.",
             "schema": {
               "type": "array",
               "items": {
-                "$ref": "#/definitions/MetricImage"
+                "$ref": "#/definitions/ProjectHook"
               }
             }
           },
@@ -2810,51 +2436,134 @@
       },
       "post": {
         "tags": [
-          "Issue"
+          "Project"
         ],
-        "description": "Upload metric image",
+        "description": "Adds a hook to a specified project.",
         "consumes": [
-          "multipart/form-data"
+          "application/x-www-form-urlencoded"
         ],
         "produces": [
           "application/json"
         ],
         "parameters": [
-
+          {
+            "name": "confidential_issues_events",
+            "in": "query",
+            "description": "Trigger hook on confidential issues events.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "confidential_note_events",
+            "in": "query",
+            "description": "Trigger hook on confidential note events.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "deployment_events",
+            "in": "query",
+            "description": "Trigger hook on deployment events.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "enable_ssl_verification",
+            "in": "query",
+            "description": "Do SSL verification when triggering the hook.",
+            "required": false,
+            "type": "boolean"
+          },
           {
             "name": "id",
             "in": "path",
-            "description": "The ID or URL-encoded path of the project owned by the authenticated user",
+            "description": "The ID orURL-encoded path of the project.",
             "required": true,
             "type": "integer"
           },
           {
-            "name": "issue_iid",
-            "in": "path",
-            "description": "The internal ID of a project's issue",
-            "required": true,
-            "type": "integer"
+            "name": "issues_events",
+            "in": "query",
+            "description": "Trigger hook on issues events.",
+            "required": false,
+            "type": "boolean"
           },
           {
-            "name": "file",
-            "in": "formData",
-            "description": "The image file to be uploaded",
-            "required": true,
-            "type": "file"
+            "name": "job_events",
+            "in": "query",
+            "description": "Trigger hook on job events.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "merge_requests_events",
+            "in": "query",
+            "description": "Trigger hook on merge requests events.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "note_events",
+            "in": "query",
+            "description": "Trigger hook on note events.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "pipeline_events",
+            "in": "query",
+            "description": "Trigger hook on pipeline events.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "push_events_branch_filter",
+            "in": "query",
+            "description": "Trigger hook on push events for matching branches only.",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "push_events",
+            "in": "query",
+            "description": "Trigger hook on push events.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "tag_push_events",
+            "in": "query",
+            "description": "Trigger hook on tag push events.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "token",
+            "in": "query",
+            "description": "Secret token to validate received payloads; this is not returned in the response.",
+            "required": false,
+            "type": "string"
           },
           {
             "name": "url",
             "in": "query",
-            "description": "The URL to view more metric information",
-            "required": false,
+            "description": "The hook URL.",
+            "required": true,
             "type": "string"
+          },
+          {
+            "name": "wiki_page_events",
+            "in": "query",
+            "description": "Trigger hook on wiki events.",
+            "required": false,
+            "type": "boolean"
           }
         ],
         "responses": {
           "201": {
-            "description": "Upload metric image",
+            "description": "Adds a hook to a specified project.",
             "schema": {
-              "$ref": "#/definitions/MetricImage"
+              "$ref": "#/definitions/ProjectHook"
             }
           },
           "default": {
@@ -2863,6 +2572,875 @@
               "$ref": "#/definitions/Error"
             }
           }
+        }
+      }
+    },
+    "/projects/{id}/hooks/{hook_id}": {
+      "get": {
+        "tags": [
+          "Project"
+        ],
+        "description": "Get a specific hook for a project.",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The ID or URL-encoded path of the project.",
+            "required": true,
+            "type": "integer"
+          },
+          {
+            "name": "hook_id",
+            "in": "path",
+            "description": "The ID of a project hook.",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Get a specific hook for a project.",
+            "schema": {
+              "$ref": "#/definitions/ProjectHook"
+            }
+          },
+          "default": {
+            "description": "bad input parameter",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Project"
+        ],
+        "description": "Edits a hook for a specified project",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "confidential_issues_events",
+            "in": "query",
+            "description": "Trigger hook on confidential issues events.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "confidential_note_events",
+            "in": "query",
+            "description": "Trigger hook on confidential note events.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "deployment_events",
+            "in": "query",
+            "description": "Trigger hook on deployment events.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "enable_ssl_verification",
+            "in": "query",
+            "description": "Do SSL verification when triggering the hook.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "hook_id",
+            "in": "path",
+            "description": "The ID of the project hook.",
+            "required": true,
+            "type": "integer"
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The ID orURL-encoded path of the project.",
+            "required": true,
+            "type": "integer"
+          },
+          {
+            "name": "issues_events",
+            "in": "query",
+            "description": "Trigger hook on issues events.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "job_events",
+            "in": "query",
+            "description": "Trigger hook on job events.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "merge_requests_events",
+            "in": "query",
+            "description": "Trigger hook on merge requests events.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "note_events",
+            "in": "query",
+            "description": "Trigger hook on note events.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "pipeline_events",
+            "in": "query",
+            "description": "Trigger hook on pipeline events.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "push_events_branch_filter",
+            "in": "query",
+            "description": "Trigger hook on push events for matching branches only.",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "push_events",
+            "in": "query",
+            "description": "Trigger hook on push events.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "tag_push_events",
+            "in": "query",
+            "description": "Trigger hook on tag push events.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "token",
+            "in": "query",
+            "description": "Secret token to validate received payloads; this is not returned in the response.",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "url",
+            "in": "query",
+            "description": "The hook URL.",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "wiki_events",
+            "in": "query",
+            "description": "Trigger hook on wiki events.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "releases_events",
+            "in": "query",
+            "description": "Trigger hook on release events.",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Edits a hook for a specified project.",
+            "schema": {
+              "$ref": "#/definitions/ProjectHook"
+            }
+          },
+          "default": {
+            "description": "bad input parameter",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Project"
+        ],
+        "description": "Removes a hook from a project. This is an idempotent method and can be called multiple times. Either the hook is available or not.",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "hook_id",
+            "in": "path",
+            "description": "The ID of the project hook.",
+            "required": true,
+            "type": "integer"
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The ID orURL-encoded path of the project.",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Removes a hook from a project",
+            "schema": {
+              "$ref": "#/definitions/ProjectHook"
+            }
+          },
+          "default": {
+            "description": "bad input parameter",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          }
+        }
+      }
+    },
+    "/projects/{id}/housekeeping": {
+      "post": {
+        "tags": [
+          "Project"
+        ],
+        "description": "Start the Housekeeping task for a project",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The ID or URL-encoded path of the project.",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Start the Housekeeping task for a project"
+          },
+          "default": {
+            "description": "bad input parameter",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          }
+        }
+      }
+    },
+    "/projects/{id}/transfer": {
+      "put": {
+        "tags": [
+          "Project"
+        ],
+        "description": "Transfer a project to a new namespace",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The ID or URL-encoded path of the project.",
+            "required": true,
+            "type": "integer"
+          },
+          {
+            "name": "namespace",
+            "in": "query",
+            "description": "The ID or path of the namespace to transfer to project to.",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transfer a project to a new namespace",
+            "schema": {
+              "$ref": "#/definitions/ProjectWithAcess"
+            }
+          },
+          "default": {
+            "description": "bad input parameter",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          }
+        }
+      }
+    },
+    "/projects/{id}/fork/{forked_from_id}": {
+      "post": {
+        "tags": [
+          "Project"
+        ],
+        "description": "Create a forked from/to relation between existing projects",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "forked_from_id",
+            "in": "path",
+            "description": "The ID of the project that was forked from.",
+            "required": true,
+            "type": "integer"
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The ID or URL-encoded path of the project.",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Create a forked from/to relation between existing projects"
+          },
+          "default": {
+            "description": "bad input parameter",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          }
+        }
+      }
+    },
+    "/projects/{id}/snapshot": {
+      "get": {
+        "tags": [
+          "Project"
+        ],
+        "description": "Download snapshot of a Git repository",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The ID or URL-encoded path of the project.",
+            "required": true,
+            "type": "integer"
+          },
+          {
+            "name": "wiki",
+            "in": "query",
+            "description": "Whether to download the wiki, rather than project, repository.",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Download snapshot of a Git repository"
+          },
+          "default": {
+            "description": "bad input parameter",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          }
+        }
+      }
+    },
+    "/users/{user_id}/projects": {
+      "get": {
+        "tags": [
+          "Project"
+        ],
+        "description": "Get a list of visible projects owned by the given user. When accessed without authentication, only public projects are returned.",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "archived",
+            "in": "query",
+            "description": "Limit by archived status",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "id_after",
+            "in": "query",
+            "description": "Limit results to projects with IDs greater than the specified ID.",
+            "required": false,
+            "type": "integer"
+          },
+          {
+            "name": "id_before",
+            "in": "query",
+            "description": "Limit results to projects with IDs less than the specified ID.",
+            "required": false,
+            "type": "integer"
+          },
+          {
+            "name": "membership",
+            "in": "query",
+            "description": "Limit by projects that the current user is a member of.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "min_access_level",
+            "in": "query",
+            "description": "Limit by current user minimal access level.",
+            "required": false,
+            "type": "integer",
+            "enum": [
+              0,
+              10,
+              20,
+              30,
+              40,
+              50
+            ]
+          },
+          {
+            "name": "order_by",
+            "in": "query",
+            "description": "Return projects ordered by field",
+            "required": false,
+            "type": "string",
+            "default": "created_at",
+            "enum": [
+              "id",
+              "name",
+              "path",
+              "created_at",
+              "updated_at",
+              "last_activity_at"
+            ]
+          },
+          {
+            "name": "owned",
+            "in": "query",
+            "description": "Limit by projects explicitly owned by the current user.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "description": "Return list of projects matching the search criteria.",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "simple",
+            "in": "query",
+            "description": "Return only limited fields for each project. This is a no-op without authentication as then only simple fields are returned.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Return projects sorted in asc or desc order. Default is desc",
+            "required": false,
+            "type": "string",
+            "default": "desc",
+            "enum": [
+              "asc",
+              "desc"
+            ]
+          },
+          {
+            "name": "starred",
+            "in": "query",
+            "description": "Limit by projects starred by the current user.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "statistics",
+            "in": "query",
+            "description": "Include project statistics.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "user_id",
+            "in": "path",
+            "description": "The ID or username of the user.",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "visibility",
+            "in": "query",
+            "description": "Limit by visibility",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "public",
+              "internal",
+              "private"
+            ]
+          },
+          {
+            "name": "with_custom_attributes",
+            "in": "query",
+            "description": "Include custom attributes in response. (admins only)",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "with_issues_enabled",
+            "in": "query",
+            "description": "Limit by enabled issues feature.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "with_merge_requests_enabled",
+            "in": "query",
+            "description": "Limit by enabled merge requests feature.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "with_programming_language",
+            "in": "query",
+            "description": "Limit by projects which use the given programming language.",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Get a list of visible projects owned by the given user",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/BasicProjectDetails"
+              }
+            }
+          },
+          "default": {
+            "description": "bad input parameter",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          }
+        }
+      }
+    },
+    "/users/{user_id}/starred_projects": {
+      "get": {
+        "tags": [
+          "Project"
+        ],
+        "description": "Get a list of visible projects owned by the given user. When accessed without authentication, only public projects are returned.",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "archived",
+            "in": "query",
+            "description": "Limit by archived status",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "membership",
+            "in": "query",
+            "description": "Limit by projects that the current user is a member of.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "min_access_level",
+            "in": "query",
+            "description": "Limit by current user minimal access level.",
+            "required": false,
+            "type": "integer",
+            "enum": [
+              0,
+              10,
+              20,
+              30,
+              40,
+              50
+            ]
+          },
+          {
+            "name": "order_by",
+            "in": "query",
+            "description": "Return projects ordered by field",
+            "required": false,
+            "type": "string",
+            "default": "created_at",
+            "enum": [
+              "id",
+              "name",
+              "path",
+              "created_at",
+              "updated_at",
+              "last_activity_at"
+            ]
+          },
+          {
+            "name": "owned",
+            "in": "query",
+            "description": "Limit by projects explicitly owned by the current user.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "description": "Return list of projects matching the search criteria.",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "simple",
+            "in": "query",
+            "description": "Return only limited fields for each project. This is a no-op without authentication as then only simple fields are returned.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Return projects sorted in asc or desc order. Default is desc",
+            "required": false,
+            "type": "string",
+            "default": "desc",
+            "enum": [
+              "asc",
+              "desc"
+            ]
+          },
+          {
+            "name": "starred",
+            "in": "query",
+            "description": "Limit by projects starred by the current user.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "statistics",
+            "in": "query",
+            "description": "Include project statistics.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "user_id",
+            "in": "path",
+            "description": "The ID or username of the user.",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "visibility",
+            "in": "query",
+            "description": "Limit by visibility",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "public",
+              "internal",
+              "private"
+            ]
+          },
+          {
+            "name": "with_custom_attributes",
+            "in": "query",
+            "description": "Include custom attributes in response. (admins only)",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "with_issues_enabled",
+            "in": "query",
+            "description": "Limit by enabled issues feature.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "with_merge_requests_enabled",
+            "in": "query",
+            "description": "Limit by enabled merge requests feature.",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Get a list of visible projects owned by the given user",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/BasicProjectDetails"
+              }
+            }
+          },
+          "default": {
+            "description": "bad input parameter",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          }
+        }
+      }
+    },
+    "/projects/{id}/access_requests": {
+      "get": {
+        "tags": [
+        "Project"
+        ],
+        "description": "Gets a list of access requests viewable by the authenticated user.",
+        "produces": [
+        "application/json"
+        ],
+        "parameters": [
+        {
+            "name": "id",
+            "in": "path",
+            "description": "The ID or URL-encoded path of the project owned by the authenticated user",
+            "required": true,
+            "type": "integer"
+        }
+      ],
+        "responses": {
+          "200": {
+                "description": "Gets a list of access requests viewable by the authenticated user.",
+                "schema": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/definitions/AccessRequests"
+                    }
+                }
+            },
+            "default": {
+                "description": "bad input parameter",
+                "schema": {
+                    "$ref": "#/definitions/Error"
+                }
+            }
+        }
+      },
+      "post": {
+        "tags": [
+        "Project"
+        ],
+        "description": "Requests access for the authenticated user to a group or project.",
+        "produces": [
+        "application/json"
+        ],
+        "parameters": [
+        {
+            "name": "id",
+            "in": "path",
+            "description": "The ID or URL-encoded path of the project owned by the authenticated user",
+            "required": true,
+            "type": "integer"
+        }
+      ],
+        "responses": {
+          "201": {
+                "description": "Requests access for the authenticated user to a group or project.",
+                "schema": {
+                    "type": "object",
+                    "items": {
+                      "$ref": "#/definitions/AccessRequest"
+                    }
+                }
+            },
+            "default": {
+                "description": "bad input parameter",
+                "schema": {
+                    "$ref": "#/definitions/Error"
+                }
+            }
+        }
+      }
+    },
+    "/projects/{id}/access_requests/{user_id}/approve": {
+      "put": {
+        "tags": [
+        "Project"
+        ],
+        "description": "Approves an access request for the given user",
+        "produces": [
+        "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The ID or URL-encoded path of the project owned by the authenticated user",
+            "required": true,
+            "type": "integer"
+          },
+          {
+            "name": "user_id",
+            "in": "path",
+            "description": "The user ID of the access requester",
+            "required": true,
+            "type": "integer"
+          },
+          {
+            "name": "access_level",
+            "in": "query",
+            "description": "A valid access level (defaults: 30, developer access level)",
+            "required": false,
+            "type": "integer",
+            "default": 30
+          }
+      ],
+        "responses": {
+          "200": {
+                "description": "Approves an access request for the given user.",
+                "schema": {
+                    "type": "object",
+                    "items": {
+                      "$ref": "#/definitions/AccessRequest"
+                    }
+                }
+            },
+            "default": {
+                "description": "bad input parameter",
+                "schema": {
+                    "$ref": "#/definitions/Error"
+                }
+            }
         }
       }
     }
@@ -7233,6 +7811,35 @@
           "mode": "100644"
         }
       ]
+    },
+    "AccessRequests": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/AccessRequest"
+      }
+    },
+    "AccessRequest": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "username": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "requested_at": {
+          "type": "string"
+        }
+      }
     }
   }
 }

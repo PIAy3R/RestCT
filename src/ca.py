@@ -1,3 +1,4 @@
+import csv
 import dataclasses
 import json
 import re
@@ -248,6 +249,8 @@ class RuntimeInfoManager:
         self._success_sequence: set = set()
         self._unresolved_params: Set[Tuple[Operation, str]] = set()
 
+        self._op_id: Dict[str, int] = dict()
+
     def essential_executed(self, operations: Tuple[Operation]):
         return operations in self._reused_essential_seq_dict.keys()
 
@@ -351,6 +354,57 @@ class RuntimeInfoManager:
             json.dump(bug_info, fp, cls=RuntimeInfoManager.EnumEncoder)
         return bug_info
 
+    def save_request(self, operation, case, sc, response, data_path):
+        if operation.__repr__() in self._op_id:
+            num = self._op_id.get(operation.__repr__())
+        else:
+            num = len(self._op_id)
+            self._op_id[operation.__repr__()] = len(self._op_id)
+        title = ["Operation", "Timestamp"]
+        for p in operation.parameterList:
+            title.append(p.name)
+        title.append("Status Code")
+        info_to_save = [operation.__repr__(), time.time()]
+
+        for pName in [p.name for p in operation.parameterList]:
+            if pName in case:
+                info_to_save.append(case.get(pName).val)
+            else:
+                info_to_save.append("null")
+
+        info_to_save.append(sc)
+
+        if sc >= 400:
+            self.get_response_string(response, info_to_save)
+
+        folder = Path(data_path) / "requests/"
+        if not folder.exists():
+            folder.mkdir(parents=True)
+        requestFile = folder / "operation_{}.csv".format(str(num))
+
+        if not requestFile.exists():
+            with requestFile.open("a+") as r:
+                writer = csv.writer(r, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+                writer.writerow(title)
+
+        with requestFile.open("a+") as r:
+            writer = csv.writer(r, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+            writer.writerow(info_to_save)
+
+    def get_response_string(self, response, info_to_save):
+        if isinstance(response, dict):
+            for k, v in response.items():
+                if isinstance(v, str):
+                    info_to_save.append(v)
+                elif isinstance(v, dict) or isinstance(v, list):
+                    self.get_response_string(v, info_to_save)
+        elif isinstance(response, list):
+            if len(response) > 0:
+                for l in response:
+                    self.get_response_string(l, info_to_save)
+        elif isinstance(response, str):
+            info_to_save.append(response)
+
     def save_success_seq(self, url_tuple):
         self._success_sequence.add(url_tuple)
 
@@ -414,6 +468,7 @@ class CA:
     def _handle_feedback(self, url_tuple, operation, response_list, chain, ca, is_essential):
         is_success = False
         for index, (sc, response) in enumerate(response_list):
+            self._manager.save_request(operation, ca[index], sc, response, self._data_path)
             self._stat.req_num += 1
             if sc < 300:
                 self._manager.save_reuse(url_tuple, is_essential, ca[index])

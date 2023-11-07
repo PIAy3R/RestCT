@@ -16,7 +16,7 @@ from loguru import logger
 from src.Dto.constraint import Constraint, Processor
 from src.Dto.keywords import Loc, DataType, Method
 from src.Dto.operation import Operation
-from src.Dto.parameter import AbstractParam, ValueType, Value, ObjectParam
+from src.Dto.parameter import AbstractParam, ValueType, Value, ObjectParam, NumberParam, StringParam, EnumParam
 
 
 def _saveChain(responseChains: List[dict], chain: dict, opStr: str, response):
@@ -365,21 +365,21 @@ class RuntimeInfoManager:
         for p in operation.parameterList:
             if isinstance(p, ObjectParam):
                 for obp in p.seeAllParameters():
-                    title.append(obp.getGlobalName())
-                    allParams.append(obp.getGlobalName())
+                    title.append(obp)
+                    allParams.append(obp)
             else:
-                title.append(p.getGlobalName())
-                allParams.append(p.getGlobalName())
+                title.append(p)
+                allParams.append(p)
         title.append("Status Code")
         for m in ["m1", "m2", "m3", "m4", "m5"]:
             title.append(str(m))
 
         info_to_save = [operation.__repr__(), time.localtime()]
 
-        for pName in allParams:
-            if pName in case:
-                if case.get(pName).val is not None:
-                    info_to_save.append(case.get(pName).val)
+        for p in allParams:
+            if p.getGlobalName() in case:
+                if case.get(p.getGlobalName()).val is not None:
+                    info_to_save.append(self.get_partition(p, case.get(p.getGlobalName()).val))
                 else:
                     info_to_save.append("null")
             else:
@@ -405,6 +405,22 @@ class RuntimeInfoManager:
         with requestFile.open("a+") as r:
             writer = csv.writer(r, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
             writer.writerow(info_to_save)
+
+    def get_partition(self, param, value):
+        try:
+            if isinstance(param, NumberParam):
+                if value > 0:
+                    return ">0"
+                elif value <= 0:
+                    return "<=0"
+            elif isinstance(param, StringParam):
+                return "not null"
+            elif isinstance(param, EnumParam):
+                return value
+            else:
+                return value
+        except TypeError:
+            return "unexpected value"
 
     def get_response_string(self, response, info_to_save):
         if isinstance(response, dict):

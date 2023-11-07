@@ -16,7 +16,7 @@ from loguru import logger
 from src.Dto.constraint import Constraint, Processor
 from src.Dto.keywords import Loc, DataType, Method
 from src.Dto.operation import Operation
-from src.Dto.parameter import AbstractParam, ValueType, Value
+from src.Dto.parameter import AbstractParam, ValueType, Value, ObjectParam
 
 
 def _saveChain(responseChains: List[dict], chain: dict, opStr: str, response):
@@ -361,14 +361,27 @@ class RuntimeInfoManager:
             num = len(self._op_id)
             self._op_id[operation.__repr__()] = len(self._op_id)
         title = ["Operation", "Timestamp"]
+        allParams = []
         for p in operation.parameterList:
-            title.append(p.name)
+            if isinstance(p, ObjectParam):
+                for obp in p.seeAllParameters():
+                    title.append(obp.getGlobalName())
+                    allParams.append(obp.getGlobalName())
+            else:
+                title.append(p.getGlobalName())
+                allParams.append(p.getGlobalName())
         title.append("Status Code")
-        info_to_save = [operation.__repr__(), time.time()]
+        for m in ["m1", "m2", "m3", "m4", "m5"]:
+            title.append(str(m))
 
-        for pName in [p.name for p in operation.parameterList]:
+        info_to_save = [operation.__repr__(), time.localtime()]
+
+        for pName in allParams:
             if pName in case:
-                info_to_save.append(case.get(pName).val)
+                if case.get(pName).val is not None:
+                    info_to_save.append(case.get(pName).val)
+                else:
+                    info_to_save.append("null")
             else:
                 info_to_save.append("null")
 
@@ -376,6 +389,8 @@ class RuntimeInfoManager:
 
         if sc >= 400:
             self.get_response_string(response, info_to_save)
+        else:
+            info_to_save.append("null")
 
         folder = Path(data_path) / "requests/"
         if not folder.exists():

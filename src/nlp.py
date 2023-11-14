@@ -138,6 +138,61 @@ class RestctValueComponent:
         return [ent for ent in doc.ents if ent.label_ == "VALUE"]
 
 
+@Language.factory("parse_txt")
+class RestctJsonComponent:
+    def __init__(self, nlp, name, text: str, extra_noun):
+        self.nlp = nlp
+
+        self._text = text
+        self._extra_noun = extra_noun
+
+    def __call__(self, doc: Doc):
+
+
+def parse_json(response, param_names: Dict[str, str], extra_noun: str = None) -> Dict[str, str]:
+    dict_to_return = {}
+    if isinstance(response, dict):
+        for k, v in response.items():
+            if isinstance(v, str):
+                if k in param_names:
+                    dict_to_return.update({v: k})
+                elif extra_noun is not None:
+                    dict_to_return.update({v: extra_noun})
+                else:
+                    dict_to_return.update({v: None})
+            elif isinstance(v, dict) or isinstance(v, list):
+                if k in param_names:
+                    dict_to_return.update(parse_json(v, param_names, k))
+                elif extra_noun is not None:
+                    dict_to_return.update(parse_json(v, param_names, extra_noun))
+                else:
+                    dict_to_return.update(parse_json(v, param_names))
+    elif isinstance(response, list):
+        if len(response) > 0:
+            if extra_noun is not None:
+                for l in response:
+                    dict_to_return.update(parse_json(l,param_names,extra_noun))
+            else:
+                for l in response:
+                    dict_to_return.update(parse_json(l,param_names,None))
+    elif isinstance(response, str):
+        info_to_save.append(response)
+
+    def get_response_string(self, response, info_to_save):
+        if isinstance(response, dict):
+            for k, v in response.items():
+                if isinstance(v, str):
+                    info_to_save.append(v)
+                elif isinstance(v, dict) or isinstance(v, list):
+                    self.get_response_string(v, info_to_save)
+        elif isinstance(response, list):
+            if len(response) > 0:
+                for l in response:
+                    self.get_response_string(l, info_to_save)
+        elif isinstance(response, str):
+            info_to_save.append(response)
+
+
 if __name__ == "__main__":
     nlp = spacy.load("en_core_web_sm")
 

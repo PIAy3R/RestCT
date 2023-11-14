@@ -22,7 +22,7 @@ class AbstractParam(metaclass=abc.ABCMeta):
         self.required = True
         self.parent: AbstractParam = None
 
-        # 参数值等价类 ((generator, args tuple), (discriminator, args tuple))
+        # 参数值等价类
         self.value_equivalence: List[Equivalence] = []
         # 当前选择的是第几个等价类
         self._index = -1
@@ -114,3 +114,71 @@ class ComparableParam(AbstractParam):
         if self._value is not None and o._value is not None:
             return self._value >= o._value
         raise ValueError(f"{self.global_name}.value or {o.global_name}.value is None")
+
+
+class EnumParam(AbstractParam):
+    """
+    EnumParam is a parameter that can only take one of a set of values.
+    """
+
+    def __init__(self, name: str, enum_value: list):
+        super().__init__(name)
+        self._enums = enum_value
+
+    def init_equivalence(self):
+        super().init_equivalence()
+
+        if self._enums is None or len(self._enums) == 0:
+            raise ValueError(f"{self.global_name}.enums is empty")
+
+        for index in range(len(self._enums)):
+            self.value_equivalence.append(Equivalence(self._value_enum, self._is_value_enum, (index,), (index,)))
+
+    def _value_enum(self, index):
+        return self._enums[index]
+
+    def _is_value_enum(self, index, value):
+        return self._enums[index] == value
+
+
+class DynamicParam(AbstractParam):
+    """
+    Dynamic parameter is a parameter that bind with another parameter.
+    """
+
+    def __init__(self, name: str, target_op_id: str, target_global_name: str):
+        super().__init__(name)
+        self._target_op_id = target_op_id
+        self._target_global_name = target_global_name
+
+        self._dynamic_value = None
+
+    def init_equivalence(self):
+        super().init_equivalence()
+
+        if self._dynamic_value is not None:
+            self.value_equivalence.append(Equivalence(self._dynamic_value, self._is_dynamic_value))
+
+    def _value_dynamic(self):
+        if self._dynamic_value is None:
+            raise ValueError(f"{self.global_name}.dynamic_value is None")
+        return self._dynamic_value
+
+    def _is_value_dynamic(self, v):
+        return self._dynamic_value == v
+
+    def set_dynamic_value(self, response_chain: dict):
+        if self._target_op_id not in response_chain.keys():
+            raise ValueError(f"{self.global_name}.target_op_id({self._target_op_id}) not in response_chain")
+        response = response_chain.get(self._target_op_id)
+
+        if isinstance(response, list):
+            if len(response) == 0:
+                raise ValueError(f"{self.global_name}.target_op_id({self._target_op_id}) response is empty")
+            if len(response) > 1:
+                response = response[0]
+
+        if self._target_global_name in response.keys():
+            self._dynamic_value = response.get(self._target_global_name)
+        else:
+            raise ValueError(f"{self.global_name}.target_global_name({self._target_global_name}) not in response")

@@ -1,5 +1,14 @@
 import abc
-from typing import List
+import dataclasses
+from typing import List, Any
+
+
+@dataclasses.dataclass(frozen=True)
+class Equivalence:
+    generate: Any[staticmethod, classmethod]
+    check: Any[staticmethod, classmethod]
+    g_args: tuple = ()
+    c_args: tuple = ()
 
 
 class AbstractParam(metaclass=abc.ABCMeta):
@@ -13,9 +22,24 @@ class AbstractParam(metaclass=abc.ABCMeta):
         self.required = True
         self.parent: AbstractParam = None
 
-        self.value_generators: List[AbstractValueGenerator] = None
+        # 参数值等价类 ((generator, args tuple), (discriminator, args tuple))
+        self.value_equivalence: List[Equivalence] = []
+        # 当前选择的是第几个等价类
+        self._index = -1
+        # 当前等价类生成的值
         self._value = None
-        self._generator_index = -1
+
+    def init_equivalence(self):
+        if not self.required:
+            self.value_equivalence.append(Equivalence(self._value_null, self._is_value_null))
+
+    @staticmethod
+    def _value_null():
+        return "__null__"
+
+    @staticmethod
+    def _is_value_null(v):
+        return v == "__null__"
 
     @property
     def description(self):
@@ -28,22 +52,6 @@ class AbstractParam(metaclass=abc.ABCMeta):
             raise ValueError("Description cannot be empty")
         self._description = text
 
-    @property
-    def value(self):
-        return self._value
-
-    @value.setter
-    def value(self, value):
-        self._value = value
-
-    @property
-    def generator_index(self):
-        return self._generator_index
-
-    @generator_index.setter
-    def generator_index(self, index):
-        self._generator_index = index
-
     def flat_view(self) -> tuple:
         return self,
 
@@ -54,27 +62,55 @@ class AbstractParam(metaclass=abc.ABCMeta):
         else:
             return self.name
 
+    @property
     def printable_value(self):
-        if self._value is None or self._generator_index == -1:
+        if self._value is None or self._index == -1:
             raise ValueError(f"{self.global_name} has not been assigned yet")
-
-        return self.value
-
-
-class AbstractValueGenerator(metaclass=abc.ABCMeta):
-    def __init__(self):
-        self.unique = True
-
-    @abc.abstractmethod
-    def generate(self): pass
-
-    @abc.abstractmethod
-    def has_instance(self, value) -> bool: pass
+        return self._value
 
 
-class NullGenerator(AbstractValueGenerator):
-    def generate(self):
-        return "__null__"
+class ComparableParam(AbstractParam):
+    def __init__(self, name: str):
+        super().__init__(name)
 
-    def has_instance(self, value) -> bool:
-        return value == "__null__"
+    def __eq__(self, o: object) -> bool:
+        if not isinstance(o, self.__class__):
+            raise TypeError(f"{self.__class__} cannot be compared to {o.__class__}")
+        if self._value is not None and o._value is not None:
+            return self._value == o._value
+        raise ValueError(f"{self.global_name}.value or {o.global_name}.value is None")
+
+    def __ne__(self, o: object) -> bool:
+        if not isinstance(o, self.__class__):
+            raise TypeError(f"{self.__class__} cannot be compared to {o.__class__}")
+        if self._value is not None and o._value is not None:
+            return self._value != o._value
+        raise ValueError(f"{self.global_name}.value or {o.global_name}.value is None")
+
+    def __lt__(self, o: object) -> bool:
+        if not isinstance(o, self.__class__):
+            raise TypeError(f"{self.__class__} cannot be compared to {o.__class__}")
+        if self._value is not None and o._value is not None:
+            return self._value < o._value
+        raise ValueError(f"{self.global_name}.value or {o.global_name}.value is None")
+
+    def __le__(self, o: object) -> bool:
+        if not isinstance(o, self.__class__):
+            raise TypeError(f"{self.__class__} cannot be compared to {o.__class__}")
+        if self._value is not None and o._value is not None:
+            return self._value <= o._value
+        raise ValueError(f"{self.global_name}.value or {o.global_name}.value is None")
+
+    def __gt__(self, o: object) -> bool:
+        if not isinstance(o, self.__class__):
+            raise TypeError(f"{self.__class__} cannot be compared to {o.__class__}")
+        if self._value is not None and o._value is not None:
+            return self._value > o._value
+        raise ValueError(f"{self.global_name}.value or {o.global_name}.value is None")
+
+    def __ge__(self, o: object) -> bool:
+        if not isinstance(o, self.__class__):
+            raise TypeError(f"{self.__class__} cannot be compared to {o.__class__}")
+        if self._value is not None and o._value is not None:
+            return self._value >= o._value
+        raise ValueError(f"{self.global_name}.value or {o.global_name}.value is None")

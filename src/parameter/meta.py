@@ -1,12 +1,12 @@
 import abc
 import dataclasses
-from typing import List, Any
+from typing import List, Callable
 
 
 @dataclasses.dataclass(frozen=True)
 class Equivalence:
-    generate: Any[staticmethod, classmethod]
-    check: Any[staticmethod, classmethod]
+    generate: Callable
+    check: Callable
     g_args: tuple = ()
     c_args: tuple = ()
 

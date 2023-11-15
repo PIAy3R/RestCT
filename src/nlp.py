@@ -138,28 +138,17 @@ class RestctValueComponent:
         return [ent for ent in doc.ents if ent.label_ == "VALUE"]
 
 
-@Language.factory("parse_txt")
-class RestctJsonComponent:
-    def __init__(self, nlp, name, text: str, extra_noun):
-        self.nlp = nlp
-
-        self._text = text
-        self._extra_noun = extra_noun
-
-    def __call__(self, doc: Doc):
-
-
 def parse_json(response, param_names: Dict[str, str], extra_noun: str = None) -> Dict[str, str]:
     dict_to_return = {}
     if isinstance(response, dict):
         for k, v in response.items():
             if isinstance(v, str):
                 if k in param_names:
-                    dict_to_return.update({v: k})
+                    dict_to_return.update({k: v})
                 elif extra_noun is not None:
-                    dict_to_return.update({v: extra_noun})
+                    dict_to_return.update({extra_noun: v})
                 else:
-                    dict_to_return.update({v: None})
+                    dict_to_return.update({"null": v})
             elif isinstance(v, dict) or isinstance(v, list):
                 if k in param_names:
                     dict_to_return.update(parse_json(v, param_names, k))
@@ -171,53 +160,51 @@ def parse_json(response, param_names: Dict[str, str], extra_noun: str = None) ->
         if len(response) > 0:
             if extra_noun is not None:
                 for l in response:
-                    dict_to_return.update(parse_json(l,param_names,extra_noun))
+                    dict_to_return.update(parse_json(l, param_names, extra_noun))
             else:
                 for l in response:
-                    dict_to_return.update(parse_json(l,param_names,None))
+                    dict_to_return.update(parse_json(l, param_names, None))
     elif isinstance(response, str):
-        info_to_save.append(response)
-
-    def get_response_string(self, response, info_to_save):
-        if isinstance(response, dict):
-            for k, v in response.items():
-                if isinstance(v, str):
-                    info_to_save.append(v)
-                elif isinstance(v, dict) or isinstance(v, list):
-                    self.get_response_string(v, info_to_save)
-        elif isinstance(response, list):
-            if len(response) > 0:
-                for l in response:
-                    self.get_response_string(l, info_to_save)
-        elif isinstance(response, str):
-            info_to_save.append(response)
+        dict_to_return.update({extra_noun: response})
+    return dict_to_return
 
 
 if __name__ == "__main__":
-    nlp = spacy.load("en_core_web_sm")
-
-    param_names_dict = {"param1": "1param1", "param2": "1param2"}
-    value = {"1param1": tuple(["www"]), "1param2": tuple(["wer"])}
-
-    nlp.add_pipe("restct_param", None, config={"op_id": "test", "param_names": param_names_dict})
-    nlp.add_pipe("restct_value", None,
-                 config={"op_id": "test", "param_names": param_names_dict, "available_values": value})
-
-    # 处理文本，生成 Doc 对象
-    text1 = "This is an example text with param1 and param2."
-    text2 = "param1 is www"
-    doc = nlp(text2)
-
-    # 访问文档级别的自定义属性
-    param_count = doc._.count_parameters
-    value_count = doc._.count_values
-    print(f"Number of parameters: {param_count}")
-    print(f"Number of values: {value_count}")
-
-    # 遍历文档中的实体，打印参数信息
-    for ent in doc.ents:
-        if ent.label_ == "PARAMETER":
-            print(
-                f"Parameter: {ent.text}, Global Name: {ent._.global_name}, Prefix: {ent._.prefix_string}, Suffix: {ent._.suffix_string}")
-        if ent.label_ == "VALUE":
-            print(f"Value: {ent.text}, Global Name: {ent._.global_name}, Prefix: {ent._.prefix_string}, Suffix: {ent._.suffix_string}")
+    # nlp = spacy.load("en_core_web_sm")
+    #
+    # param_names_dict = {"param1": "1param1", "param2": "1param2"}
+    # value = {"1param1": tuple(["www"]), "1param2": tuple(["wer"])}
+    #
+    # nlp.add_pipe("restct_param", None, config={"op_id": "test", "param_names": param_names_dict})
+    # nlp.add_pipe("restct_value", None,
+    #              config={"op_id": "test", "param_names": param_names_dict, "available_values": value})
+    #
+    # # 处理文本，生成 Doc 对象
+    # text1 = "This is an example text with param1 and param2."
+    # text2 = "param1 is www"
+    # doc = nlp(text2)
+    #
+    # # 访问文档级别的自定义属性
+    # param_count = doc._.count_parameters
+    # value_count = doc._.count_values
+    # print(f"Number of parameters: {param_count}")
+    # print(f"Number of values: {value_count}")
+    #
+    # # 遍历文档中的实体，打印参数信息
+    # for ent in doc.ents:
+    #     if ent.label_ == "PARAMETER":
+    #         print(
+    #             f"Parameter: {ent.text}, Global Name: {ent._.global_name}, Prefix: {ent._.prefix_string}, Suffix: {ent._.suffix_string}")
+    #     if ent.label_ == "VALUE":
+    #         print(f"Value: {ent.text}, Global Name: {ent._.global_name}, Prefix: {ent._.prefix_string}, Suffix: {ent._.suffix_string}")
+    response = {
+        "message": {
+            "template_name": [
+                "'wadf2qaa' is unknown or invalid"
+            ],
+            "limit_reached": []
+        }
+    }
+    param_name = {"name": "name1", "path": "path1", "template_name": "template_name1"}
+    t = parse_json(response, param_name)
+    print(t)

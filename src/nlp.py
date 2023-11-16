@@ -142,20 +142,12 @@ def parse_json(response, param_names: Dict[str, str], extra_noun: str = None) ->
     dict_to_return = {}
     if isinstance(response, dict):
         for k, v in response.items():
-            if isinstance(v, str):
-                if k in param_names:
-                    dict_to_return.update({k: v})
-                elif extra_noun is not None:
-                    dict_to_return.update({extra_noun: v})
-                else:
-                    dict_to_return.update({"null": v})
-            elif isinstance(v, dict) or isinstance(v, list):
-                if k in param_names:
-                    dict_to_return.update(parse_json(v, param_names, k))
-                elif extra_noun is not None:
-                    dict_to_return.update(parse_json(v, param_names, extra_noun))
-                else:
-                    dict_to_return.update(parse_json(v, param_names))
+            if k in param_names:
+                dict_to_return.update(parse_json(v, param_names, k))
+            elif extra_noun is not None:
+                dict_to_return.update(parse_json(v, param_names, extra_noun))
+            else:
+                dict_to_return.update(parse_json(v, param_names))
     elif isinstance(response, list):
         if len(response) > 0:
             if extra_noun is not None:
@@ -163,25 +155,48 @@ def parse_json(response, param_names: Dict[str, str], extra_noun: str = None) ->
                     dict_to_return.update(parse_json(l, param_names, extra_noun))
             else:
                 for l in response:
-                    dict_to_return.update(parse_json(l, param_names, None))
+                    dict_to_return.update(parse_json(l, param_names))
     elif isinstance(response, str):
         dict_to_return.update({extra_noun: response})
     return dict_to_return
 
 
-def parse_text(text, extra_noun):
-    pass
+def parse_text(nlp, text, extra_noun):
+    valid_sentence = []
+    doc = nlp(text)
+    for sentence in doc.sents:
+        missing_subject, missing_object = is_complate(sentence)
+        if missing_subject:
+            new_text = f"{extra_noun} {text}"
+        else:
+            new_text = text
+        sent_doc = nlp(new_text)
+        if len(sent_doc.ents) > 0:
+            valid_sentence.append(sent_doc)
+    return valid_sentence
+
+
+def is_complate(sentence):
+    missing_subject = True
+    missing_object = True
+    for token in sentence:
+        if token.dep_ == "nsubj" and token.head.dep_ == "ROOT":
+            missing_subject = False
+        if token.dep_ == "dobj" and token.head.dep_ == "ROOT":
+            missing_object = False
+    return missing_subject, missing_object
 
 
 if __name__ == "__main__":
-    # nlp = spacy.load("en_core_web_sm")
-    #
-    # param_names_dict = {"param1": "1param1", "param2": "1param2"}
-    # value = {"1param1": tuple(["www"]), "1param2": tuple(["wer"])}
-    #
-    # nlp.add_pipe("restct_param", None, config={"op_id": "test", "param_names": param_names_dict})
-    # nlp.add_pipe("restct_value", None,
-    #              config={"op_id": "test", "param_names": param_names_dict, "available_values": value})
+    nlp = spacy.load("en_core_web_sm")
+
+    param_names_dict = {"param1": "1param1", "param2": "1param2", "template_name": "template_name1", "name": "name1",
+                        "path": "path1"}
+    value = {"1param1": tuple(["www"]), "1param2": tuple(["wer"]), "template_name": tuple(["wadf2qaa"])}
+
+    nlp.add_pipe("restct_param", None, config={"op_id": "test", "param_names": param_names_dict})
+    nlp.add_pipe("restct_value", None,
+                 config={"op_id": "test", "param_names": param_names_dict, "available_values": value})
     #
     # # 处理文本，生成 Doc 对象
     # text1 = "This is an example text with param1 and param2."
@@ -201,41 +216,47 @@ if __name__ == "__main__":
     #             f"Parameter: {ent.text}, Global Name: {ent._.global_name}, Prefix: {ent._.prefix_string}, Suffix: {ent._.suffix_string}")
     #     if ent.label_ == "VALUE":
     #         print(f"Value: {ent.text}, Global Name: {ent._.global_name}, Prefix: {ent._.prefix_string}, Suffix: {ent._.suffix_string}")
-    # response = {
-    #     "message": {
-    #         "template_name": [
-    #             "'wadf2qaa' is unknown or invalid"
-    #         ],
-    #         "limit_reached": []
-    #     }
-    # }
-    # param_name = {"name": "name1", "path": "path1", "template_name": "template_name1"}
-    # t = parse_json(response, param_name)
-    # print(t)
-    nlp = spacy.load("en_core_web_sm")
-
-    # 添加 sentencizer 组件到管道
-    nlp.add_pipe("sentencizer")
-    param_names_dict = {"param1": "1param1", "param2": "1param2"}
-    value = {"1param1": tuple(["www"]), "1param2": tuple(["wer"])}
-
-    nlp.add_pipe("restct_param", None, config={"op_id": "test", "param_names": param_names_dict})
-    nlp.add_pipe("restct_value", None,
-                 config={"op_id": "test", "param_names": param_names_dict, "available_values": value})
-
-    # 处理文本
-    text = "This is an example text with param1 and param2. param1 is www"
-
-    # 将文本传递给 spaCy 处理
-    doc = nlp(text)
-
-    # 遍历文档中的句子
-    for i, sentence in enumerate(doc.sents):
-        print(f"Sentence {i + 1}: {sentence.text}")
-    for ent in doc.ents:
-        if ent.label_ == "PARAMETER":
-            print(
-                f"Parameter: {ent.text}, Global Name: {ent._.global_name}, Prefix: {ent._.prefix_string}, Suffix: {ent._.suffix_string}")
-        if ent.label_ == "VALUE":
-            print(
-                f"Value: {ent.text}, Global Name: {ent._.global_name}, Prefix: {ent._.prefix_string}, Suffix: {ent._.suffix_string}")
+    response = {
+        "message": {
+            "name": [
+                "has already been taken"
+            ],
+            "path": [
+                "has already been taken"
+            ],
+            "limit_reached": []
+        }
+    }
+    param_name = {"name": "name1", "path": "path1", "template_name": "template_name1"}
+    t = parse_json(response, param_name)
+    print(t)
+    for v, te in t.items():
+        x = parse_text(nlp, te, v)
+        print(x)
+    # nlp = spacy.load("en_core_web_sm")
+    #
+    # # 添加 sentencizer 组件到管道
+    # nlp.add_pipe("sentencizer")
+    # param_names_dict = {"param1": "1param1", "param2": "1param2"}
+    # value = {"1param1": tuple(["www"]), "1param2": tuple(["wer"])}
+    #
+    # nlp.add_pipe("restct_param", None, config={"op_id": "test", "param_names": param_names_dict})
+    # nlp.add_pipe("restct_value", None,
+    #              config={"op_id": "test", "param_names": param_names_dict, "available_values": value})
+    #
+    # # 处理文本
+    # text = "This is an example text with param1 and param2. param1 is www"
+    #
+    # # 将文本传递给 spaCy 处理
+    # doc = nlp(text)
+    #
+    # # 遍历文档中的句子
+    # for i, sentence in enumerate(doc.sents):
+    #     print(f"Sentence {i + 1}: {sentence.text}")
+    # for ent in doc.ents:
+    #     if ent.label_ == "PARAMETER":
+    #         print(
+    #             f"Parameter: {ent.text}, Global Name: {ent._.global_name}, Prefix: {ent._.prefix_string}, Suffix: {ent._.suffix_string}")
+    #     if ent.label_ == "VALUE":
+    #         print(
+    #             f"Value: {ent.text}, Global Name: {ent._.global_name}, Prefix: {ent._.prefix_string}, Suffix: {ent._.suffix_string}")

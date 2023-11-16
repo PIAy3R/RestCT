@@ -95,7 +95,7 @@ class RestctValueComponent:
             entity = Span(doc, start, end, label=self.name)
             value_token = doc[start:end][0]
             value_ancestor_list = [a.i for a in list(value_token.ancestors)]
-            entity._.value = value
+            entity._.value = value_token.text
             entity._.prefix_string = doc[:start].text
             entity._.suffix_string = doc[end:].text
 
@@ -169,6 +169,10 @@ def parse_json(response, param_names: Dict[str, str], extra_noun: str = None) ->
     return dict_to_return
 
 
+def parse_text(text, extra_noun):
+    pass
+
+
 if __name__ == "__main__":
     # nlp = spacy.load("en_core_web_sm")
     #
@@ -197,14 +201,41 @@ if __name__ == "__main__":
     #             f"Parameter: {ent.text}, Global Name: {ent._.global_name}, Prefix: {ent._.prefix_string}, Suffix: {ent._.suffix_string}")
     #     if ent.label_ == "VALUE":
     #         print(f"Value: {ent.text}, Global Name: {ent._.global_name}, Prefix: {ent._.prefix_string}, Suffix: {ent._.suffix_string}")
-    response = {
-        "message": {
-            "template_name": [
-                "'wadf2qaa' is unknown or invalid"
-            ],
-            "limit_reached": []
-        }
-    }
-    param_name = {"name": "name1", "path": "path1", "template_name": "template_name1"}
-    t = parse_json(response, param_name)
-    print(t)
+    # response = {
+    #     "message": {
+    #         "template_name": [
+    #             "'wadf2qaa' is unknown or invalid"
+    #         ],
+    #         "limit_reached": []
+    #     }
+    # }
+    # param_name = {"name": "name1", "path": "path1", "template_name": "template_name1"}
+    # t = parse_json(response, param_name)
+    # print(t)
+    nlp = spacy.load("en_core_web_sm")
+
+    # 添加 sentencizer 组件到管道
+    nlp.add_pipe("sentencizer")
+    param_names_dict = {"param1": "1param1", "param2": "1param2"}
+    value = {"1param1": tuple(["www"]), "1param2": tuple(["wer"])}
+
+    nlp.add_pipe("restct_param", None, config={"op_id": "test", "param_names": param_names_dict})
+    nlp.add_pipe("restct_value", None,
+                 config={"op_id": "test", "param_names": param_names_dict, "available_values": value})
+
+    # 处理文本
+    text = "This is an example text with param1 and param2. param1 is www"
+
+    # 将文本传递给 spaCy 处理
+    doc = nlp(text)
+
+    # 遍历文档中的句子
+    for i, sentence in enumerate(doc.sents):
+        print(f"Sentence {i + 1}: {sentence.text}")
+    for ent in doc.ents:
+        if ent.label_ == "PARAMETER":
+            print(
+                f"Parameter: {ent.text}, Global Name: {ent._.global_name}, Prefix: {ent._.prefix_string}, Suffix: {ent._.suffix_string}")
+        if ent.label_ == "VALUE":
+            print(
+                f"Value: {ent.text}, Global Name: {ent._.global_name}, Prefix: {ent._.prefix_string}, Suffix: {ent._.suffix_string}")

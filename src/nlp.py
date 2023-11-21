@@ -93,9 +93,14 @@ class RestctValueComponent:
         spans = []
         for _, start, end in matches:
             entity = Span(doc, start, end, label=self.name)
-            value_token = doc[start:end][0]
-            value_ancestor_list = [a.i for a in list(value_token.ancestors)]
-            entity._.value = value_token.text
+            value_ancestor_set = set()
+            value_token_list = doc[start:end]
+            for value_token in value_token_list:
+                for a in list(value_token.ancestors):
+                    value_ancestor_set.add(a.i)
+                if value_token.i in value_ancestor_set:
+                    value_ancestor_set.remove(value_token.i)
+            entity._.value = entity.text
             entity._.prefix_string = doc[:start].text
             entity._.suffix_string = doc[end:].text
 
@@ -113,18 +118,28 @@ class RestctValueComponent:
 
             if doc._.count_parameters == 1:
                 param_ent = doc._.get_parameters[0]
-                param_token = doc[param_ent.start:param_ent.end][0]
-                param_ancestor_list = [a.i for a in list(param_token.ancestors)]
-                if param_ancestor_list == value_ancestor_list:
+                param_ancestor_set = set()
+                param_token_list = doc[param_ent.start:param_ent.end]
+                for param_token in param_token_list:
+                    for a in param_token.ancestors:
+                        param_ancestor_set.add(a.i)
+                        if param_token.i in param_ancestor_set:
+                            param_ancestor_set.remove(param_token.i)
+                if all(p in value_ancestor_set for p in param_ancestor_set):
                     entity._.global_name = self._param_names[param_ent.text]
                 spans.append(entity)
 
             # handle multiple params and values
             if doc._.count_parameters > 1:
                 for param_ent in doc._.get_parameters:
-                    param_token = doc[param_ent.start:param_ent.end][0]
-                    param_ancestor_list = [a.i for a in list(param_token.ancestors)]
-                    if param_ancestor_list == value_ancestor_list:
+                    param_ancestor_set = set()
+                    param_token_list = doc[param_ent.start:param_ent.end]
+                    for param_token in param_token_list:
+                        for a in param_token.ancestors:
+                            param_ancestor_set.add(a.i)
+                            if param_token.i in param_ancestor_set:
+                                param_ancestor_set.remove(param_token.i)
+                    if all(p in value_ancestor_set for p in param_ancestor_set):
                         entity._.global_name = self._param_names[param_ent.text]
                 spans.append(entity)
 
@@ -190,73 +205,22 @@ def is_complate(sentence):
 if __name__ == "__main__":
     nlp = spacy.load("en_core_web_sm")
 
-    param_names_dict = {"param1": "1param1", "param2": "1param2", "template_name": "template_name1", "name": "name1",
-                        "path": "path1"}
-    value = {"1param1": tuple(["www"]), "1param2": tuple(["wer"]), "template_name": tuple(["wadf2qaa"])}
+    param_names_dict = {"language": "language", "param1": "param1","param2": "param2"}
+    value = {"language": tuple(["en-US", "de-DE", "fr", "auto"]), "param1": tuple(["test1"]), "param2": tuple(["test1"])}
 
     nlp.add_pipe("restct_param", None, config={"op_id": "test", "param_names": param_names_dict})
     nlp.add_pipe("restct_value", None,
                  config={"op_id": "test", "param_names": param_names_dict, "available_values": value})
-    #
-    # # 处理文本，生成 Doc 对象
-    # text1 = "This is an example text with param1 and param2."
-    # text2 = "param1 is www"
-    # doc = nlp(text2)
-    #
-    # # 访问文档级别的自定义属性
-    # param_count = doc._.count_parameters
-    # value_count = doc._.count_values
-    # print(f"Number of parameters: {param_count}")
-    # print(f"Number of values: {value_count}")
-    #
-    # # 遍历文档中的实体，打印参数信息
-    # for ent in doc.ents:
-    #     if ent.label_ == "PARAMETER":
-    #         print(
-    #             f"Parameter: {ent.text}, Global Name: {ent._.global_name}, Prefix: {ent._.prefix_string}, Suffix: {ent._.suffix_string}")
-    #     if ent.label_ == "VALUE":
-    #         print(f"Value: {ent.text}, Global Name: {ent._.global_name}, Prefix: {ent._.prefix_string}, Suffix: {ent._.suffix_string}")
-    response = {
-        "message": {
-            "name": [
-                "has already been taken"
-            ],
-            "path": [
-                "has already been taken"
-            ],
-            "limit_reached": []
-        }
-    }
-    param_name = {"name": "name1", "path": "path1", "template_name": "template_name1"}
-    t = parse_json(response, param_name)
-    print(t)
-    for v, te in t.items():
-        x = parse_text(nlp, te, v)
-        print(x)
-    # nlp = spacy.load("en_core_web_sm")
-    #
-    # # 添加 sentencizer 组件到管道
-    # nlp.add_pipe("sentencizer")
-    # param_names_dict = {"param1": "1param1", "param2": "1param2"}
-    # value = {"1param1": tuple(["www"]), "1param2": tuple(["wer"])}
-    #
-    # nlp.add_pipe("restct_param", None, config={"op_id": "test", "param_names": param_names_dict})
-    # nlp.add_pipe("restct_value", None,
-    #              config={"op_id": "test", "param_names": param_names_dict, "available_values": value})
-    #
-    # # 处理文本
-    # text = "This is an example text with param1 and param2. param1 is www"
-    #
-    # # 将文本传递给 spaCy 处理
-    # doc = nlp(text)
-    #
-    # # 遍历文档中的句子
-    # for i, sentence in enumerate(doc.sents):
-    #     print(f"Sentence {i + 1}: {sentence.text}")
-    # for ent in doc.ents:
-    #     if ent.label_ == "PARAMETER":
-    #         print(
-    #             f"Parameter: {ent.text}, Global Name: {ent._.global_name}, Prefix: {ent._.prefix_string}, Suffix: {ent._.suffix_string}")
-    #     if ent.label_ == "VALUE":
-    #         print(
-    #             f"Value: {ent.text}, Global Name: {ent._.global_name}, Prefix: {ent._.prefix_string}, Suffix: {ent._.suffix_string}")
+
+    # 处理文本，生成 Doc 对象
+    text1 = "A language code like ‘en-US’, ‘de-DE’, ‘fr’ or ‘auto’."
+    text2 = "param1 has value test1, and param2 also has value test1"
+    doc = nlp(text2)
+
+    # 遍历文档中的实体，打印参数信息
+    for ent in doc.ents:
+        if ent.label_ == "PARAMETER":
+            print(
+                f"Parameter: {ent.text}, Global Name: {ent._.global_name}, Prefix: {ent._.prefix_string}, Suffix: {ent._.suffix_string}")
+        if ent.label_ == "VALUE":
+            print(f"Value: {ent.text}, Global Name: {ent._.global_name}, Prefix: {ent._.prefix_string}, Suffix: {ent._.suffix_string}")

@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from src.parameter.meta import AbstractParam
 
@@ -17,12 +17,18 @@ class ObjectParam(AbstractParam):
         for p in self._additional_properties:
             p.init_equivalence()
 
-    def flat_view(self) -> tuple:
-        result = [self, ]
+    def set_required_property(self, p: AbstractParam):
+        self._properties.append(p)
+
+    def set_optional_property(self, p: AbstractParam):
+        self._additional_properties.append(p)
+
+    def get_leaves(self) -> tuple:
+        result = []
         for p in self._properties:
-            result.extend(p.flat_view())
+            result.extend(p.get_leaves())
         for p in self._additional_properties:
-            result.extend(p.flat_view())
+            result.extend(p.get_leaves())
         return tuple(result)
 
     @property
@@ -43,17 +49,23 @@ class ObjectParam(AbstractParam):
 
 
 class ArrayParam(AbstractParam):
-    def __init__(self, name):
+    def __init__(self, name, min_items: int = 1, max_items: int = 1, unique_items: bool = False):
         super(ArrayParam, self).__init__(name)
 
-        # 目前只设置一个item
-        self._item: AbstractParam = None
+        self._min_items: int = min_items
+        self._max_items: int = max_items
+        self._unique_items: bool = unique_items
+
+        self._item: Optional[AbstractParam] = None
 
     def init_equivalence(self):
         self._item.init_equivalence()
 
-    def flat_view(self) -> tuple:
-        return self, self._item
+    def set_item(self, item_param: AbstractParam):
+        self._item = item_param
+
+    def get_leaves(self) -> tuple:
+        return self._item,
 
     @property
     def printable_value(self):

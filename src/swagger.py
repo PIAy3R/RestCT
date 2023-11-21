@@ -16,8 +16,6 @@ class ParserV3:
         # 可能有多个server，只存一个
         self._server: str = self._get_server()
 
-        self._ref_dict = dict()
-
     def _get_server(self):
         """
         get bash path of url

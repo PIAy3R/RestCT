@@ -1,14 +1,14 @@
 import abc
-import dataclasses
-from typing import List, Callable
+from dataclasses import dataclass, field
+from typing import List, Callable, Tuple, Optional
 
 
-@dataclasses.dataclass(frozen=True)
+@dataclass(frozen=True)
 class Equivalence:
     generate: Callable
     check: Callable
-    g_args: tuple = ()
-    c_args: tuple = ()
+    g_args: tuple = field(default_factory=tuple)
+    c_args: tuple = field(default_factory=tuple)
 
 
 class AbstractParam(metaclass=abc.ABCMeta):
@@ -20,7 +20,7 @@ class AbstractParam(metaclass=abc.ABCMeta):
 
         # Set the required flag to true
         self.required = True
-        self.parent: AbstractParam = None
+        self.parent: Optional[AbstractParam] = None
 
         # 参数值等价类
         self.value_equivalence: List[Equivalence] = []
@@ -52,7 +52,11 @@ class AbstractParam(metaclass=abc.ABCMeta):
             raise ValueError("Description cannot be empty")
         self._description = text
 
-    def flat_view(self) -> tuple:
+    def get_leaves(self) -> Tuple:
+        """
+        Get all leaves of the parameter tree,
+        excluding arrays and objects themselves.
+        """
         return self,
 
     @property
@@ -61,6 +65,12 @@ class AbstractParam(metaclass=abc.ABCMeta):
             return f"{self.parent.global_name}.{self.name}"
         else:
             return self.name
+
+    @property
+    def is_active(self):
+        if self._value is None or self._index == -1:
+            raise ValueError(f"{self.global_name} has not been assigned yet")
+        return self._value != "__null__"
 
     @property
     def printable_value(self):
@@ -141,6 +151,11 @@ class EnumParam(AbstractParam):
         return self._enums[index] == value
 
 
+class BoolParam(EnumParam):
+    def __init__(self, name: str):
+        super(BoolParam, self).__init__(name, [True, False])
+
+
 class DynamicParam(AbstractParam):
     """
     Dynamic parameter is a parameter that bind with another parameter.
@@ -157,7 +172,7 @@ class DynamicParam(AbstractParam):
         super().init_equivalence()
 
         if self._dynamic_value is not None:
-            self.value_equivalence.append(Equivalence(self._dynamic_value, self._is_dynamic_value))
+            self.value_equivalence.append(Equivalence(self._value_dynamic, self._is_value_dynamic))
 
     def _value_dynamic(self):
         if self._dynamic_value is None:

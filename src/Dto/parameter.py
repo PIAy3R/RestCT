@@ -112,7 +112,7 @@ class Example:
         allValues = list()
         for example in Example.members:
             if example.parameterStr == parameterStr:
-                allValues.append(example.value)
+                allValues.append(example.raw_value)
         return allValues
 
     def __hash__(self):

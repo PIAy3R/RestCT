@@ -19,9 +19,12 @@ class ObjectParam(AbstractParam):
 
     def set_required_property(self, p: AbstractParam):
         self._properties.append(p)
+        p.parent = self
 
     def set_optional_property(self, p: AbstractParam):
         self._additional_properties.append(p)
+        p.parent = self
+        p.required = False
 
     def get_leaves(self) -> tuple:
         result = []
@@ -63,6 +66,7 @@ class ArrayParam(AbstractParam):
 
     def set_item(self, item_param: AbstractParam):
         self._item = item_param
+        item_param.parent = self
 
     def get_leaves(self) -> tuple:
         return self._item,

@@ -39,6 +39,7 @@ class ParserV3:
                 # handle with input parameters
                 for param in operation.parameters:
                     rest_param = self._extract_param(param)
+                    rest_op.parameters.append(rest_param)
 
     @staticmethod
     def _extract_param(param: Parameter):
@@ -56,10 +57,10 @@ class ParserV3:
             rest_param = PathParam(factor)
         else:
             raise ValueError(f"Unsupported parameter location: {param.location}")
+        return rest_param
 
     @staticmethod
     def _extract_factor(name: str, schema: Schema):
-        factor = None
         if isinstance(schema, Null):
             raise ValueError(f"Parameter {name} has no schema")
         if len(schema.enum) > 0:
@@ -79,7 +80,14 @@ class ParserV3:
         else:
             raise ValueError(f"{name} -> Unsupported schema: {schema}")
 
-        factor.required = schema.required
+        factor.required = not schema.nullable
+
+        if schema.example is not None:
+            factor.set_example(schema.example)
+        if schema.default is not None:
+            factor.set_default(schema.default)
+
+        return factor
 
     @staticmethod
     def _build_object_factor(name: str, schema: Object):

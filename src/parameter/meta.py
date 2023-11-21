@@ -29,6 +29,10 @@ class AbstractParam(metaclass=abc.ABCMeta):
         # 当前等价类生成的值
         self._value = None
 
+        # specified values
+        self._example: Optional = None
+        self._default: Optional = None
+
     def init_equivalence(self):
         if not self.required:
             self.value_equivalence.append(Equivalence(self._value_null, self._is_value_null))
@@ -51,6 +55,12 @@ class AbstractParam(metaclass=abc.ABCMeta):
         if text is None or len(text) == 0:
             raise ValueError("Description cannot be empty")
         self._description = text
+
+    def set_example(self, example):
+        self._example = example
+
+    def set_default(self, default_value):
+        self._default = default_value
 
     def get_leaves(self) -> Tuple:
         """

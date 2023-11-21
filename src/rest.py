@@ -1,7 +1,9 @@
 import abc
 from enum import Enum
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 from urllib.parse import quote
+
+from openapi_parser.specification import ContentType
 
 from src.parameter import AbstractParam, ArrayParam, Constraint
 
@@ -28,13 +30,18 @@ class QueryParam(RestParam):
 
 
 class BodyParam(RestParam):
+    def __init__(self, factor: AbstractParam, content_type: ContentType):
+        super().__init__(factor)
+
+        self.content_type: ContentType = content_type
+
+
+class PathParam(RestParam):
     pass
 
 
-class PathParam(RestParam): pass
-
-
-class HeaderParam(RestParam): pass
+class HeaderParam(RestParam):
+    pass
 
 
 class RestPath:
@@ -189,7 +196,20 @@ class RestOp:
         self._host = host
         self.path = RestPath(path)
         self.verb = RestOp.Method.of(verb)
-        self.description: str = ""
+        self.description: Optional[str] = None
 
         self.constraints: List[Constraint] = []
         self.parameters: List[RestParam] = []
+
+        self.responses: List[RestResponse] = []
+
+
+class RestResponse:
+    def __init__(self, status_code: Optional[int] = None, description: Optional[str] = None):
+        self.status_code: Optional[int] = status_code
+        self.description: Optional[str] = description
+
+        self._contents: List[Tuple[ContentType, AbstractParam]] = []
+
+    def add_content(self, content: AbstractParam, content_type: ContentType):
+        self._contents.append((content_type, content))

@@ -30,16 +30,36 @@ class ParserV3:
         self._server = parsed.geturl()
 
     def extract(self):
+        operations = []
         for path in self._swagger.paths:
+            path_parameters = path.parameters
+
             for operation in path.operations:
                 rest_op = RestOp(self._server, path.url, operation.method.name)
-                rest_op.description = operation.description \
-                    if operation.description is not None and len(operation.description) else ""
+
+                if operation.description is not None and len(operation.description):
+                    rest_op.description = operation.description
 
                 # handle with input parameters
                 for param in operation.parameters:
                     rest_param = self._extract_param(param)
                     rest_op.parameters.append(rest_param)
+
+                if len(path_parameters) > 0:
+                    for param in path_parameters:
+                        rest_param = self._extract_param(param)
+                        rest_op.parameters.append(rest_param)
+
+                for r in operation.responses:
+                    response = RestResponse(r.code, r.description)
+                    if r.content is not None:
+                        for c in r.content:
+                            content_type = c.type
+                            content = ParserV3._extract_factor("response", c.schema)
+                            response.add_content(content, content_type)
+                    rest_op.responses.append(response)
+                operations.append(rest_op)
+        return operations
 
     @staticmethod
     def _extract_param(param: Parameter):

@@ -1,6 +1,6 @@
 import abc
 from dataclasses import dataclass, field
-from typing import List, Callable, Tuple, Optional
+from typing import List, Callable, Tuple, Optional, Union
 
 
 @dataclass(frozen=True)
@@ -30,7 +30,7 @@ class AbstractParam(metaclass=abc.ABCMeta):
         self._value = None
 
         # specified values
-        self._example: Optional = None
+        self._examples: Optional[list] = None
         self._default: Optional = None
 
     def init_equivalence(self):
@@ -57,7 +57,20 @@ class AbstractParam(metaclass=abc.ABCMeta):
         self._description = text
 
     def set_example(self, example):
-        self._example = example
+        parsed_example = self._spilt_example(example)
+        if parsed_example is not None:
+            for e in parsed_example:
+                if e not in self._examples:
+                    self._examples.append(e)
+
+    def _spilt_example(self, example) -> Union[list, None]:
+        if example is None:
+            return None
+        if isinstance(example, list):
+            return example
+        if isinstance(example, dict):
+            raise ValueError("Example cannot be a dict")
+        return [example]
 
     def set_default(self, default_value):
         self._default = default_value
@@ -87,6 +100,9 @@ class AbstractParam(metaclass=abc.ABCMeta):
         if self._value is None or self._index == -1:
             raise ValueError(f"{self.global_name} has not been assigned yet")
         return self._value
+
+    def __eq__(self, other):
+        return isinstance(other, self.__class__) and self.name == other.name
 
 
 class ComparableParam(AbstractParam):

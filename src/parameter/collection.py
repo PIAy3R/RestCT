@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from src.parameter.meta import AbstractParam
 
@@ -50,6 +50,26 @@ class ObjectParam(AbstractParam):
         else:
             return v
 
+    def _spilt_example(self, example) -> Union[list, None]:
+        if example is None:
+            return None
+        if isinstance(example, list):
+            for e in example:
+                if not isinstance(e, dict):
+                    return None
+                self._spilt_example(e)
+            return None
+        elif isinstance(example, dict):
+            for p_name, p_example in example.items():
+                target_p_list = [p for p in self._properties if p.name == p_name]
+                if len(target_p_list) == 0:
+                    continue
+                target_p = target_p_list[0]
+                target_p.set_example(p_example)
+            return None
+        else:
+            raise ValueError("ObjectParam's example must be list or dict")
+
 
 class ArrayParam(AbstractParam):
     def __init__(self, name, min_items: int = 1, max_items: int = 1, unique_items: bool = False):
@@ -77,3 +97,13 @@ class ArrayParam(AbstractParam):
             return "__null__"
         else:
             return [self._item.printable_value, ]
+
+    def _spilt_example(self, example) -> Union[list, None]:
+        if example is None:
+            return None
+        if isinstance(example, list):
+            for e in example:
+                self._item.set_example(e)
+            return None
+        else:
+            raise ValueError("ArrayParam's example must be a list")

@@ -53,7 +53,7 @@ class RestctParamComponent:
         return len([e for e in doc.ents if e.label_ == self.name])
 
     def get_parameters(self, doc: Doc) -> list:
-        return [ent for ent in doc.ents if ent.label_ == "PARAMETER"]
+        return [ent for ent in doc.ents if ent.label_ == self.name]
 
 
 @Language.factory("restct_value")

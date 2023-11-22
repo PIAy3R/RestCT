@@ -371,7 +371,8 @@ class RuntimeInfoManager:
                 title.append(p)
                 allParams.append(p)
 
-        title.append("response message")
+        title.append("statuscode")
+        title.append("response")
 
         info_to_save = [operation.__repr__(), time.localtime()]
 
@@ -387,7 +388,10 @@ class RuntimeInfoManager:
 
         info_to_save.append(sc)
 
-        info_to_save.append(response)
+        if isinstance(response, str):
+            info_to_save.append(response)
+        else:
+            info_to_save.append(json.dumps(response))
 
         # if sc >= 400:
         #     self.get_response_string(response, info_to_save)

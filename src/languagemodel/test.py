@@ -12,10 +12,12 @@ from src.ca import RuntimeInfoManager
 from src.languagemodel.LanguageModel import ParamValueModel
 from src.openapiParser import Parser
 
-swagger = "D:/Python_Codes/RestCT/exp/swagger/GitLab/Groups.json"
+swagger = "/Users/naariah/Documents/Python_Codes/RestCT/exp/swagger/GitLab/Groups.json"
 os.environ["swagger"] = swagger
 os.environ["model"] = "gpt-3.5-turbo"
-os.environ["language_model_key"] = "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"
+os.environ["language_model_key"] = "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"
+os.environ["http_proxy"] = "http://localhost:7890"
+os.environ["https_proxy"] = "http://localhost:7890"
 
 with Path(swagger).open("r") as fp:
     spec = json.load(fp)
@@ -27,14 +29,13 @@ ep = [p for p in op.parameterList if not isinstance(p, EnumParam)]
 bp = ep[0]
 pl = bp.seeAllParameters()
 p0 = pl[0].getGlobalName()
-print(p0)
 definition = spec.get("definitions").copy()
 p_l = spec["paths"][op.url.replace(URL.baseurl, "")][op.method.value]["parameters"]
-ref = str()
-for p_i in p_l:
-    if p_i["name"] == bp.name:
-        ref = p_i["schema"].get("$ref").split("/")[-1]
-def_dict = definition[ref]
+# ref = str()
+# for p_i in p_l:
+#     if p_i["name"] == bp.name:
+#         ref = p_i["schema"].get("$ref").split("/")[-1]
+# def_dict = definition[ref]
 
 
 def get_info(param, definition, def_dict, body):
@@ -50,15 +51,14 @@ def get_info(param, definition, def_dict, body):
     return info
 
 
-i = get_info(p0, definition, def_dict, bp)
-print(i)
+# i = get_info(p0, definition, def_dict, bp)
+# print(i)
 
 r = RuntimeInfoManager()
-m = ParamValueModel(op, ep, r, "D:/TestData")
+m = ParamValueModel(op, ep, r, "/Users/naariah/Experiment/LLM")
 pt = m.build_prompt()
-print(pt)
+# print(pt)
 a = m.execute()
 print()
 t = r.get_llm_examples().get(op)
-print(t)
 print()

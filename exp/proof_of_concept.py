@@ -25,7 +25,7 @@ class Analyser:
         self.all_param_list = dict()
 
         self.filtered_data = dict()
-        self.not_param_names = ["Operation", "Timestamp", "status_code", " response"]
+        self.not_param_names = ["Operation", "Timestamp", "statuscode", "response"]
 
     def _extract_info_from_spec(self, op_id, name, schema):
         if isinstance(schema, Boolean):
@@ -75,7 +75,7 @@ class Analyser:
 
                 self._parse_swagger(swagger)
 
-    def save(self):
+    def save_spec_info(self):
         data = [(self.all_param_list, "all_param.json"), (self.enum_param_list, "enum_param.json"),
                 (self.numeric_param_list, "numeric_param.json"), (self.enum_values, "enum_value.json")]
         for (v, f) in data:
@@ -92,7 +92,7 @@ class Analyser:
             abs_folder = os.path.join(self.root_dir, swagger_folder)
             self.extract_swagger(abs_folder)
 
-        self.save()
+        self.save_spec_info()
 
     def parse_log(self):
         for log_folder in self.logs:
@@ -138,8 +138,7 @@ class Analyser:
         if key not in self.filtered_data.keys():
             self.filtered_data[key] = {}
         case = self.do_case(key, line)
-        message = line[" response"].replace("\'", '\"')
-        # message = line[" response"]
+        message = line["response"]
         if message.startswith("{") and message.endswith("}"):
             texts = self._parse_json(key, line, json.loads(message))
         else:
@@ -151,7 +150,8 @@ class Analyser:
                 self.filtered_data[key][pattern] = {}
             if params_string not in self.filtered_data[key][pattern].keys():
                 self.filtered_data[key][pattern][params_string] = []
-            self.filtered_data[key][pattern][params_string].append(case.copy())
+            self.filtered_data[key][pattern][params_string].append(
+                {k: v for k, v in case.items() if k in involved_params})
 
     def _parse_json(self, key, line, message, extra=None) -> list:
         if isinstance(message, dict):
@@ -196,13 +196,15 @@ class Analyser:
         if len(involved) > 0:
             return sentence, list(involved)
 
+        count_values = 0
         for k, v in line.items():
-            if k in self.not_param_names:
+            if k in self.not_param_names or v == "__null__" or len(v) == 0:
                 continue
             escaped_v = re.escape(v)
-            matched = re.search(rf"\b{escaped_v}\b", sentence)
+            re_pattern = re.compile(rf'(?:(?<=^)|(?<=\W)){escaped_v}(?=\W|$)')
+            matched = re_pattern.search(sentence)
             if matched:
-                sentence = re.sub(rf"\b{escaped_v}\b", "__VALUE__", sentence)
+                sentence = re_pattern.sub("__VALUE__", sentence)
                 involved.add(k)
                 break
         return sentence, list(involved)
@@ -215,18 +217,23 @@ class Analyser:
         # with open(abs_file_path, "w") as fp:
         #     fp.writelines(lines)
         with open(abs_file_path, "r") as fp:
-            reader = csv.DictReader(fp)
+            reader = csv.DictReader(row.replace('\0', '').replace('\x00', '') for row in fp)
             for line in reader:
                 verb, url = line["Operation"].split("***")
                 key = self._find_key(verb, url)
-                if line["status_code"].startswith('2'):
+                if line["statuscode"].startswith('2'):
                     self._handle_success_case(key, line)
                 else:
                     self._handle_failed_case(key, line)
+
+    def save_result(self):
+        f_path = os.path.join(self.root_dir, "result.json")
+        with open(f_path, "w") as fp:
+            json.dump(self.filtered_data, fp, indent=2)
 
 
 if __name__ == '__main__':
     a = Analyser()
     a.initialize()
     a.parse_log()
-    print(a)
+    a.save_result()

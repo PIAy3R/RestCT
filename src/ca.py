@@ -370,16 +370,16 @@ class RuntimeInfoManager:
             else:
                 title.append(p)
                 allParams.append(p)
-        title.append("Status Code")
-        for m in ["m1", "m2", "m3", "m4", "m5"]:
-            title.append(str(m))
+
+        title.append("response message")
 
         info_to_save = [operation.__repr__(), time.localtime()]
 
         for p in allParams:
             if p.getGlobalName() in case:
                 if case.get(p.getGlobalName()).val is not None:
-                    info_to_save.append(self.get_partition(p, case.get(p.getGlobalName()).val))
+                    # info_to_save.append(self.get_partition(p, case.get(p.getGlobalName()).val))
+                    info_to_save.append(case.get(p.getGlobalName()).val)
                 else:
                     info_to_save.append("null")
             else:
@@ -387,10 +387,12 @@ class RuntimeInfoManager:
 
         info_to_save.append(sc)
 
-        if sc >= 400:
-            self.get_response_string(response, info_to_save)
-        else:
-            info_to_save.append("null")
+        info_to_save.append(response)
+
+        # if sc >= 400:
+        #     self.get_response_string(response, info_to_save)
+        # else:
+        #     info_to_save.append("null")
 
         folder = Path(data_path) / "requests/"
         if not folder.exists():

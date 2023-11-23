@@ -89,7 +89,7 @@ class ValueType(Enum):
     NULL = "Null"
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=False)
 class Value:
     val: object = None
     generator: ValueType = ValueType.NULL
@@ -453,7 +453,7 @@ class ObjectParam(AbstractParam):
         for child in self._children:
             childValue = child.printableValue(response)
             if childValue is not None:
-                value[child.name] = child.printableValue(response)
+                value[child.getGlobalName()] = child.printableValue(response)
         return None if len(value.keys()) == 0 else value
 
     def getValueDto(self, value_dict: Dict[str, Value]):

@@ -1,3 +1,4 @@
+import copy
 import csv
 import dataclasses
 import json
@@ -122,7 +123,7 @@ class Executor:
         self._auth = None if len(queryAuth) == 0 and len(headerAuth) == 0 else Auth(headerAuth, queryAuth)
         self._manager = manager
 
-    def process(self, operation, ca_item, previous_responses) -> Tuple[int, object]:
+    def process(self, operation, ca_item, previous_responses):
         """
         Executor的任务只有发送请求，不处理CA相关的东西
         @param operation: the target operation
@@ -131,11 +132,15 @@ class Executor:
         @return: status code and response info
         """
         self.setParamValue(operation, ca_item)
-        kwargs = self.assemble(operation, previous_responses)
-        return self.send(operation, **kwargs)
+        kwargs, mutate_case = self.assemble(operation, previous_responses, ca_item)
+        return self.send(operation, **kwargs), mutate_case
+        # kwargs = self.assemble(operation, previous_responses)
+        # return self.send(operation, **kwargs)
 
     @staticmethod
-    def assemble(operation, responses) -> dict:
+    def assemble(operation, responses, case):
+        # def assemble(operation, responses) -> dict:
+        mutate_case = copy.deepcopy(case)
         url = operation.url
         headers = {
             'Content-Type': operation.header[0] if operation.header is not None else "applications/json",
@@ -153,13 +158,20 @@ class Executor:
                     url = url.replace("{" + p.name + "}", str("abc"))
                 # assert p.loc is not Loc.Path, "{}:{}".format(p.name, p.loc.value)
             else:
+                # if mutate_case.get(p.getGlobalName()) is not None:
+                #     mutate_case[p.getGlobalName()].val = value
                 if p.type is DataType.File:
+                    mutate_case[p.name].val = value
                     # todo: fixme: bug
                     files = value
                 elif p.loc is Loc.Path:
                     assert p.name != "" and p.name is not None
                     url = url.replace("{" + p.name + "}", str(value))
                 elif p.loc is Loc.Query:
+                    if p.type is DataType.Array:
+                        mutate_case[p.name+"@_item"].val = value
+                    else:
+                        mutate_case[p.name].val = value
                     params[p.name] = value
                 elif p.loc is Loc.Header:
                     headers[p.name] = value
@@ -170,8 +182,12 @@ class Executor:
                         formData[p.name] = value
                 elif p.loc is Loc.Body:
                     if isinstance(value, dict):
+                        for n, v in value.items():
+                            mutate_case[n].val = v
                         body.update(value)
                     else:
+                        for item in p.seeAllParameters():
+                            mutate_case[item.getGlobalName()].val = value
                         body[p.name] = value
                 else:
                     raise Exception("unexpected Param Loc Type: {}".format(p.name))
@@ -187,7 +203,8 @@ class Executor:
             kwargs["data"] = formData
         if len(body) > 0:
             kwargs["data"] = json.dumps(body)
-        return kwargs
+        return kwargs, mutate_case
+        # return kwargs
 
     @staticmethod
     def setParamValue(operation, case):
@@ -485,10 +502,13 @@ class CA:
             raise Exception("the size of ca can not be zero")
 
         response_list: List[(int, object)] = []
+        mutate_ca = []
         for case in ca:
             self._stat.dump_snapshot()
-            status_code, response = self._executor.process(operation, case, chain)
+            (status_code, response), mutate_case = self._executor.process(operation, case, chain)
+            # status_code, response = self._executor.process(operation, case, chain)
             response_list.append((status_code, response))
+            mutate_ca.append(mutate_case)
 
             if status_code < 300:
                 has_success = True
@@ -498,7 +518,8 @@ class CA:
 
         logger.info(f"status code list:{[sc for (sc, r) in response_list]}")
 
-        self._handle_feedback(url_tuple, operation, response_list, chain, ca, is_essential)
+        self._handle_feedback(url_tuple, operation, response_list, chain, mutate_ca, is_essential)
+        # self._handle_feedback(url_tuple, operation, response_list, chain, ca, is_essential)
 
         return has_success or has_bug
 

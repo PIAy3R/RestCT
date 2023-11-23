@@ -1,32 +1,38 @@
+import json
 import unittest
 import requests
 
-class MyTestCase(unittest.TestCase):
-    def test_send_request(self):
-        # Define the base host
-        self.base_host = "https://127.0.0.1:31080/api/v4"
 
-        # Define the rquest url
-        self.url = self.base_host + "/projects/50/repository/commits"
+def test_send_request():
+    import requests
 
-        # Define the http request method
-        self.method = "POST"
+    url = "http://127.0.0.1:30080/api/v4/projects/66/repository/commits"
+    headers = {
+        "Authorization": "Bearer 454b2df560464ffc22dfc606f66a63b7ed9fc33000e57d2acb6c1f23bd37c61a",
+        "Content-Type": "application/json",
+    }
 
-        # Define the request payload
-        self.data = {"commit_message": "commit message",
-                     "actions": '[ { "action" : "create" , "file_path": "app/app.js", "content" : "puts \"Hello, world!\" }, { "action" : "delete", "file_path": "app/views.py" }, { "action" : "move", "file_path": "doc/api/index.md", "previous_path": "docs/api/README.md" }, { "action" : "update", "file_path": "app/models/model.py", "content" : "class Bag(object)\n def __init__(self):\n """Create bag.\n See how you can use this API easily now?\n By the way, we changed the file description that can be seen in a commit.\n"""} ]',
-                     "branch": "my_branch"}
+    payload = {
+        "branch": "main",
+        "commit_message": "some commit message",
+        "actions": [
+            {
+                "action": "create",
+                "file_path": "foo/bar",
+                "content": "some content",
+            },
+            {
+                "action": "delete",
+                "file_path": "foo/bar",
+            },
+        ],
+    }
 
-        # Define the http request header. It needs authentication info
-        self.header = {"Content-Type": "application/x-www-form-urlencoded",
-                       "Authorization": "Bearer 8b5bfc9f6c6a47c430c03cf2ea6a693972654ffa94b7483d5ded5300ff395689"}
+    response = requests.post(url, headers=headers, json=payload)
 
-        # Send the request
-        req = requests.request(method=self.method, url=self.url, data=self.data, headers=self.header)
-
-        # Validate the response status code is 201
-        self.assertEqual(req.status_code, 201, msg='test case failed')
+    print(response.status_code)
+    print(response.text)
 
 
 if __name__ == '__main__':
-    unittest.main()
+    test_send_request()

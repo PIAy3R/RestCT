@@ -26,6 +26,7 @@ class Analyser:
 
         self.filtered_data = dict()
         self.not_param_names = ["Operation", "Timestamp", "statuscode", "response"]
+        self.error_messages = dict()
 
     def _extract_info_from_spec(self, op_id, name, schema):
         if isinstance(schema, Boolean):
@@ -111,11 +112,11 @@ class Analyser:
 
     def _handle_success_case(self, key, line):
         if key not in self.filtered_data.keys():
-            self.filtered_data[key] = {}
-        if "20X" not in self.filtered_data[key].keys():
-            self.filtered_data[key]["20X"] = []
+            self.filtered_data[key] = []
 
-        self.filtered_data[key]["20X"].append(self.do_case(key, line))
+        case = self.do_case(key, line)
+        case["20X"] = 1
+        self.filtered_data[key].append(case)
 
     def do_case(self, key, line):
         case = dict()
@@ -136,7 +137,10 @@ class Analyser:
 
     def _handle_failed_case(self, key, line):
         if key not in self.filtered_data.keys():
-            self.filtered_data[key] = {}
+            self.filtered_data[key] = []
+        if key not in self.error_messages.keys():
+            self.error_messages[key] = set()
+
         case = self.do_case(key, line)
         message = line["response"]
         if message.startswith("{") and message.endswith("}"):
@@ -146,12 +150,9 @@ class Analyser:
 
         for (pattern, involved_params) in texts:
             params_string = "+".join(involved_params)
-            if pattern not in self.filtered_data[key].keys():
-                self.filtered_data[key][pattern] = {}
-            if params_string not in self.filtered_data[key][pattern].keys():
-                self.filtered_data[key][pattern][params_string] = []
-            self.filtered_data[key][pattern][params_string].append(
-                {k: v for k, v in case.items() if k in involved_params})
+            self.error_messages[key].add((pattern, *involved_params))
+            case[f"Y_{pattern}***{params_string}"] = 1
+        self.filtered_data[key].append(case)
 
     def _parse_json(self, key, line, message, extra=None) -> list:
         if isinstance(message, dict):
@@ -193,12 +194,10 @@ class Analyser:
                 sentence = re.sub(rf"\b{escaped_name}\b", "__PARAM__", sentence)
                 involved.add(name)
 
-        if len(involved) > 0:
-            return sentence, list(involved)
-
-        count_values = 0
         for k, v in line.items():
             if k in self.not_param_names or v == "__null__" or len(v) == 0:
+                continue
+            if len(involved) > 0 and k not in involved:
                 continue
             escaped_v = re.escape(v)
             re_pattern = re.compile(rf'(?:(?<=^)|(?<=\W)){escaped_v}(?=\W|$)')
@@ -227,6 +226,21 @@ class Analyser:
                     self._handle_failed_case(key, line)
 
     def save_result(self):
+        # 补全 dict
+        for key, cases in self.filtered_data.items():
+            errors = self.error_messages.get(key, set())
+            if len(errors) == 0:
+                continue
+            for case in cases:
+                for (pattern, *param) in errors:
+                    param_string = "+".join(param)
+                    y = f"Y_{pattern}***{param_string}"
+                    if y not in case.keys():
+                        if "20X" in case.keys():
+                            case[y] = 0
+                        else:
+                            case[y] = -1
+
         f_path = os.path.join(self.root_dir, "result.json")
         with open(f_path, "w") as fp:
             json.dump(self.filtered_data, fp, indent=2)

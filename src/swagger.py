@@ -11,7 +11,6 @@ class ParserV3:
     def __init__(self, swagger_path):
         # 解析swagger文件
         self._swagger: Specification = parse(swagger_path)
-        print(self._swagger.schemas)
 
         # 可能有多个server，只存一个
         self._server: str = self._get_server()
@@ -142,6 +141,10 @@ class ParserV3:
             # todo: regex factor
             raise ValueError(f"Pattern {schema.pattern} is not supported")
         if schema.format is not None:
+            if schema.format is StringFormat.DATE:
+                return ParserV3._build_date_factor(name, schema)
+            if schema.format is StringFormat.DATETIME:
+                return ParserV3._build_datetime_factor(name, schema)
             # todo: build factor based on format
             raise ValueError(f"Format {schema.format} is not supported")
 
@@ -150,7 +153,28 @@ class ParserV3:
                            max_length=schema.max_length if schema.max_length is not None else 100)
 
     @staticmethod
-    def _build_integer_factor(name: str, schema: Integer):
+    def _build_date_factor(name, schema: String):
+        if schema.format is None or schema.format is not StringFormat.DATE:
+            raise ValueError(f"Format {schema.format} is not date")
+
+        return Date(name)
+
+    @staticmethod
+    def _build_datetime_factor(name, schema: String):
+        if schema.format is None or schema.format is not StringFormat.DATETIME:
+            raise ValueError(f"Format {schema.format} is not datetime")
+
+        return DateTime(name)
+
+    @staticmethod
+    def _set_numerical_boundaries(schema: Union[Number, Integer],
+                                  max_inf: Union[int, float],
+                                  min_inf: Union[int, float]) \
+            -> Tuple[Union[int, float], bool, Union[int, float], bool]:
+
+        if max_inf < min_inf:
+            raise ValueError(f"{max_inf} must be greater than {min_inf}")
+
         if schema.exclusive_maximum is not None:
             maximum = schema.exclusive_maximum
             exclusive_maximum = True
@@ -158,7 +182,7 @@ class ParserV3:
             maximum = schema.maximum
             exclusive_maximum = False
         else:
-            maximum = int("inf")
+            maximum = max_inf
             exclusive_maximum = True
 
         if schema.exclusive_minimum is not None:
@@ -168,48 +192,60 @@ class ParserV3:
             minimum = schema.minimum
             exclusive_minimum = False
         else:
-            minimum = int("-inf")
+            minimum = min_inf
             exclusive_minimum = True
+        return maximum, exclusive_maximum, minimum, exclusive_minimum
 
-        return IntegerParam(
+    @staticmethod
+    def _build_integer_factor(name: str, schema: Integer):
+        if schema.format is None:
+            max_inf = IntegerParam.INT_32_MAX
+            min_inf = IntegerParam.INT_32_MIN
+        elif schema.format is IntegerFormat.INT32:
+            max_inf = IntegerParam.INT_32_MAX
+            min_inf = IntegerParam.INT_32_MIN
+        elif schema.format is IntegerFormat.INT64:
+            max_inf = IntegerParam.INT_64_MAX
+            min_inf = IntegerParam.INT_64_MIN
+        else:
+            max_inf = IntegerParam.INT_32_MAX
+            min_inf = IntegerParam.INT_32_MIN
+
+        maximum, exclusive_maximum, minimum, exclusive_minimum = ParserV3._set_numerical_boundaries(schema, max_inf,
+                                                                                                    min_inf)
+
+        factor = IntegerParam(
             name=name,
             min_value=minimum,
             max_value=maximum,
             exclusive_max_value=exclusive_maximum,
             exclusive_min_value=exclusive_minimum
         )
+
+        if schema.multiple_of is not None:
+            factor.set_multiple_of(schema.multiple_of)
+        return factor
 
     @staticmethod
     def _build_number_factor(name: str, schema: Number):
-        if schema.exclusive_maximum is not None:
-            maximum = schema.exclusive_maximum
-            exclusive_maximum = True
-        elif schema.maximum is not None:
-            maximum = schema.maximum
-            exclusive_maximum = False
-        else:
-            maximum = float("inf")
-            exclusive_maximum = True
+        maximum, exclusive_maximum, minimum, exclusive_minimum = \
+            ParserV3._set_numerical_boundaries(schema, FloatParam.FLOAT_MAX, FloatParam.FLOAT_MIN)
 
-        if schema.exclusive_minimum is not None:
-            minimum = schema.exclusive_minimum
-            exclusive_minimum = True
-        elif schema.minimum is not None:
-            minimum = schema.minimum
-            exclusive_minimum = False
-        else:
-            minimum = float("-inf")
-            exclusive_minimum = True
-
-        return FloatParam(
+        factor = FloatParam(
             name=name,
             min_value=minimum,
             max_value=maximum,
             exclusive_max_value=exclusive_maximum,
             exclusive_min_value=exclusive_minimum
         )
+
+        if schema.multiple_of is not None:
+            factor.set_multiple_of(schema.multiple_of)
+        return factor
 
 
 if __name__ == '__main__':
     # 初始化ParserV3类
-    parser = ParserV3("/Users/lixin/Workplace/Java/FRest/scripts/swaggers/GitLab/Project.json")
+    parser = ParserV3("/Users/lixin/Workplace/Jupyter/work/swaggers/BingMap/Locations.json")
+    operations = parser.extract()
+    print(operations[0])

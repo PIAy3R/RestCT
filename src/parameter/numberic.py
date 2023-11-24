@@ -1,6 +1,8 @@
 import abc
 import math
 import random
+import sys
+from typing import Union, Optional
 
 from src.parameter.meta import ComparableParam, Equivalence
 
@@ -24,6 +26,11 @@ class AbstractNumericParam(ComparableParam):
         # Set the exclusive min and max values
         self._exclusive_min_value = exclusive_min_value
         self._exclusive_max_value = exclusive_max_value
+
+        self._multiple_of: Optional[Union[int, float]] = None
+
+    def set_multiple_of(self, num: Union[int, float]):
+        self._multiple_of = num
 
     @property
     def boundary_min(self):
@@ -90,6 +97,14 @@ class AbstractNumericParam(ComparableParam):
 
 # Integer parameter class
 class IntegerParam(AbstractNumericParam):
+    # 32-bit signed integer
+    INT_32_MAX = 2 ** 31 - 1
+    INT_32_MIN = -2 ** 31
+
+    # 64-bit signed integer
+    INT_64_MAX = 2 ** 63 - 1
+    INT_64_MIN = -2 ** 63
+
     # Initialize the parent class
     def __init__(self, name, min_value, max_value, exclusive_min_value=True, exclusive_max_value=True):
         super().__init__(name, min_value, max_value, exclusive_min_value, exclusive_max_value)
@@ -111,12 +126,14 @@ class IntegerParam(AbstractNumericParam):
 
 # Float parameter class
 class FloatParam(AbstractNumericParam):
+    # Float
+    FLOAT_MAX = sys.float_info.max
+    FLOAT_MIN = sys.float_info.min
+
     # Initialize the parent class
     def __init__(self, name, min_value, max_value, exclusive_min_value=True, exclusive_max_value=True,
                  precision=2):
-        super().__init__(name, round(min_value, precision) if not math.isinf(min_value) else min_value,
-                         round(max_value, precision) if not math.isinf(max_value) else max_value, exclusive_min_value,
-                         exclusive_max_value)
+        super().__init__(name, min_value, max_value, exclusive_min_value, exclusive_max_value)
 
         if min_value >= max_value:
             raise ValueError(f"{self.global_name}, min_value {min_value} must be less than max_value {max_value}")

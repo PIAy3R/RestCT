@@ -47,6 +47,11 @@ class ParserV3:
                         rest_param = self._extract_param(param)
                         rest_op.parameters.append(rest_param)
 
+                # handle request body
+                if operation.request_body is not None:
+                    if not len(operation.request_body.content) == 0:
+                        rest_op.parameters.append(self._extract_body_param(operation.request_body))
+
                 for r in operation.responses:
                     response = RestResponse(r.code, r.description)
                     if r.content is not None:
@@ -57,6 +62,20 @@ class ParserV3:
                     rest_op.responses.append(response)
                 operations.append(rest_op)
         return operations
+
+    @staticmethod
+    def _extract_body_param(body: RequestBody):
+        content = body.content
+        if len(content) > 1 or len(content) == 0:
+            raise ValueError("no content is provided")
+
+        content = content[0]
+
+        factor: AbstractParam = ParserV3._extract_factor("body", content.schema)
+        if body.description is not None and len(body.description) != 0:
+            factor.description = body.description
+
+        return BodyParam(factor, content.type.value)
 
     @staticmethod
     def _extract_param(param: Parameter):
@@ -145,6 +164,8 @@ class ParserV3:
                 return ParserV3._build_date_factor(name, schema)
             if schema.format is StringFormat.DATETIME:
                 return ParserV3._build_datetime_factor(name, schema)
+            if schema.format is StringFormat.BINARY:
+                return ParserV3._build_binary_factor(name, schema)
             # todo: build factor based on format
             raise ValueError(f"Format {schema.format} is not supported")
 
@@ -165,6 +186,13 @@ class ParserV3:
             raise ValueError(f"Format {schema.format} is not datetime")
 
         return DateTime(name)
+
+    @staticmethod
+    def _build_binary_factor(name, schema: String):
+        if schema.format is None or schema.format is not StringFormat.BINARY:
+            raise ValueError("fFormat {schema.format} is not binary")
+
+        return BinaryParam(name, 1, 100)
 
     @staticmethod
     def _set_numerical_boundaries(schema: Union[Number, Integer],
@@ -246,6 +274,6 @@ class ParserV3:
 
 if __name__ == '__main__':
     # 初始化ParserV3类
-    parser = ParserV3("/Users/lixin/Workplace/Jupyter/work/swaggers/BingMap/Locations.json")
+    parser = ParserV3("/Users/lixin/Workplace/Jupyter/work/swaggers/GitLab/Branch.json")
     operations = parser.extract()
     print(operations[0])

@@ -3,8 +3,6 @@ from enum import Enum
 from typing import List, Tuple, Optional
 from urllib.parse import quote
 
-from openapi_parser.specification import ContentType
-
 from src.parameter import AbstractParam, ArrayParam, Constraint
 
 
@@ -30,10 +28,53 @@ class QueryParam(RestParam):
 
 
 class BodyParam(RestParam):
-    def __init__(self, factor: AbstractParam, content_type: ContentType):
+    def __init__(self, factor: AbstractParam, content_type: str):
         super().__init__(factor)
 
-        self.content_type: ContentType = content_type
+        self.content_type: BodyParam.ContentType = BodyParam.ContentType.of(content_type)
+
+    class ContentType(Enum):
+        JSON = 'application/json'
+        JSON_TEXT = 'text/json'
+        JSON_ANY = 'application/*+json'
+        XML = 'application/xml'
+        FORM = 'application/x-www-form-urlencoded'
+        MULTIPART_FORM = 'multipart/form-data'
+        PLAIN_TEXT = 'text/plain'
+        HTML = 'text/html'
+        PDF = 'application/pdf'
+        PNG = 'image/png'
+        BINARY = 'application/octet-stream'
+        ANY = '*/*'
+
+        @classmethod
+        def of(cls, s: str):
+            if s.startswith('application/json'):
+                return cls.JSON
+            elif s.startswith('text/json'):
+                return cls.JSON_TEXT
+            elif s.startswith('application/*+json'):
+                return cls.JSON_ANY
+            elif s.startswith('application/xml'):
+                return cls.XML
+            elif s.startswith('application/x-www-form-urlencoded'):
+                return cls.FORM
+            elif s.startswith('multipart/form-data'):
+                return cls.MULTIPART_FORM
+            elif s.startswith('text/plain'):
+                return cls.PLAIN_TEXT
+            elif s.startswith('text/html'):
+                return cls.HTML
+            elif s.startswith('application/pdf'):
+                return cls.PDF
+            elif s.startswith('image/png'):
+                return cls.PNG
+            elif s.startswith('application/octet-stream'):
+                return cls.BINARY
+            elif s.startswith('*/*'):
+                return cls.ANY
+            else:
+                raise ValueError(f'Unknown content type: {s}')
 
 
 class PathParam(RestParam):
@@ -209,7 +250,7 @@ class RestResponse:
         self.status_code: Optional[int] = status_code
         self.description: Optional[str] = description
 
-        self._contents: List[Tuple[ContentType, AbstractParam]] = []
+        self._contents: List[Tuple[str, AbstractParam]] = []
 
-    def add_content(self, content: AbstractParam, content_type: ContentType):
+    def add_content(self, content: AbstractParam, content_type: str):
         self._contents.append((content_type, content))

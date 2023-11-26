@@ -1,3 +1,4 @@
+import os
 import string
 from random import choice, randint
 
@@ -69,3 +70,9 @@ class StringParam(AbstractParam):
             return False
         length = len(v)
         return a < length < b
+
+
+class BinaryParam(StringParam):
+    @staticmethod
+    def generate_string(length):
+        return os.urandom(length)

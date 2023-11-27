@@ -201,7 +201,7 @@ class Template:
 class TaskTemplate:
     SPECIAL_VALUE = "- According to the Parameter info, give 3 possible values for each parameter in Parameter list. " \
                     "Format your response as a JSON object.\n" \
-                    "The format is {parameter1:[value1,value2,...],parameter2:[value1,value2,...],...}.\n"
+                    # "The format is {parameter1:[value1,value2,...],parameter2:[value1,value2,...],...}.\n"
     COMBINATION = "- According to the Parameter info and Constraint, give 3 possible valid combinations of " \
                   "parameters in Parameter list and their specific value. " \
                   "Format your response as a JSON object.\n" \

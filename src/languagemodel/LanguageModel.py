@@ -1,6 +1,6 @@
 import abc
 import os
-import openai
+from openai import OpenAI
 import time
 from pathlib import Path
 from collections import defaultdict
@@ -53,7 +53,6 @@ def get_info(param, definition, def_dict, body):
 
 
 class BasicLanguageModel:
-
     def __init__(self, operation: Operation, manager, data_path, temperature: float = 0.7):
         self._temperature: float = temperature
 
@@ -69,7 +68,8 @@ class BasicLanguageModel:
             self._spec = json.load(fp)
 
         self._complete_model: str = os.environ.get("model")
-        openai.api_key = os.environ.get("language_model_key")
+        api_key = os.environ.get("language_model_key")
+        self._client = OpenAI(api_key=api_key)
         logger.debug(f"call language model for operation: {self._operation}")
 
     @property
@@ -112,15 +112,16 @@ class BasicLanguageModel:
                 logger.warning("Exceeding the maximum token limit")
                 return
         start_time = time.time()
-        response = openai.ChatCompletion.create(
+        response = self._client.chat.completions.create(
             model=self._complete_model,
             messages=message,
             temperature=self._temperature,
+            response_format={"type": "json_object"}
         )
         self._manager.register_llm_call()
         end_time = time.time()
         logger.info(f"call time: {end_time - start_time} s")
-        return response.choices[0].message["content"], message
+        return response.choices[0].message.content, message
 
     def execute(self):
         pass

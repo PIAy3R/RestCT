@@ -14,7 +14,7 @@ from src.openapiParser import Parser
 
 swagger = "/Users/naariah/Documents/Python_Codes/RestCT/exp/swagger/GitLab/Groups.json"
 os.environ["swagger"] = swagger
-os.environ["model"] = "gpt-3.5-turbo"
+os.environ["model"] = "gpt-3.5-turbo-1106"
 os.environ["language_model_key"] = "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"
 os.environ["http_proxy"] = "http://localhost:7890"
 os.environ["https_proxy"] = "http://localhost:7890"

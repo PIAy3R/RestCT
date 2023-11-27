@@ -58,7 +58,7 @@ class ParserV3:
                         for c in r.content:
                             content_type = c.type
                             content = ParserV3._extract_factor("response", c.schema)
-                            response.add_content(content, content_type)
+                            response.add_content(content, content_type.name)
                     rest_op.responses.append(response)
                 operations.append(rest_op)
         return operations

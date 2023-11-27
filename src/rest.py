@@ -25,6 +25,7 @@ class RestParam(metaclass=abc.ABCMeta):
 
 class QueryParam(RestParam):
     pass
+    # todo: encode query string
 
 
 class BodyParam(RestParam):
@@ -95,6 +96,9 @@ class RestPath:
 
         def __str__(self):
             return self.__repr__()
+
+        def __hash__(self):
+            return hash(self.__repr__())
 
         def __eq__(self, other):
             if not isinstance(other, RestPath.Element):
@@ -212,6 +216,14 @@ class RestPath:
 
         return [get_query_string(q) for q in usable_query_params]
 
+    def is_ancestor_of(self, other):
+        if len(self.elements) > len(other.elements):
+            return False
+        return all([e == other.elements[i] for i, e in enumerate(self.elements)])
+
+    def __repr__(self):
+        return f"{self.computed_to_string}"
+
 
 class RestOp:
     class Method(Enum):
@@ -244,13 +256,16 @@ class RestOp:
 
         self.responses: List[RestResponse] = []
 
+    def __repr__(self):
+        return f"{self.verb.value}:{self.path}"
+
 
 class RestResponse:
     def __init__(self, status_code: Optional[int] = None, description: Optional[str] = None):
         self.status_code: Optional[int] = status_code
         self.description: Optional[str] = description
 
-        self._contents: List[Tuple[str, AbstractParam]] = []
+        self.contents: List[Tuple[str, AbstractParam]] = []
 
     def add_content(self, content: AbstractParam, content_type: str):
-        self._contents.append((content_type, content))
+        self.contents.append((content_type, content))

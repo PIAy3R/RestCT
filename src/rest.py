@@ -28,54 +28,55 @@ class QueryParam(RestParam):
     # todo: encode query string
 
 
+class ContentType(Enum):
+    JSON = 'application/json'
+    JSON_TEXT = 'text/json'
+    JSON_ANY = 'application/*+json'
+    XML = 'application/xml'
+    FORM = 'application/x-www-form-urlencoded'
+    MULTIPART_FORM = 'multipart/form-data'
+    PLAIN_TEXT = 'text/plain'
+    HTML = 'text/html'
+    PDF = 'application/pdf'
+    PNG = 'image/png'
+    BINARY = 'application/octet-stream'
+    ANY = '*/*'
+
+    @classmethod
+    def of(cls, s: str):
+        if s.startswith('application/json'):
+            return cls.JSON
+        elif s.startswith('text/json'):
+            return cls.JSON_TEXT
+        elif s.startswith('application/*+json'):
+            return cls.JSON_ANY
+        elif s.startswith('application/xml'):
+            return cls.XML
+        elif s.startswith('application/x-www-form-urlencoded'):
+            return cls.FORM
+        elif s.startswith('multipart/form-data'):
+            return cls.MULTIPART_FORM
+        elif s.startswith('text/plain'):
+            return cls.PLAIN_TEXT
+        elif s.startswith('text/html'):
+            return cls.HTML
+        elif s.startswith('application/pdf'):
+            return cls.PDF
+        elif s.startswith('image/png'):
+            return cls.PNG
+        elif s.startswith('application/octet-stream'):
+            return cls.BINARY
+        elif s.startswith('*/*'):
+            return cls.ANY
+        else:
+            raise ValueError(f'Unknown content type: {s}')
+
+
 class BodyParam(RestParam):
     def __init__(self, factor: AbstractParam, content_type: str):
         super().__init__(factor)
 
-        self.content_type: BodyParam.ContentType = BodyParam.ContentType.of(content_type)
-
-    class ContentType(Enum):
-        JSON = 'application/json'
-        JSON_TEXT = 'text/json'
-        JSON_ANY = 'application/*+json'
-        XML = 'application/xml'
-        FORM = 'application/x-www-form-urlencoded'
-        MULTIPART_FORM = 'multipart/form-data'
-        PLAIN_TEXT = 'text/plain'
-        HTML = 'text/html'
-        PDF = 'application/pdf'
-        PNG = 'image/png'
-        BINARY = 'application/octet-stream'
-        ANY = '*/*'
-
-        @classmethod
-        def of(cls, s: str):
-            if s.startswith('application/json'):
-                return cls.JSON
-            elif s.startswith('text/json'):
-                return cls.JSON_TEXT
-            elif s.startswith('application/*+json'):
-                return cls.JSON_ANY
-            elif s.startswith('application/xml'):
-                return cls.XML
-            elif s.startswith('application/x-www-form-urlencoded'):
-                return cls.FORM
-            elif s.startswith('multipart/form-data'):
-                return cls.MULTIPART_FORM
-            elif s.startswith('text/plain'):
-                return cls.PLAIN_TEXT
-            elif s.startswith('text/html'):
-                return cls.HTML
-            elif s.startswith('application/pdf'):
-                return cls.PDF
-            elif s.startswith('image/png'):
-                return cls.PNG
-            elif s.startswith('application/octet-stream'):
-                return cls.BINARY
-            elif s.startswith('*/*'):
-                return cls.ANY
-            else:
-                raise ValueError(f'Unknown content type: {s}')
+        self.content_type: ContentType = ContentType.of(content_type)
 
 
 class PathParam(RestParam):
@@ -224,31 +225,34 @@ class RestPath:
     def __repr__(self):
         return f"{self.computed_to_string}"
 
+    def __eq__(self, other):
+        if not isinstance(other, RestPath):
+            return False
+
+        return self.computed_to_string == other.computed_to_string
+
+
+class Method(Enum):
+    POST = "post"
+    GET = "get"
+    DELETE = "delete"
+    PUT = "put"
+
+    @classmethod
+    def of(cls, text: str):
+        text_lower = text.lower()
+        for member in cls.__members__.values():
+            if member.value.lower() == text_lower:
+                return member
+        else:
+            raise ValueError(f"Unknown method: {text}")
+
 
 class RestOp:
-    class Method(Enum):
-        POST = "post"
-        GET = "get"
-        DELETE = "delete"
-        PUT = "put"
-
-        @classmethod
-        def of(cls, text: str):
-            if text.lower() == "get":
-                return cls.GET
-            elif text.lower() == "delete":
-                return cls.DELETE
-            elif text.lower() == "put":
-                return cls.PUT
-            elif text.lower() == "post":
-                return cls.POST
-            else:
-                raise ValueError(f"Unknown method: {text}")
-
     def __init__(self, host: str, path: str, verb: str):
         self._host = host
         self.path = RestPath(path)
-        self.verb = RestOp.Method.of(verb)
+        self.verb = Method.of(verb)
         self.description: Optional[str] = None
 
         self.constraints: List[Constraint] = []
@@ -258,6 +262,15 @@ class RestOp:
 
     def __repr__(self):
         return f"{self.verb.value}:{self.path}"
+
+    def __hash__(self):
+        return hash(self.__repr__())
+
+    def __eq__(self, other):
+        if not isinstance(other, RestOp):
+            return False
+
+        return self.verb == other.verb and self.path == other.path
 
 
 class RestResponse:
@@ -269,3 +282,6 @@ class RestResponse:
 
     def add_content(self, content: AbstractParam, content_type: str):
         self.contents.append((content_type, content))
+
+    def __repr__(self):
+        return f"{self.status_code}:{self.description}"

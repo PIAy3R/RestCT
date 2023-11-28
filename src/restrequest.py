@@ -2,27 +2,31 @@ import json
 from typing import Tuple, Union
 
 import requests
+from loguru import logger
 
 from src.Dto.keywords import Method
 
 
 class RestRequest:
     def __init__(self):
-        self.url = None
-        self.headers = None
-        self.query = None
-        self.body = None
+        pass
 
-    def send_request(self, verb, url: str, headers: dict, query: dict = None, body: dict = None) -> Tuple[int, Union[str, dict]]:
-        self.url = url
+    def send_request(self, verb, url: str, headers: dict, **kwargs) -> Tuple[int, Union[str, dict]]:
+        if url is None or "":
+            logger.warning("Url cannot be null")
+            return 700, dict()
+        else:
+            self.url = url
         self.headers = headers
-        self.query = query
-        self.body = body
+        self.query = kwargs.get("query", None)
+        self.file = kwargs.get("file", None)
         if verb == Method.POST:
+            self.body = kwargs.get("body") if kwargs.get("body") is not None else None
             status_code, response_content = self.send_post_request()
         elif verb == Method.GET:
             status_code, response_content = self.send_get_request()
         elif verb == Method.PUT:
+            self.body = kwargs.get("body") if kwargs.get("body") is not None else None
             status_code, response_content = self.send_put_request()
         elif verb == Method.DELETE:
             status_code, response_content = self.send_delete_request()
@@ -31,22 +35,32 @@ class RestRequest:
 
         return status_code, response_content
 
+    @staticmethod
     def send_post_request(self) -> Tuple[int, Union[str, dict]]:
-        content_type = RestRequest.get_content_type(self.headers)
-        if content_type == "applications/json":
-            feedback = requests.post(url=self.url, headers=self.headers, data=self.query, json=json.dumps(self.body))
+        if self.body is None:
+            feedback = requests.post(url=self.url, headers=self.headers, params=self.query)
+        elif self.get_content_type() == "applications/json":
+            feedback = requests.post(url=self.url, headers=self.headers, params=self.query, json=json.dumps(self.body))
         else:
             feedback = requests.post(url=self.url, headers=self.headers, params=self.query, data=self.body)
         return RestRequest.get_response_info(feedback)
 
+    @staticmethod
     def send_get_request(self) -> Tuple[int, Union[str, dict]]:
         feedback = requests.get(url=self.url, headers=self.headers, params=self.query)
         return RestRequest.get_response_info(feedback)
 
+    @staticmethod
     def send_put_request(self) -> Tuple[int, Union[str, dict]]:
-        feedback = requests.put(url=self.url, headers=self.headers, params=self.query, data=self.body)
+        if self.body is None:
+            feedback = requests.post(url=self.url, headers=self.headers, params=self.query)
+        elif self.get_content_type() == "applications/json":
+            feedback = requests.post(url=self.url, headers=self.headers, params=self.query, json=json.dumps(self.body))
+        else:
+            feedback = requests.post(url=self.url, headers=self.headers, params=self.query, data=self.body)
         return RestRequest.get_response_info(feedback)
 
+    @staticmethod
     def send_delete_request(self) -> Tuple[int, Union[str, dict]]:
         feedback = requests.delete(url=self.url, headers=self.headers, params=self.query)
         return RestRequest.get_response_info(feedback)
@@ -61,5 +75,5 @@ class RestRequest:
         return status_code, response
 
     @staticmethod
-    def get_content_type(headers):
-        return "applications/json" if headers.get("Content-Type") is None else headers.get("Content-Type")
+    def get_content_type(self):
+        return "applications/json" if self.headers.get("Content-Type") is None else self.headers.get("Content-Type")

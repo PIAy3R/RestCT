@@ -1,14 +1,14 @@
 from typing import List, Optional, Union
 
-from src.parameter.meta import AbstractParam
+from src.factor.meta import AbstractFactor
 
 
-class ObjectParam(AbstractParam):
+class ObjectFactor(AbstractFactor):
     def __init__(self, name):
-        super(ObjectParam, self).__init__(name)
+        super(ObjectFactor, self).__init__(name)
 
-        self._properties: List[AbstractParam] = []
-        self._additional_properties: List[AbstractParam] = []
+        self._properties: List[AbstractFactor] = []
+        self._additional_properties: List[AbstractFactor] = []
 
     def init_equivalence(self):
         for p in self._properties:
@@ -17,11 +17,11 @@ class ObjectParam(AbstractParam):
         for p in self._additional_properties:
             p.init_equivalence()
 
-    def set_required_property(self, p: AbstractParam):
+    def set_required_property(self, p: AbstractFactor):
         self._properties.append(p)
         p.parent = self
 
-    def set_optional_property(self, p: AbstractParam):
+    def set_optional_property(self, p: AbstractFactor):
         self._additional_properties.append(p)
         p.parent = self
         p.required = False
@@ -68,23 +68,23 @@ class ObjectParam(AbstractParam):
                 target_p.set_example(p_example)
             return None
         else:
-            raise ValueError("ObjectParam's example must be list or dict")
+            raise ValueError("ObjectFactor's example must be list or dict")
 
 
-class ArrayParam(AbstractParam):
+class ArrayFactor(AbstractFactor):
     def __init__(self, name, min_items: int = 1, max_items: int = 1, unique_items: bool = False):
-        super(ArrayParam, self).__init__(name)
+        super(ArrayFactor, self).__init__(name)
 
         self._min_items: int = min_items
         self._max_items: int = max_items
         self._unique_items: bool = unique_items
 
-        self._item: Optional[AbstractParam] = None
+        self._item: Optional[AbstractFactor] = None
 
     def init_equivalence(self):
         self._item.init_equivalence()
 
-    def set_item(self, item_param: AbstractParam):
+    def set_item(self, item_param: AbstractFactor):
         self._item = item_param
         item_param.parent = self
 
@@ -106,4 +106,4 @@ class ArrayParam(AbstractParam):
                 self._item.set_example(e)
             return None
         else:
-            raise ValueError("ArrayParam's example must be a list")
+            raise ValueError("ArrayFactor's example must be a list")

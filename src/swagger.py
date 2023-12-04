@@ -3,7 +3,7 @@ from urllib.parse import urlparse
 from openapi_parser.parser import parse
 from openapi_parser.specification import *
 
-from src.parameter import *
+from src.factor import *
 from src.rest import *
 
 
@@ -80,7 +80,7 @@ class ParserV3:
     @staticmethod
     def _extract_param(param: Parameter):
         """
-        extract parameter from swagger
+        extract factor from swagger
         """
         # factor info: AbstractParam
         factor: AbstractParam = ParserV3._extract_factor(param.name, param.schema)
@@ -92,7 +92,7 @@ class ParserV3:
         elif param.location is ParameterLocation.PATH:
             rest_param = PathParam(factor)
         else:
-            raise ValueError(f"Unsupported parameter location: {param.location}")
+            raise ValueError(f"Unsupported factor location: {param.location}")
         return rest_param
 
     @staticmethod

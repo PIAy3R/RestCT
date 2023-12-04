@@ -1,7 +1,7 @@
 from datetime import datetime
 from enum import Enum, unique
 
-from src.parameter.meta import ComparableParam
+from src.factor.meta import ComparableFactor
 
 
 @unique
@@ -10,7 +10,7 @@ class TimeFormat(Enum):
     TIME_WITH_MILLISECONDS = "%H:%M:%S.%fZ"
 
 
-class Time(ComparableParam):
+class Time(ComparableFactor):
     def __init__(self, name):
         super().__init__(name)
         self.format: TimeFormat = TimeFormat.TIME_WITH_MILLISECONDS
@@ -29,7 +29,7 @@ class DateFormat(Enum):
     ISO_LOCAL_DATE_FORMAT = "%Y-%m-%d"
 
 
-class Date(ComparableParam):
+class Date(ComparableFactor):
     def __init__(self, name):
         super(Date, self).__init__(name)
 
@@ -46,7 +46,7 @@ class DateTimeFormat(Enum):
     DEFAULT_DATE_TIME = "%Y-%m-%d %H:%M:%S"
 
 
-class DateTime(ComparableParam):
+class DateTime(ComparableFactor):
     def __init__(self, name):
         super(DateTime, self).__init__(name)
 

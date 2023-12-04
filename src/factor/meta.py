@@ -1,6 +1,6 @@
 import abc
 from dataclasses import dataclass, field
-from typing import List, Callable, Tuple, Optional, Union
+from typing import Callable, Tuple, Optional, Union, Any
 
 
 @dataclass(frozen=True)
@@ -11,39 +11,22 @@ class Equivalence:
     c_args: tuple = field(default_factory=tuple)
 
 
-class AbstractParam(metaclass=abc.ABCMeta):
+class AbstractFactor(metaclass=abc.ABCMeta):
     # Abstract class for parameters
     def __init__(self, name: str):
-        # Initialize the name and description of the parameter
-        self.name = name
-        self._description = None
+        # Initialize the name and description of the factor
+        self.name: str = name
+        self._description: Optional[str] = None
 
         # Set the required flag to true
-        self.required = True
-        self.parent: Optional[AbstractParam] = None
-
-        # 参数值等价类
-        self.value_equivalence: List[Equivalence] = []
-        # 当前选择的是第几个等价类
-        self._index = -1
-        # 当前等价类生成的值
-        self._value = None
+        self.required: bool = True
+        self.parent: Optional[AbstractFactor] = None
 
         # specified values
         self._examples: Optional[list] = None
-        self._default: Optional = None
+        self._default: Optional[Any] = None
 
-    def init_equivalence(self):
-        if not self.required:
-            self.value_equivalence.append(Equivalence(self._value_null, self._is_value_null))
-
-    @staticmethod
-    def _value_null():
-        return "__null__"
-
-    @staticmethod
-    def _is_value_null(v):
-        return v == "__null__"
+        self._value: Optional[Any] = None
 
     @property
     def description(self):
@@ -77,7 +60,7 @@ class AbstractParam(metaclass=abc.ABCMeta):
 
     def get_leaves(self) -> Tuple:
         """
-        Get all leaves of the parameter tree,
+        Get all leaves of the factor tree,
         excluding arrays and objects themselves.
         """
         return self,
@@ -91,13 +74,13 @@ class AbstractParam(metaclass=abc.ABCMeta):
 
     @property
     def is_active(self):
-        if self._value is None or self._index == -1:
+        if self._value is None:
             raise ValueError(f"{self.global_name} has not been assigned yet")
         return self._value != "__null__"
 
     @property
     def printable_value(self):
-        if self._value is None or self._index == -1:
+        if self._value is None:
             raise ValueError(f"{self.global_name} has not been assigned yet")
         return self._value
 
@@ -105,7 +88,7 @@ class AbstractParam(metaclass=abc.ABCMeta):
         return isinstance(other, self.__class__) and self.name == other.name
 
 
-class ComparableParam(AbstractParam):
+class ComparableFactor(AbstractFactor):
     def __init__(self, name: str):
         super().__init__(name)
 
@@ -152,9 +135,9 @@ class ComparableParam(AbstractParam):
         raise ValueError(f"{self.global_name}.value or {o.global_name}.value is None")
 
 
-class EnumParam(AbstractParam):
+class EnumFactor(AbstractFactor):
     """
-    EnumParam is a parameter that can only take one of a set of values.
+    EnumFactor is a factor that can only take one of a set of values.
     """
 
     def __init__(self, name: str, enum_value: list):
@@ -177,14 +160,14 @@ class EnumParam(AbstractParam):
         return self._enums[index] == value
 
 
-class BoolParam(EnumParam):
+class BoolFactor(EnumFactor):
     def __init__(self, name: str):
-        super(BoolParam, self).__init__(name, [True, False])
+        super(BoolFactor, self).__init__(name, [True, False])
 
 
-class DynamicParam(AbstractParam):
+class DynamicFactor(AbstractFactor):
     """
-    Dynamic parameter is a parameter that bind with another parameter.
+    Dynamic factor is a factor that bind with another factor.
     """
 
     def __init__(self, name: str, target_op_id: str, target_global_name: str):

@@ -4,11 +4,11 @@ import random
 import sys
 from typing import Union, Optional
 
-from src.parameter.meta import ComparableParam, Equivalence
+from src.factor.meta import ComparableFactor, Equivalence
 
 
 # Abstract class for numeric parameters
-class AbstractNumericParam(ComparableParam):
+class AbstractNumericFactor(ComparableFactor):
     # Initialize the parent class
     """
     self.value_equivalence中的元素只有两种情况：
@@ -95,8 +95,8 @@ class AbstractNumericParam(ComparableParam):
                             (self.boundary_min, self.boundary_max)))
 
 
-# Integer parameter class
-class IntegerParam(AbstractNumericParam):
+# Integer factor class
+class IntegerFactor(AbstractNumericFactor):
     # 32-bit signed integer
     INT_32_MAX = 2 ** 31 - 1
     INT_32_MIN = -2 ** 31
@@ -124,8 +124,8 @@ class IntegerParam(AbstractNumericParam):
             self.value_equivalence.append(Equivalence(self._value_boundary_max, self._is_value_boundary_max))
 
 
-# Float parameter class
-class FloatParam(AbstractNumericParam):
+# Float factor class
+class FloatFactor(AbstractNumericFactor):
     # Float
     FLOAT_MAX = sys.float_info.max
     FLOAT_MIN = sys.float_info.min

@@ -2,10 +2,10 @@ import os
 import string
 from random import choice, randint
 
-from src.parameter.meta import AbstractParam, Equivalence
+from src.factor.meta import AbstractFactor, Equivalence
 
 
-class StringParam(AbstractParam):
+class StringFactor(AbstractFactor):
 
     def __init__(self, name: str, min_length=1, max_length=100):
         super().__init__(name)
@@ -72,7 +72,7 @@ class StringParam(AbstractParam):
         return a < length < b
 
 
-class BinaryParam(StringParam):
+class BinaryFactor(StringFactor):
     @staticmethod
     def generate_string(length):
         return os.urandom(length)

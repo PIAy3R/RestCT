@@ -1,9 +1,8 @@
-import abc
 import json
+import re
 from typing import Dict, List
 
 from loguru import logger
-import re
 
 from src.Dto.operation import Operation
 
@@ -66,22 +65,4 @@ class ValueOutputFixer(OutputFixer):
                     processed_output.update({p: [v]})
                 else:
                     processed_output[p].append(v)
-        return processed_output
-
-
-class BodyOutputFixer(OutputFixer):
-    def __init__(self, manager, operation: Operation):
-        super().__init__(manager)
-
-        self._operation = operation
-
-    def handle(self, output_to_process, parameter_list=None):
-        json_output = self.decode_to_json(output_to_process)
-        p = parameter_list[0]
-        if p.name in json_output.keys():
-            processed_output = json_output
-        else:
-            processed_output = {p.name: json_output}
-        logger.info(f"Language model answer: {processed_output}")
-        self._manager.save_language_model_response(self._operation, processed_output)
         return processed_output

@@ -1,17 +1,17 @@
-import abc
+import json
 import os
-from openai import OpenAI
 import time
 from pathlib import Path
-from collections import defaultdict
-from typing import List, Dict, Tuple
+from typing import List, Dict
+
+import tiktoken
 from loguru import logger
-from src.Dto.keywords import Template, TaskTemplate, Method, URL, Loc
+from openai import OpenAI
+
+from src.Dto.keywords import Template, TaskTemplate, URL, Loc
 from src.Dto.operation import Operation
 from src.Dto.parameter import AbstractParam, ObjectParam, ArrayParam
-from src.languagemodel.OutputFixer import ValueOutputFixer, BodyOutputFixer
-import tiktoken
-import json
+from src.languagemodel.OutputFixer import ValueOutputFixer
 
 
 def num_tokens_from_string(messages: List[Dict[str, str]], encoding_name: str = "gpt-3.5-turbo") -> int:
@@ -119,6 +119,7 @@ class BasicLanguageModel:
             response_format={"type": "json_object"}
         )
         self._manager.register_llm_call()
+        self._manager.count_llm_tokens(num_tokens)
         end_time = time.time()
         logger.info(f"call time: {end_time - start_time} s")
         return response.choices[0].message.content, message

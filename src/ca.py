@@ -1,7 +1,6 @@
 import dataclasses
 import json
 import os
-import random
 import re
 import shlex
 import subprocess
@@ -268,6 +267,7 @@ class RuntimeInfoManager:
         self._postman_bug_info: list = list()
 
         self._llm_example_value_dict: Dict[Operation, Dict[AbstractParam, Union[dict, list]]] = dict()
+        self._prompt_tokens = 0
 
     def essential_executed(self, operations: Tuple[Operation]):
         return operations in self._reused_essential_seq_dict.keys()
@@ -301,6 +301,9 @@ class RuntimeInfoManager:
 
     def register_llm_call(self):
         self._llm_call += 1
+
+    def count_prompt_tokens(self, tokens):
+        self._prompt_tokens += tokens
 
     def save_reuse(self, url_tuple, is_essential, case):
         if is_essential:
@@ -380,7 +383,7 @@ class RuntimeInfoManager:
             json.dump(bug_info, fp, cls=RuntimeInfoManager.EnumEncoder)
         return bug_info
 
-    # todo finish the save_postman
+    # todo optimize the save_to_postman method
     def save_to_postman(self, data_path):
         folder = Path(data_path) / "bug/postman"
         if not folder.exists():

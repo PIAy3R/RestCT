@@ -2,17 +2,15 @@ import json
 import os
 from pathlib import Path
 
-import tiktoken
 from loguru import logger
 
-from src.Dto.keywords import DataType, URL
-from src.Dto.operation import Operation
-from src.Dto.parameter import ValueType, EnumParam
+from src.Dto.keywords import URL
+from src.Dto.parameter import EnumParam
 from src.ca import RuntimeInfoManager
 from src.languagemodel.LanguageModel import ParamValueModel
 from src.openapiParser import Parser
 
-swagger = "/Users/naariah/Documents/Python_Codes/RestCT/exp/swagger/GitLab/Groups.json"
+swagger = "/Users/naariah/Documents/Python_Codes/RestCT/exp/swagger/GitLab/Branch.json"
 os.environ["swagger"] = swagger
 os.environ["model"] = "gpt-3.5-turbo-1106"
 os.environ["language_model_key"] = "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"
@@ -24,13 +22,14 @@ with Path(swagger).open("r") as fp:
 
 p = Parser(logger)
 p.parse()
-op = p.operations[6]
+op = p.operations[1]
 ep = [p for p in op.parameterList if not isinstance(p, EnumParam)]
 bp = ep[0]
 pl = bp.seeAllParameters()
 p0 = pl[0].getGlobalName()
 definition = spec.get("definitions").copy()
 p_l = spec["paths"][op.url.replace(URL.baseurl, "")][op.method.value]["parameters"]
+plstr = json.dumps(p_l)
 # ref = str()
 # for p_i in p_l:
 #     if p_i["name"] == bp.name:

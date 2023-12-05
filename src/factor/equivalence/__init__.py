@@ -1,8 +1,8 @@
-from .bind import AbstractBindings
-from .date import DateTimeBetween, DateBetween, TimeBetween
 from .meta import AbstractEquivalence, Enumerated, Null
+from .date import DateTimeBetween, DateBetween, TimeBetween
 from .numeric import FloatBetween, IntBetween, Zero
 from .strings import Empty, FixedLength, Regex, VariableLength
+from .bind import AbstractBindings
 
 __all__ = [
     "AbstractBindings",

@@ -3,12 +3,12 @@ from enum import Enum
 from typing import List, Tuple, Optional
 from urllib.parse import quote
 
-from src.parameter import AbstractParam, ArrayParam, Constraint
+from src.factor import AbstractFactor, ArrayFactor
 
 
 class RestParam(metaclass=abc.ABCMeta):
-    def __init__(self, factor: AbstractParam):
-        self._factor = factor
+    def __init__(self, factor: AbstractFactor):
+        self._factor: AbstractFactor = factor
 
     @property
     def name(self):
@@ -21,6 +21,9 @@ class RestParam(metaclass=abc.ABCMeta):
     @property
     def param(self):
         return self._factor
+
+    def update_domain(self, context):
+        self._factor.update_equivalences()
 
 
 class QueryParam(RestParam):
@@ -73,7 +76,7 @@ class ContentType(Enum):
 
 
 class BodyParam(RestParam):
-    def __init__(self, factor: AbstractParam, content_type: str):
+    def __init__(self, factor: AbstractFactor, content_type: str):
         super().__init__(factor)
 
         self.content_type: ContentType = ContentType.of(content_type)
@@ -208,8 +211,8 @@ class RestPath:
         def get_query_string(param: RestParam):
             name = encode(param.name)
 
-            if isinstance(param.param, ArrayParam):
-                elements: Tuple[AbstractParam] = param.param.get_leaves()
+            if isinstance(param.param, ArrayFactor):
+                elements: Tuple[AbstractFactor] = param.param.get_leaves()
                 return "&".join(f"{name}={encode(e.printable_value)}" for e in elements if e.is_active)
             else:
                 value = encode(param.value)
@@ -255,7 +258,7 @@ class RestOp:
         self.verb = Method.of(verb)
         self.description: Optional[str] = None
 
-        self.constraints: List[Constraint] = []
+        # self.constraints: List[Constraint] = []
         self.parameters: List[RestParam] = []
 
         self.responses: List[RestResponse] = []
@@ -278,9 +281,9 @@ class RestResponse:
         self.status_code: Optional[int] = status_code
         self.description: Optional[str] = description
 
-        self.contents: List[Tuple[str, AbstractParam]] = []
+        self.contents: List[Tuple[str, AbstractFactor]] = []
 
-    def add_content(self, content: AbstractParam, content_type: str):
+    def add_content(self, content: AbstractFactor, content_type: str):
         self.contents.append((content_type, content))
 
     def __repr__(self):

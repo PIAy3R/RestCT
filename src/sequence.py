@@ -180,24 +180,42 @@ class SCA:
                 c_list = {c for c in combinations(sequence, strength)}
                 self._uncovered[strength] -= c_list
 
-    def uncovered_is_empty(self):
-        for _, uncovered in self._uncovered.items():
-            if len(uncovered) != 0:
-                return False
-        return True
+    @property
+    def is_empty(self):
+        return all([len(uncovered) == 0 for uncovered in self._uncovered.values()])
+
+    def __iter__(self):
+        # 返回一个实现了 __next__ 方法的迭代器对象
+        return self
+
+    def __next__(self):
+        # 在每次迭代中返回下一个元素
+        if not self.is_empty:
+            sequence = []
+            length = -1
+            while len(sequence) != length:
+                length = len(sequence)
+                sequence = self.extend(sequence)
+            self.update_uncovered_t(sequence)
+            return sequence
+        else:
+            # 当没有元素可返回时，抛出 StopIteration 异常
+            raise StopIteration
 
 
 if __name__ == '__main__':
     from swagger import ParserV3
 
-    parser = ParserV3("/Users/naariah/Experiment/swaggers/GitLabV3/Project.json")
+    parser = ParserV3("/Users/lixin/Workplace/Jupyter/work/swaggers/GitLab/Project.json")
     operations = parser.extract()
     sca = SCA.create_sca_model(2, operations)
-    while not sca.uncovered_is_empty():
-        s = []
-        length = -1
-        while len(s) != length:
-            length = len(s)
-            s = sca.extend(s)
+    for s in sca:
         print(s)
-        sca.update_uncovered_t(s)
+    # while not sca.is_empty:
+    #     s = []
+    #     length = -1
+    #     while len(s) != length:
+    #         length = len(s)
+    #         s = sca.extend(s)
+    #     print(s)
+    #     sca.update_uncovered_t(s)

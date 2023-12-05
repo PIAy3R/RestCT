@@ -91,7 +91,8 @@ class SCA:
                 return sequence
             else:
                 if c_len == 0:
-                    return None
+                    return sequence
+        return sequence
 
     def _retrieve_dependent_ops(self, seq: List[RestOp], best: RestOp):
         ops: List[RestOp] = []
@@ -171,7 +172,10 @@ if __name__ == '__main__':
     parser = ParserV3("/Users/lixin/Workplace/Jupyter/work/swaggers/GitLab/Project.json")
     operations = parser.extract()
     sca = SCA.create_sca_model(2, operations)
-    s = []
-    while s is not None:
-        s = sca.extend(s)
+    while len(sca._uncovered) > 0:
+        s = []
+        length = -1
+        while len(s) != length:
+            length = len(s)
+            s = sca.extend(s)
         print(s)

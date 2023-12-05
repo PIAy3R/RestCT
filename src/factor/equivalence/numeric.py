@@ -45,7 +45,13 @@ class FloatBetween(AbstractEquivalence):
         return self.min < value < self.max
 
     def generate(self) -> Any:
-        return random.uniform(self.min, self.max)
+        MAX_TRIES = 5
+        while MAX_TRIES > 0:
+            value = random.uniform(self.min, self.max)
+            if value != self.min and value != self.max:
+                return value
+            else:
+                MAX_TRIES -= 1
 
     def __str__(self):
         return f"E: Float({self.min},{self.max})"
@@ -108,20 +114,3 @@ class FloatNegative(AbstractEquivalence):
 
     def __repr__(self):
         return "E: FloatNegative"
-
-
-class Boundary(AbstractEquivalence):
-    def __init__(self, boundary: Union[int, float]):
-        self.boundary = boundary
-
-    def check(self, value: Union[int, float]) -> bool:
-        return value == self.boundary
-
-    def generate(self) -> Any:
-        return self.boundary
-
-    def __str__(self):
-        return f"E: {self.boundary}"
-
-    def __repr__(self):
-        return f"E: {self.boundary}"

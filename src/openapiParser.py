@@ -73,7 +73,7 @@ class Parser:
         for url_str, url_info in paths.items():
             extraParamList = url_info.get(DocKey.PARAMS, list())
             for method_name, method_info in url_info.items():
-                if method_name not in [m.value for m in Method]:
+                if method_name not in [m.raw_value for m in Method]:
                     continue
                 header = method_info.get("consumes")
                 operation = Operation(self._host, self._path.rstrip("/") + "/" + url_str.lstrip("/"), method_name,

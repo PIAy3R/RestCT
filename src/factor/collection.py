@@ -1,6 +1,7 @@
 from typing import List, Optional, Union
 
-from src.factor.meta import AbstractFactor
+from src.factor import AbstractFactor
+from src.factor.equivalence import Null
 
 
 class ObjectFactor(AbstractFactor):
@@ -10,12 +11,12 @@ class ObjectFactor(AbstractFactor):
         self._properties: List[AbstractFactor] = []
         self._additional_properties: List[AbstractFactor] = []
 
-    def init_equivalence(self):
+    def init_equivalences(self):
         for p in self._properties:
-            p.init_equivalence()
+            p.init_equivalences()
 
         for p in self._additional_properties:
-            p.init_equivalence()
+            p.init_equivalences()
 
     def set_required_property(self, p: AbstractFactor):
         self._properties.append(p)
@@ -38,15 +39,15 @@ class ObjectFactor(AbstractFactor):
     def printable_value(self):
         v = {}
         for p in self._properties:
-            if p.printable_value == "__null__":
+            if p.printable_value == Null.NULL_STRING:
                 continue
             v[p.name] = p.printable_value
         for p in self._additional_properties:
-            if p.printable_value == "__null__":
+            if p.printable_value == Null.NULL_STRING:
                 continue
             v[p.name] = p.printable_value
         if len(v.keys()) == 0:
-            return "__null__"
+            return Null.NULL_STRING
         else:
             return v
 
@@ -81,8 +82,8 @@ class ArrayFactor(AbstractFactor):
 
         self._item: Optional[AbstractFactor] = None
 
-    def init_equivalence(self):
-        self._item.init_equivalence()
+    def init_equivalences(self):
+        self._item.init_equivalences()
 
     def set_item(self, item_param: AbstractFactor):
         self._item = item_param
@@ -93,8 +94,8 @@ class ArrayFactor(AbstractFactor):
 
     @property
     def printable_value(self):
-        if self._item.printable_value == "__null__":
-            return "__null__"
+        if self._item.printable_value == Null.NULL_STRING:
+            return Null.NULL_STRING
         else:
             return [self._item.printable_value, ]
 

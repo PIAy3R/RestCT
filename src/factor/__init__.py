@@ -1,6 +1,6 @@
 from .collection import ArrayFactor, ObjectFactor
-from .date import Date, DateTime, Time
-from .meta import AbstractFactor, EnumFactor, BoolFactor, DynamicFactor
+from .date import DateFactor, DateTimeFactor, TimeFactor
+from .meta import AbstractFactor, EnumFactor, BoolFactor, ComparableFactor
 from .numberic import FloatFactor, IntegerFactor
 from .strings import StringFactor, BinaryFactor
 
@@ -11,11 +11,11 @@ __all__ = [
     "FloatFactor",
     "IntegerFactor",
     "ArrayFactor",
-    "DynamicFactor",
     "StringFactor",
     "ObjectFactor",
-    "Date",
-    "DateTime",
-    "Time",
+    "ComparableFactor",
+    "DateFactor",
+    "DateTimeFactor",
+    "TimeFactor",
     "BinaryFactor"
 ]

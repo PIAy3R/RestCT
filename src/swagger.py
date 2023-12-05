@@ -71,7 +71,7 @@ class ParserV3:
 
         content = content[0]
 
-        factor: AbstractParam = ParserV3._extract_factor("body", content.schema)
+        factor: AbstractFactor = ParserV3._extract_factor("body", content.schema)
         if body.description is not None and len(body.description) != 0:
             factor.description = body.description
 
@@ -82,8 +82,8 @@ class ParserV3:
         """
         extract factor from swagger
         """
-        # factor info: AbstractParam
-        factor: AbstractParam = ParserV3._extract_factor(param.name, param.schema)
+        # factor info: AbstractFactor
+        factor: AbstractFactor = ParserV3._extract_factor(param.name, param.schema)
 
         if param.location is ParameterLocation.QUERY:
             rest_param = QueryParam(factor)
@@ -100,9 +100,9 @@ class ParserV3:
         if isinstance(schema, Null):
             raise ValueError(f"Parameter {name} has no schema")
         if len(schema.enum) > 0:
-            factor = EnumParam(name, schema.enum)
+            factor = EnumFactor(name, schema.enum)
         elif isinstance(schema, Boolean):
-            factor = BoolParam(name)
+            factor = BoolFactor(name)
         elif isinstance(schema, Integer):
             factor = ParserV3._build_integer_factor(name, schema)
         elif isinstance(schema, Number):
@@ -129,7 +129,7 @@ class ParserV3:
     def _build_object_factor(name: str, schema: Object):
         # todo: currently do not handle with anyOf and oneOf
         # todo: 没有见过 max_properties 和 min_properties，暂时不处理
-        object_factor = ObjectParam(name)
+        object_factor = ObjectFactor(name)
 
         for p in schema.properties:
             p_factor = ParserV3._extract_factor(p.name, p.schema)
@@ -143,10 +143,10 @@ class ParserV3:
     @staticmethod
     def _build_array_factor(name: str, schema: Array):
         min_items = schema.min_items if schema.min_items is not None else 1
-        array = ArrayParam(name,
-                           min_items=min_items,
-                           max_items=schema.max_items if schema.max_items is not None else min_items,
-                           unique_items=schema.unique_items if schema.unique_items is not None else False)
+        array = ArrayFactor(name,
+                            min_items=min_items,
+                            max_items=schema.max_items if schema.max_items is not None else min_items,
+                            unique_items=schema.unique_items if schema.unique_items is not None else False)
 
         if schema.items is None:
             raise ValueError(f"Parameter {name} has no items")
@@ -169,30 +169,30 @@ class ParserV3:
             # todo: build factor based on format
             raise ValueError(f"Format {schema.format} is not supported")
 
-        return StringParam(name,
-                           min_length=schema.min_length if schema.min_length is not None else 1,
-                           max_length=schema.max_length if schema.max_length is not None else 100)
+        return StringFactor(name,
+                            min_length=schema.min_length if schema.min_length is not None else 1,
+                            max_length=schema.max_length if schema.max_length is not None else 100)
 
     @staticmethod
     def _build_date_factor(name, schema: String):
         if schema.format is None or schema.format is not StringFormat.DATE:
             raise ValueError(f"Format {schema.format} is not date")
 
-        return Date(name)
+        return DateFactor(name)
 
     @staticmethod
     def _build_datetime_factor(name, schema: String):
         if schema.format is None or schema.format is not StringFormat.DATETIME:
             raise ValueError(f"Format {schema.format} is not datetime")
 
-        return DateTime(name)
+        return DateTimeFactor(name)
 
     @staticmethod
     def _build_binary_factor(name, schema: String):
         if schema.format is None or schema.format is not StringFormat.BINARY:
             raise ValueError("fFormat {schema.format} is not binary")
 
-        return BinaryParam(name, 1, 100)
+        return BinaryFactor(name, 1, 100)
 
     @staticmethod
     def _set_numerical_boundaries(schema: Union[Number, Integer],
@@ -227,22 +227,22 @@ class ParserV3:
     @staticmethod
     def _build_integer_factor(name: str, schema: Integer):
         if schema.format is None:
-            max_inf = IntegerParam.INT_32_MAX
-            min_inf = IntegerParam.INT_32_MIN
+            max_inf = IntegerFactor.INT_32_MAX
+            min_inf = IntegerFactor.INT_32_MIN
         elif schema.format is IntegerFormat.INT32:
-            max_inf = IntegerParam.INT_32_MAX
-            min_inf = IntegerParam.INT_32_MIN
+            max_inf = IntegerFactor.INT_32_MAX
+            min_inf = IntegerFactor.INT_32_MIN
         elif schema.format is IntegerFormat.INT64:
-            max_inf = IntegerParam.INT_64_MAX
-            min_inf = IntegerParam.INT_64_MIN
+            max_inf = IntegerFactor.INT_64_MAX
+            min_inf = IntegerFactor.INT_64_MIN
         else:
-            max_inf = IntegerParam.INT_32_MAX
-            min_inf = IntegerParam.INT_32_MIN
+            max_inf = IntegerFactor.INT_32_MAX
+            min_inf = IntegerFactor.INT_32_MIN
 
         maximum, exclusive_maximum, minimum, exclusive_minimum = ParserV3._set_numerical_boundaries(schema, max_inf,
                                                                                                     min_inf)
 
-        factor = IntegerParam(
+        factor = IntegerFactor(
             name=name,
             min_value=minimum,
             max_value=maximum,
@@ -257,9 +257,9 @@ class ParserV3:
     @staticmethod
     def _build_number_factor(name: str, schema: Number):
         maximum, exclusive_maximum, minimum, exclusive_minimum = \
-            ParserV3._set_numerical_boundaries(schema, FloatParam.FLOAT_MAX, FloatParam.FLOAT_MIN)
+            ParserV3._set_numerical_boundaries(schema, FloatFactor.FLOAT_MAX, FloatFactor.FLOAT_MIN)
 
-        factor = FloatParam(
+        factor = FloatFactor(
             name=name,
             min_value=minimum,
             max_value=maximum,

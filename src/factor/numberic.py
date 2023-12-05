@@ -49,6 +49,15 @@ class AbstractNumericFactor(ComparableFactor, ABC):
             return 1000
         return self._max_value
 
+    def __deepcopy__(self, memo):
+        ins = super().__deepcopy__(memo)
+        ins._min_value = self._min_value
+        ins._max_value = self._max_value
+        ins._exclusive_min_value = self._exclusive_min_value
+        ins._exclusive_max_value = self._exclusive_max_value
+        ins._multiple_of = self._multiple_of
+        return ins
+
 
 # Integer factor class
 class IntegerFactor(AbstractNumericFactor):
@@ -112,3 +121,8 @@ class FloatFactor(AbstractNumericFactor):
         if not self.is_active:
             raise ValueError(f"{self.global_name} has not been assigned yet")
         return round(self.value, self.precision)
+
+    def __deepcopy__(self, memo):
+        ins = super().__deepcopy__(memo)
+        ins.precision = self.precision
+        return ins

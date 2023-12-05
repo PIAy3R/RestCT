@@ -71,6 +71,12 @@ class ObjectFactor(AbstractFactor):
         else:
             raise ValueError("ObjectFactor's example must be list or dict")
 
+    def __deepcopy__(self, memo):
+        ins = super().__deepcopy__(memo)
+        ins._properties = [p.__deepcopy__(memo) for p in self._properties]
+        ins._additional_properties = [p.__deepcopy__(memo) for p in self._additional_properties]
+        return ins
+
 
 class ArrayFactor(AbstractFactor):
     def __init__(self, name, min_items: int = 1, max_items: int = 1, unique_items: bool = False):
@@ -108,3 +114,11 @@ class ArrayFactor(AbstractFactor):
             return None
         else:
             raise ValueError("ArrayFactor's example must be a list")
+
+    def __deepcopy__(self, memo):
+        ins = super().__deepcopy__(memo)
+        ins._min_items = self._min_items
+        ins._max_items = self._max_items
+        ins._unique_items = self._unique_items
+        ins._item = self._item.__deepcopy__(memo)
+        return ins

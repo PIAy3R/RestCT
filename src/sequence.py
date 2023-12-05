@@ -206,8 +206,9 @@ class SCA:
 if __name__ == '__main__':
     from swagger import ParserV3
 
-    parser = ParserV3("/Users/lixin/Workplace/Jupyter/work/swaggers/GitLab/Project.json")
+    parser = ParserV3("/Users/naariah/Experiment/swaggers/GitLabV3/Project.json")
     operations = parser.extract()
+
     sca = SCA.create_sca_model(2, operations)
     for s in sca:
         print(s)

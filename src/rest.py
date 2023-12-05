@@ -1,4 +1,5 @@
 import abc
+import copy
 from enum import Enum
 from typing import List, Tuple, Optional
 from urllib.parse import quote
@@ -24,6 +25,9 @@ class RestParam(metaclass=abc.ABCMeta):
 
     def update_domain(self, context):
         self._factor.update_equivalences()
+
+    def __deepcopy__(self, memo):
+        return self.__class__(factor=copy.deepcopy(self._factor, memo))
 
 
 class QueryParam(RestParam):
@@ -80,6 +84,10 @@ class BodyParam(RestParam):
         super().__init__(factor)
 
         self.content_type: ContentType = ContentType.of(content_type)
+
+    def __deepcopy__(self, memo):
+        ins = self.__class__(factor=copy.deepcopy(self._factor, memo), content_type=self.content_type.value)
+        return ins
 
 
 class PathParam(RestParam):

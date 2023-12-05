@@ -30,6 +30,13 @@ class TimeFactor(ComparableFactor):
     def printable_value(self):
         return self.value.strftime(self.format)
 
+    def __deepcopy__(self, memo):
+        ins = super().__deepcopy__(memo)
+        ins.format = self.format
+        ins.min = self.min
+        ins.max = self.max
+        return ins
+
 
 @unique
 class DateFormat(Enum):
@@ -54,6 +61,13 @@ class DateFactor(ComparableFactor):
     @property
     def printable_value(self):
         return self.value.strftime(self.format)
+
+    def __deepcopy__(self, memo):
+        ins = super().__deepcopy__(memo)
+        ins.format = self.format
+        ins.min = self.min
+        ins.max = self.max
+        return ins
 
 
 @unique
@@ -81,3 +95,10 @@ class DateTimeFactor(ComparableFactor):
     @property
     def printable_value(self):
         return self.value.strftime(self.format)
+
+    def __deepcopy__(self, memo):
+        ins = super().__deepcopy__(memo)
+        ins.format = self.format
+        ins.min = self.min
+        ins.max = self.max
+        return ins

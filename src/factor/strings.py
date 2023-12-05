@@ -21,6 +21,12 @@ class StringFactor(AbstractFactor):
         if self.max_length - self.min_length > 1:
             self.equivalences.append(VariableLength(self.min_length, self.max_length))
 
+    def __deepcopy__(self, memo):
+        ins = super().__deepcopy__(memo)
+        ins.min_length = self.min_length
+        ins.max_length = self.max_length
+        return ins
+
 
 class BinaryFactor(StringFactor):
     pass

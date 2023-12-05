@@ -1,4 +1,5 @@
 import abc
+import copy
 from abc import ABC
 from typing import Tuple, Optional, Union, Any, List
 
@@ -6,7 +7,12 @@ from src.factor.equivalence import Enumerated, AbstractEquivalence, Null
 
 
 class AbstractFactor(metaclass=abc.ABCMeta):
-    # Abstract class for parameters
+    """
+    Abstract class for parameters
+    """
+    __slots__ = (
+        "name", "_description", "required", "parent", "_examples", "_default", "domain", "index", "equivalences")
+
     def __init__(self, name: str):
         # Initialize the name and description of the factor
         self.name: str = name
@@ -99,6 +105,20 @@ class AbstractFactor(metaclass=abc.ABCMeta):
     def __repr__(self):
         return self.global_name
 
+    def __deepcopy__(self, memo):
+        ins = self.__class__(name=self.name)
+        ins._description = self._description
+        ins.required = self.required
+        ins.index = self.index
+
+        ins.parent = copy.deepcopy(self.parent, memo)
+        ins._examples = copy.deepcopy(self._examples, memo)
+        ins._default = copy.deepcopy(self._default, memo)
+        ins.domain = copy.deepcopy(self.domain, memo)
+        ins.equivalences = copy.deepcopy(self.equivalences, memo)
+
+        return ins
+
 
 class ComparableFactor(AbstractFactor, ABC):
     def __init__(self, name: str):
@@ -166,6 +186,11 @@ class EnumFactor(AbstractFactor):
 
         for v in self.domain:
             self.equivalences.append(Enumerated(v))
+
+    def __deepcopy__(self, memo):
+        ins = super().__deepcopy__(memo)
+        ins.domain = copy.deepcopy(self.domain, memo)
+        return ins
 
 
 class BoolFactor(EnumFactor):

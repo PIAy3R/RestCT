@@ -63,6 +63,7 @@ class SCA:
                 raise ValueError("unexpected empty cluster")
             real_strength = min(len(c), strength)
             for p in permutations(c, real_strength):
+                # fixme: p warning?
                 if validate(p):
                     uncovered[len(p)].add(p)
                     max_strength = max(len(p), max_strength)
@@ -165,17 +166,38 @@ class SCA:
                         count += 1
         return count
 
+    def update_uncovered_t(self, sequence: Union[List[RestOp], Tuple[RestOp]]) -> None:
+        """
+        Update the uncovered permutations
+        @param sequence: the sequence covered new permutations
+        """
+        if len(sequence) == 0:
+            return
+        for strength, uncovered in self._uncovered.items():
+            if len(uncovered) == 0:
+                continue
+            if strength <= len(sequence):
+                c_list = {c for c in combinations(sequence, strength)}
+                self._uncovered[strength] -= c_list
+
+    def uncovered_is_empty(self):
+        for _, uncovered in self._uncovered.items():
+            if len(uncovered) != 0:
+                return False
+        return True
+
 
 if __name__ == '__main__':
     from swagger import ParserV3
 
-    parser = ParserV3("/Users/lixin/Workplace/Jupyter/work/swaggers/GitLab/Project.json")
+    parser = ParserV3("/Users/naariah/Experiment/swaggers/GitLabV3/Project.json")
     operations = parser.extract()
     sca = SCA.create_sca_model(2, operations)
-    while len(sca._uncovered) > 0:
+    while not sca.uncovered_is_empty():
         s = []
         length = -1
         while len(s) != length:
             length = len(s)
             s = sca.extend(s)
         print(s)
+        sca.update_uncovered_t(s)

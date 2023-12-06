@@ -8,22 +8,7 @@ from src.factor import AbstractFactor, ArrayFactor
 
 class RestParam(metaclass=abc.ABCMeta):
     def __init__(self, factor: AbstractFactor):
-        self._factor: AbstractFactor = factor
-
-    @property
-    def name(self):
-        return self._factor.name
-
-    @property
-    def value(self):
-        return self._factor.printable_value if self._factor.is_active else None
-
-    @property
-    def param(self):
-        return self._factor
-
-    def update_domain(self, context):
-        self._factor.update_equivalences()
+        self.factor: AbstractFactor = factor
 
 
 class QueryParam(RestParam):
@@ -173,12 +158,12 @@ class RestPath:
                 if not t.is_parameter:
                     path += t.name
                 else:
-                    p = next((p for p in path_params if isinstance(p, PathParam) and p.name == t.name), None)
+                    p = next((p for p in path_params if isinstance(p, PathParam) and p.factor.name == t.name), None)
 
                     if p is None:
                         raise ValueError(f"Cannot resolve path parameter '{t.name}'")
 
-                    value = p.value
+                    value = p.factor.value
 
                     if not value.strip():
                         """
@@ -203,19 +188,19 @@ class RestPath:
 
     @staticmethod
     def resolve_query_param(params: List[RestParam]) -> List[str]:
-        usable_query_params = filter(lambda p: isinstance(p, QueryParam) and p.value is not None, params)
+        usable_query_params = filter(lambda p: isinstance(p, QueryParam) and p.factor.is_active, params)
 
         def encode(value):
             return quote(value, safe='-')
 
         def get_query_string(param: RestParam):
-            name = encode(param.name)
+            name = encode(param.factor.name)
 
-            if isinstance(param.param, ArrayFactor):
-                elements: Tuple[AbstractFactor] = param.param.get_leaves()
+            if isinstance(param.factor, ArrayFactor):
+                elements: Tuple[AbstractFactor] = param.factor.get_leaves()
                 return "&".join(f"{name}={encode(e.printable_value)}" for e in elements if e.is_active)
             else:
-                value = encode(param.value)
+                value = encode(param.factor.printable_value)
                 return f"{name}={value}"
 
         return [get_query_string(q) for q in usable_query_params]

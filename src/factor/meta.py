@@ -81,7 +81,7 @@ class AbstractFactor(metaclass=abc.ABCMeta):
 
     @property
     def is_active(self):
-        if self.domain is None or len(self.domain) == 0 or self.index < 0:
+        if self.domain is None or len(self.domain) == 0 or self.index < 0 or self.value == Null.NULL_STRING:
             return False
         return True
 
@@ -95,6 +95,8 @@ class AbstractFactor(metaclass=abc.ABCMeta):
     @property
     def printable_value(self):
         return self.value
+
+    def update_equivalences(self, ):
 
     def __eq__(self, other):
         return isinstance(other, self.__class__) and self.name == other.name

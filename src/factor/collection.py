@@ -1,4 +1,4 @@
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Dict, Any
 
 from src.factor import AbstractFactor
 from src.factor.equivalence import Null
@@ -17,6 +17,18 @@ class ObjectFactor(AbstractFactor):
 
         for p in self._additional_properties:
             p.init_equivalences()
+
+    def update_equivalences(self, inputs: Dict[str, Any] = None, responses: Dict[str, Union[list, dict]] = None):
+        for p in self._properties:
+            p.update_equivalences(inputs, responses)
+        for p in self._additional_properties:
+            p.update_equivalences(inputs, responses)
+
+    def generate_domain(self):
+        for p in self._properties:
+            p.generate_domain()
+        for p in self._additional_properties:
+            p.generate_domain()
 
     def set_required_property(self, p: AbstractFactor):
         self._properties.append(p)
@@ -90,6 +102,12 @@ class ArrayFactor(AbstractFactor):
 
     def init_equivalences(self):
         self._item.init_equivalences()
+
+    def update_equivalences(self, inputs: Dict[str, Any] = None, responses: Dict[str, Union[list, dict]] = None):
+        self._item.update_equivalences(inputs, responses)
+
+    def generate_domain(self):
+        self._item.generate_domain()
 
     def set_item(self, item_param: AbstractFactor):
         self._item = item_param

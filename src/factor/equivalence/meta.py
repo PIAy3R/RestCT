@@ -9,6 +9,9 @@ class AbstractEquivalence(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def generate(self) -> Any: pass
 
+    def __deepcopy__(self, memo):
+        return self.__class__()
+
 
 class Null(AbstractEquivalence):
     NULL_STRING = "__null__"
@@ -43,3 +46,8 @@ class Enumerated(AbstractEquivalence):
 
     def __repr__(self):
         return f"E: Enumerated {self.value}"
+
+    def __deepcopy__(self, memo):
+        ins = super().__deepcopy__(memo)
+        ins.value = self.value
+        return ins

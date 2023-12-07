@@ -14,7 +14,7 @@ class AbstractBindings(AbstractEquivalence, metaclass=abc.ABCMeta):
         DATETIME = "datetime"
         TIME = "time"
 
-    def __init__(self, target_op: str, target_param: str, p_type: AbstractBindings.TYPES, **kwargs):
+    def __init__(self, target_op: str, target_param: str, p_type, **kwargs):
         if p_type not in self.TYPES.__members__:
             raise ValueError(f"type({p_type}) is not supported")
 
@@ -70,12 +70,21 @@ class AbstractBindings(AbstractEquivalence, metaclass=abc.ABCMeta):
         pass
 
     def generate(self) -> Any:
+        if self.generator is None:
+            return "__NOT_SET__"
         return self.generator.generate()
 
     def check(self, value) -> bool:
         if self.generator is None:
             raise ValueError("Value is not set")
         return self.generator.check(value)
+
+    def __deepcopy__(self, memo):
+        ins = super().__deepcopy__(memo)
+
+        for key, value in self.__dict__.items():
+            setattr(ins, key, value.__deepcopy__(memo))
+        return ins
 
 
 class EqualTo(AbstractBindings):

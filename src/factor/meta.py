@@ -1,9 +1,9 @@
 import abc
 import copy
 from abc import ABC
-from typing import Tuple, Optional, Union, Any, List
+from typing import Tuple, Optional, Union, Any, List, Dict
 
-from src.factor.equivalence import Enumerated, AbstractEquivalence, Null
+from src.factor.equivalence import Enumerated, AbstractEquivalence, Null, AbstractBindings
 
 
 class AbstractFactor(metaclass=abc.ABCMeta):
@@ -96,7 +96,19 @@ class AbstractFactor(metaclass=abc.ABCMeta):
     def printable_value(self):
         return self.value
 
-    def update_equivalences(self, ):
+    def update_equivalences(self, inputs: Dict[str, Any] = None, responses: Dict[str, Union[list, dict]] = None):
+        for e in self.equivalences:
+            if isinstance(e, AbstractBindings):
+                e.update(inputs, responses)
+
+    def generate_domain(self):
+        """
+        when all equivalences are ready
+        generate the domain of the factor
+        """
+        self.domain.clear()
+        for e in self.equivalences:
+            self.domain.append(e.generate())
 
     def __eq__(self, other):
         return isinstance(other, self.__class__) and self.name == other.name

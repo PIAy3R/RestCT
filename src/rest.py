@@ -259,6 +259,9 @@ class RestOp:
     def __repr__(self):
         return f"{self.verb.value}:{self.path}"
 
+    def __str__(self):
+        return f"{self.verb.value}:{self.path}"
+
     def __hash__(self):
         return hash(self.__repr__())
 

@@ -24,6 +24,19 @@ class Builder:
             if new_groups:
                 self.op_groups.append([op, ])
 
+    def initialize_factors_equivalence(self):
+        """
+        1) 解决path参数的依赖问题
+        2) 其他类型的参数初始化默认等价类
+        3) todo: 如果有新的信息，也在这里对等价类进行转换
+        """
+        self.build_path_equivalences()
+        for g in self.op_groups:
+            for op in g:
+                for p in op.parameters:
+                    if not p.factor.is_initialized:
+                        p.factor.init_equivalences()
+
     def build_path_equivalences(self):
         """
         build equivalences for factors of op

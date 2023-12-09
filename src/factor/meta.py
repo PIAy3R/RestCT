@@ -81,9 +81,15 @@ class AbstractFactor(metaclass=abc.ABCMeta):
 
     @property
     def is_active(self):
+        """有确切的值"""
         if self.domain is None or len(self.domain) == 0 or self.index < 0 or self.value == Null.NULL_STRING:
             return False
         return True
+
+    @property
+    def is_initialized(self):
+        """已经有equivalences了"""
+        return len(self.equivalences) > 0
 
     @property
     def value(self):

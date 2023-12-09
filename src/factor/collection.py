@@ -18,6 +18,14 @@ class ObjectFactor(AbstractFactor):
         for p in self._additional_properties:
             p.init_equivalences()
 
+    @property
+    def is_active(self):
+        return all([p.is_active for p in self.properties])
+
+    @property
+    def is_initialized(self):
+        return all([p.is_initialized for p in self.properties])
+
     def update_equivalences(self, inputs: Dict[str, Any] = None, responses: Dict[str, Union[list, dict]] = None):
         for p in self.properties:
             p.update_equivalences(inputs, responses)
@@ -132,6 +140,14 @@ class ArrayFactor(AbstractFactor):
             return None
         else:
             raise ValueError("ArrayFactor's example must be a list")
+
+    @property
+    def is_active(self):
+        return self.item.is_active
+
+    @property
+    def is_initialized(self):
+        return self.item.is_initialized
 
     def __deepcopy__(self, memo):
         ins = super().__deepcopy__(memo)

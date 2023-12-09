@@ -4,7 +4,8 @@ from enum import Enum
 from typing import List, Tuple, Optional
 from urllib.parse import quote
 
-from src.factor import AbstractFactor, ArrayFactor
+from src.factor import AbstractFactor, ArrayFactor, ObjectFactor
+from src.nlp import word_similarity
 
 
 class RestParam(metaclass=abc.ABCMeta):
@@ -12,7 +13,7 @@ class RestParam(metaclass=abc.ABCMeta):
         self.factor: AbstractFactor = factor
 
     def __deepcopy__(self, memo):
-        return self.__class__(factor=copy.deepcopy(self._factor, memo))
+        return self.__class__(factor=copy.deepcopy(self.factor, memo))
 
 
 class QueryParam(RestParam):
@@ -88,6 +89,10 @@ class RestPath:
         def __init__(self, tokens: list):
             self.tokens = tokens
 
+        @property
+        def is_parameter(self):
+            return any([t.is_parameter for t in self.tokens])
+
         def __repr__(self):
             return "".join([t.__repr__() for t in self.tokens])
 
@@ -105,11 +110,11 @@ class RestPath:
 
     class Token:
         def __init__(self, name: str, is_parameter: bool):
-            self._name = name
-            self._is_parameter = is_parameter
+            self.name = name
+            self.is_parameter = is_parameter
 
         def __repr__(self):
-            return "{" + self._name + "}" if self._is_parameter else self._name
+            return "{" + self.name + "}" if self.is_parameter else self.name
 
         def __str__(self):
             return self.__repr__()
@@ -118,7 +123,7 @@ class RestPath:
             if not isinstance(other, RestPath.Token):
                 return False
 
-            return self._name == other._name and self._is_parameter == self._is_parameter
+            return self.name == other.name and self.is_parameter == self.is_parameter
 
     @staticmethod
     def _extract_element(s):
@@ -218,6 +223,11 @@ class RestPath:
             return False
         return all([e == other.elements[i] for i, e in enumerate(self.elements)])
 
+    def is_directly_parent_of(self, other):
+        if len(self.elements) + 1 != len(other.elements):
+            return False
+        return all([e == other.elements[i] for i, e in enumerate(self.elements)])
+
     def __repr__(self):
         return f"{self.computed_to_string}"
 
@@ -277,10 +287,34 @@ class RestResponse:
         self.status_code: Optional[int] = status_code
         self.description: Optional[str] = description
 
+        # 目前支持一个content
         self.contents: List[Tuple[str, AbstractFactor]] = []
 
     def add_content(self, content: AbstractFactor, content_type: str):
         self.contents.append((content_type, content))
+
+    def match_binding(self, name: str) -> Tuple[bool, Optional[AbstractFactor]]:
+        """
+        :param name:
+        :return:
+        """
+        similarity = 0
+        matched: Optional[AbstractFactor] = None
+        for _, c in self.contents:
+            if isinstance(c, ArrayFactor):
+                c = c.item
+
+            if isinstance(c, ObjectFactor):
+                for p in c.properties:
+                    s = word_similarity(name, p.name)
+                    if s > similarity:
+                        similarity = s
+                        matched = p
+                    if similarity == 1:
+                        return True, matched
+        if similarity < 0.5:
+            return False, None
+        return True, matched
 
     def __repr__(self):
         return f"{self.status_code}:{self.description}"

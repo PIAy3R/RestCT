@@ -14,8 +14,10 @@ class AbstractBindings(AbstractEquivalence, metaclass=abc.ABCMeta):
         DATETIME = "datetime"
         TIME = "time"
 
+    NOT_SET = "__NOT_SET__"
+
     def __init__(self, target_op: str, target_param: str, p_type, **kwargs):
-        if p_type not in self.TYPES.__members__:
+        if p_type not in AbstractBindings.TYPES.__members__.values():
             raise ValueError(f"type({p_type}) is not supported")
 
         self.target_op: str = target_op
@@ -71,7 +73,7 @@ class AbstractBindings(AbstractEquivalence, metaclass=abc.ABCMeta):
 
     def generate(self) -> Any:
         if self.generator is None:
-            return "__NOT_SET__"
+            return AbstractBindings.NOT_SET
         return self.generator.generate()
 
     def check(self, value) -> bool:
@@ -86,9 +88,14 @@ class AbstractBindings(AbstractEquivalence, metaclass=abc.ABCMeta):
             setattr(ins, key, value.__deepcopy__(memo))
         return ins
 
+    def __eq__(self, other):
+        if isinstance(other, EqualTo):
+            return self.target_op == other.target_op and self.target_param == other.target_param
+        return False
+
 
 class EqualTo(AbstractBindings):
-    def __init__(self, target_op: str, target_param: str, p_type: type, **kwargs):
+    def __init__(self, target_op: str, target_param: str, p_type: AbstractBindings.TYPES, **kwargs):
         super().__init__(target_op, target_param, p_type, **kwargs)
 
     def _update_comparator(self):
@@ -105,7 +112,7 @@ class EqualTo(AbstractBindings):
 
 
 class GreaterThan(AbstractBindings):
-    def __init__(self, target_op: str, target_param: str, p_type: type, **kwargs):
+    def __init__(self, target_op: str, target_param: str, p_type: AbstractBindings.TYPES, **kwargs):
         super().__init__(target_op, target_param, p_type, **kwargs)
 
     def _update_comparator(self):

@@ -205,3 +205,18 @@ class ArrayGenerator:
 
             a.append(d)
         return a
+
+
+if __name__ == '__main__':
+    os.environ["OUTPUT_FOLDER"] = "/Users/lixin/Desktop"
+    os.environ["ACTS_JAR"] = "/Users/lixin/Workplace/Python/PRestCT/lib/acts_2.93.jar"
+    acts = ArrayGenerator()
+
+    from swagger import ParserV3
+
+    parser = ParserV3("/Users/lixin/Workplace/Jupyter/work/swaggers/GitLab/Project.json")
+    operations = parser.extract()
+
+    op = operations[0]
+
+    factors = [f_list for f_list in op.parameters]

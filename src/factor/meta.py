@@ -23,7 +23,7 @@ class AbstractFactor(metaclass=abc.ABCMeta):
         self.parent: Optional[AbstractFactor] = None
 
         # specified values
-        self._examples: Optional[list] = None
+        self._examples: list = []
         self._default: Optional[Any] = None
 
         self.domain: list = []

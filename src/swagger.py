@@ -131,6 +131,9 @@ class ParserV3:
         # todo: 没有见过 max_properties 和 min_properties，暂时不处理
         object_factor = ObjectFactor(name)
 
+        if len(schema.required) == 0:
+            schema.required = [_.name for _ in schema.properties]
+
         for p in schema.properties:
             p_factor = ParserV3._extract_factor(p.name, p.schema)
             if p_factor.name in schema.required:

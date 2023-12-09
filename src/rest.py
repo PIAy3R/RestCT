@@ -294,10 +294,12 @@ class RestResponse:
         self.contents.append((content_type, content))
 
     def match_binding(self, name: str) -> Tuple[bool, Optional[AbstractFactor]]:
-        """
-        :param name:
-        :return:
-        """
+        matched, matched_p = self._match_exact_name(name)
+        if not matched:
+            matched, matched_p = self._match_based_on_similarity(name)
+        return matched, matched_p
+
+    def _match_based_on_similarity(self, name):
         similarity = 0
         matched: Optional[AbstractFactor] = None
         for _, c in self.contents:
@@ -315,6 +317,19 @@ class RestResponse:
         if similarity < 0.5:
             return False, None
         return True, matched
+
+    def _match_exact_name(self, name: str) -> Tuple[bool, Optional[AbstractFactor]]:
+        similarity = 0
+        matched: Optional[AbstractFactor] = None
+        for _, c in self.contents:
+            if isinstance(c, ArrayFactor):
+                c = c.item
+
+            if isinstance(c, ObjectFactor):
+                for p in c.properties:
+                    if p.name.lower() == name.lower():
+                        return True, p
+        return False, None
 
     def __repr__(self):
         return f"{self.status_code}:{self.description}"

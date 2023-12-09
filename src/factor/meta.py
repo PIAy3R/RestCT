@@ -82,7 +82,7 @@ class AbstractFactor(metaclass=abc.ABCMeta):
     @property
     def is_active(self):
         """有确切的值"""
-        if self.domain is None or len(self.domain) == 0 or self.index < 0 or self.value == Null.NULL_STRING:
+        if self.domain is None or len(self.domain) == 0 or self.index < 0:
             return False
         return True
 
@@ -197,6 +197,7 @@ class EnumFactor(AbstractFactor):
     def __init__(self, name: str, enum_value: list):
         super().__init__(name)
         self.domain = enum_value
+        self.index = 0
 
     def init_equivalences(self):
         super().init_equivalences()

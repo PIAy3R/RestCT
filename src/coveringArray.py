@@ -213,9 +213,13 @@ if __name__ == '__main__':
     acts = ArrayGenerator()
 
     from swagger import ParserV3
+    from bindingFactory import Builder
 
     parser = ParserV3("/Users/lixin/Workplace/Jupyter/work/swaggers/GitLab/Project.json")
     operations = parser.extract()
+    builder = Builder()
+    builder.initialize(operations)
+    builder.initialize_factors_equivalence()
 
     op = operations[0]
 

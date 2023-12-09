@@ -1,6 +1,6 @@
+from .meta import AbstractEquivalence, Enumerated, Null
 from .bind import AbstractBindings, EqualTo
 from .date import DateTimeBetween, DateBetween, TimeBetween
-from .meta import AbstractEquivalence, Enumerated, Null
 from .numeric import FloatBetween, IntBetween, Zero
 from .strings import Empty, FixedLength, Regex, VariableLength
 

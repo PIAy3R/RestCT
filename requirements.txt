@@ -31,3 +31,6 @@ typer==0.3.2
 typing_extensions==4.4.0
 urllib3==1.26.16
 wasabi==0.10.1
+
+neo4j==5.14.1
+faker==19.6.1

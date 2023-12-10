@@ -112,7 +112,7 @@ class Example:
         allValues = list()
         for example in Example.members:
             if example.parameterStr == parameterStr:
-                allValues.append(example.value)
+                allValues.append(example.raw_value)
         return allValues
 
     def __hash__(self):
@@ -176,7 +176,8 @@ class Fuzzer:
             return [Fuzzer.mutate_str(str(v), t_set[i % 2]) for i in range(r)]
 
 
-class AbstractParam(metaclass=abc.ABCMeta):
+class \
+        AbstractParam(metaclass=abc.ABCMeta):
     randomCount = 3
 
     def __init__(self, specifiedName: str, default: list, loc: Loc, required: bool, paramType: DataType,

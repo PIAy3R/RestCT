@@ -1,9 +1,22 @@
 import spacy
+import wordninja
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 from spacy.tokens import Token, Doc, Span
 from spacy.language import Language
 from spacy.matcher import PhraseMatcher
 from typing import Tuple, List, Dict, Any
 
+def word_similarity(str1: str, str2: str):
+    """
+    Calculates the cosine similarity between two strings.
+    """
+    str1 = [w.lower() for w in wordninja.split(str1)]
+    str2 = [w.lower() for w in wordninja.split(str2)]
+
+    vectorizer = CountVectorizer().fit_transform([' '.join(str1), ' '.join(str2)])
+    cosine_sim = cosine_similarity(vectorizer)
+    return cosine_sim[0][1]
 
 @Language.factory("restct_param")
 class RestctParamComponent:
@@ -224,3 +237,4 @@ if __name__ == "__main__":
                 f"Parameter: {ent.text}, Global Name: {ent._.global_name}, Prefix: {ent._.prefix_string}, Suffix: {ent._.suffix_string}")
         if ent.label_ == "VALUE":
             print(f"Value: {ent.text}, Global Name: {ent._.global_name}, Prefix: {ent._.prefix_string}, Suffix: {ent._.suffix_string}")
+

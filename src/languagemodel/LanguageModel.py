@@ -119,7 +119,7 @@ class BasicLanguageModel:
             response_format={"type": "json_object"}
         )
         self._manager.register_llm_call()
-        self._manager.count_llm_tokens(num_tokens)
+        # self._manager.count_llm_tokens(num_tokens)
         end_time = time.time()
         logger.info(f"call time: {end_time - start_time} s")
         return response.choices[0].message.content, message

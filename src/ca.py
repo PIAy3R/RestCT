@@ -694,16 +694,14 @@ class CAWithLLM(CA):
             return True
 
         history = []
-        flag = False
 
         self._reset_constraints(operation, operation.parameterList)
 
         if self._manager.get_llm_examples().get(operation) is None or len(
                 self._manager.get_llm_examples().get(operation)) == 0:
             flag = self._call_language_model(operation)
-
-        if not flag:
-            return False
+            if not flag:
+                return False
 
         e_ca = self._handle_essential_params(operation, sequence[:index], chain, history)
         logger.info(f"{index + 1}-th operation essential parameters covering array size: {len(e_ca)}, "
@@ -771,7 +769,9 @@ class CAWithLLM(CA):
             if not is_break_e:
                 logger.info("no success request, use llm to help re-generate")
                 is_break = self._re_handle(index, operation, chain, sequence, loop_num)
-            return is_break_e
+                return is_break
+            else:
+                return is_break_e
 
         a_ca = self._handle_all_params(operation, sequence[:index], chain, history)
         logger.info(f"{index + 1}-th operation all parameters covering array size: {len(a_ca)}, "

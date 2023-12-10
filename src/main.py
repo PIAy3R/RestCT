@@ -62,7 +62,7 @@ class Config:
         self.forwarding_url = None
 
         self.use_llm = False
-        self.language_model = "gpt-3.5-turbo"
+        self.language_model = "gpt-3.5-turbo-1106"
         self.language_model_key = ""
 
     def checkAndPrehandling(self, settings: Namespace):

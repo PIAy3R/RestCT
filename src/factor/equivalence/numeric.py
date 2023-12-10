@@ -35,6 +35,9 @@ class IntBetween(AbstractEquivalence):
     def __repr__(self):
         return f"E: Int({self.min},{self.max})"
 
+    def __deepcopy__(self, memo):
+        return self.__class__(self.min, self.max)
+
 
 class FloatBetween(AbstractEquivalence):
     def __init__(self, minimum: float, maximum: float):
@@ -58,6 +61,9 @@ class FloatBetween(AbstractEquivalence):
 
     def __repr__(self):
         return f"E: Float({self.min},{self.max})"
+
+    def __deepcopy__(self, memo):
+        return self.__class__(self.min, self.max)
 
 
 class IntPositive(AbstractEquivalence):

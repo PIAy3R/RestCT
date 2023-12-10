@@ -1,3 +1,4 @@
+import copy
 import math
 import sys
 from abc import ABC
@@ -50,12 +51,15 @@ class AbstractNumericFactor(ComparableFactor, ABC):
         return self._max_value
 
     def __deepcopy__(self, memo):
-        ins = super().__deepcopy__(memo)
-        ins._min_value = self._min_value
-        ins._max_value = self._max_value
-        ins._exclusive_min_value = self._exclusive_min_value
-        ins._exclusive_max_value = self._exclusive_max_value
+        ins = self.__class__(self.global_name, self._min_value, self._max_value, self._exclusive_min_value,
+                             self._exclusive_max_value)
         ins._multiple_of = self._multiple_of
+
+        ins._description = self._description
+        ins.required = self.required
+        ins.index = self.index
+        ins.domain = [copy.deepcopy(v, memo) for v in self.domain]
+        ins.equivalences = [e.__deepcopy__(memo) for e in self.equivalences]
         return ins
 
 

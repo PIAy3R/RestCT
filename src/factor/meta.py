@@ -48,8 +48,8 @@ class AbstractFactor(metaclass=abc.ABCMeta):
                 if e not in self._examples:
                     self._examples.append(e)
 
-    @abc.abstractmethod
     def init_equivalences(self):
+        self.equivalences.clear()
         if not self.required:
             self.equivalences.append(Null())
 
@@ -126,12 +126,11 @@ class AbstractFactor(metaclass=abc.ABCMeta):
         return self.global_name
 
     def __deepcopy__(self, memo):
-        ins = self.__class__(name=self.name)
+        ins = self.__class__(name=self.name, )
         ins._description = self._description
         ins.required = self.required
         ins.index = self.index
 
-        ins.parent = copy.deepcopy(self.parent, memo)
         ins._examples = copy.deepcopy(self._examples, memo)
         ins._default = copy.deepcopy(self._default, memo)
         ins.domain = copy.deepcopy(self.domain, memo)
@@ -198,6 +197,7 @@ class EnumFactor(AbstractFactor):
         super().__init__(name)
         self.domain = enum_value
         self.index = 0
+        self.init_equivalences()
 
     def init_equivalences(self):
         super().init_equivalences()
@@ -209,11 +209,22 @@ class EnumFactor(AbstractFactor):
             self.equivalences.append(Enumerated(v))
 
     def __deepcopy__(self, memo):
-        ins = super().__deepcopy__(memo)
-        ins.domain = copy.deepcopy(self.domain, memo)
+        ins = self.__class__(self.name, [copy.deepcopy(v, memo) for v in self.domain])
+        ins._description = self._description
+        ins.required = self.required
+        ins.index = self.index
+
         return ins
 
 
 class BoolFactor(EnumFactor):
     def __init__(self, name: str):
         super(BoolFactor, self).__init__(name, [True, False])
+
+    def __deepcopy__(self, memo):
+        ins = self.__class__(self.name)
+        ins._description = self._description
+        ins.required = self.required
+        ins.index = self.index
+
+        return ins

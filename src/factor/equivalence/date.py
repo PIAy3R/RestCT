@@ -29,6 +29,9 @@ class DateTimeBetween(AbstractEquivalence):
     def __repr__(self):
         return f"E: DateTimeBetween {self.begin} {self.end}"
 
+    def __deepcopy__(self, memo):
+        return self.__class__(self.begin, self.end)
+
 
 class DateBetween(AbstractEquivalence):
     def __init__(self, begin: datetime, end: datetime):
@@ -55,6 +58,9 @@ class DateBetween(AbstractEquivalence):
     def __repr__(self):
         return f"E: DateBetween {self.begin} {self.end}"
 
+    def __deepcopy__(self, memo):
+        return self.__class__(self.begin, self.end)
+
 
 class TimeBetween(AbstractEquivalence):
     def __init__(self, begin: datetime, end: datetime):
@@ -80,3 +86,6 @@ class TimeBetween(AbstractEquivalence):
 
     def __repr__(self):
         return f"E: TimeBetween {self.begin} {self.end}"
+
+    def __deepcopy__(self, memo):
+        return self.__class__(self.begin, self.end)

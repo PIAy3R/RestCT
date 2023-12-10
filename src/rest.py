@@ -72,7 +72,7 @@ class BodyParam(RestParam):
         self.content_type: ContentType = ContentType.of(content_type)
 
     def __deepcopy__(self, memo):
-        ins = self.__class__(factor=copy.deepcopy(self._factor, memo), content_type=self.content_type.value)
+        ins = self.__class__(factor=copy.deepcopy(self.factor, memo), content_type=self.content_type.value)
         return ins
 
 
@@ -266,6 +266,10 @@ class RestOp:
 
         self.responses: List[RestResponse] = []
 
+    def resolve_url(self) -> str:
+        path = self.path.resolve_path_param(self.parameters)
+        return f"{self._host.strip('/')}/{path.strip('/')}"
+
     def __repr__(self):
         return f"{self.verb.value}:{self.path}"
 
@@ -280,6 +284,12 @@ class RestOp:
             return False
 
         return self.verb == other.verb and self.path == other.path
+
+    def __deepcopy__(self, memo):
+        """for rendering values"""
+        ins = RestOp(self._host, self.path.computed_to_string, self.verb.value)
+        ins.parameters.extend(copy.deepcopy(self.parameters, memo))
+        return ins
 
 
 class RestResponse:

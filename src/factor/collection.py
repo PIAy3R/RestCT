@@ -23,6 +23,22 @@ class ObjectFactor(AbstractFactor):
         return all([p.is_active for p in self.properties])
 
     @property
+    def value(self):
+        v = {}
+        for p in self.properties:
+            if p.printable_value == Null.NULL_STRING:
+                continue
+            v[p.name] = p.printable_value
+        for p in self._additional_properties:
+            if p.printable_value == Null.NULL_STRING:
+                continue
+            v[p.name] = p.printable_value
+        if len(v.keys()) == 0:
+            return Null.NULL_STRING
+        else:
+            return v
+
+    @property
     def is_initialized(self):
         return all([p.is_initialized for p in self.properties])
 
@@ -57,19 +73,7 @@ class ObjectFactor(AbstractFactor):
 
     @property
     def printable_value(self):
-        v = {}
-        for p in self.properties:
-            if p.printable_value == Null.NULL_STRING:
-                continue
-            v[p.name] = p.printable_value
-        for p in self._additional_properties:
-            if p.printable_value == Null.NULL_STRING:
-                continue
-            v[p.name] = p.printable_value
-        if len(v.keys()) == 0:
-            return Null.NULL_STRING
-        else:
-            return v
+        return self.value
 
     def _spilt_example(self, example) -> Union[list, None]:
         if example is None:
@@ -126,10 +130,7 @@ class ArrayFactor(AbstractFactor):
 
     @property
     def printable_value(self):
-        if self.item.printable_value == Null.NULL_STRING:
-            return Null.NULL_STRING
-        else:
-            return [self.item.printable_value, ]
+        return self.value
 
     def _spilt_example(self, example) -> Union[list, None]:
         if example is None:
@@ -144,6 +145,13 @@ class ArrayFactor(AbstractFactor):
     @property
     def is_active(self):
         return self.item.is_active
+
+    @property
+    def value(self):
+        if self.item.printable_value == Null.NULL_STRING:
+            return Null.NULL_STRING
+        else:
+            return [self.item.printable_value, ]
 
     @property
     def is_initialized(self):

@@ -24,7 +24,7 @@ class ParserV3:
         if parsed.scheme == 0 or parsed.netloc == 0:
             raise ValueError(f"Invalid URI {server.url}: Scheme and netloc are required.")
 
-        self._server = parsed.geturl()
+        return parsed.geturl()
 
     def extract(self):
         operations = []
@@ -84,7 +84,7 @@ class ParserV3:
         """
         # factor info: AbstractFactor
         factor: AbstractFactor = ParserV3._extract_factor(param.name, param.schema)
-
+        factor.required = param.required
         if param.location is ParameterLocation.QUERY:
             rest_param = QueryParam(factor)
         elif param.location is ParameterLocation.HEADER:
@@ -115,8 +115,6 @@ class ParserV3:
             factor = ParserV3._build_object_factor(name, schema)
         else:
             raise ValueError(f"{name} -> Unsupported schema: {schema}")
-
-        factor.required = not schema.nullable
 
         if schema.example is not None:
             factor.set_example(schema.example)

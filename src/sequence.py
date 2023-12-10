@@ -1,4 +1,4 @@
-from itertools import permutations, combinations
+from itertools import permutations, combinations, chain
 from random import choice
 from typing import Set, List, Tuple, Dict, Union
 
@@ -18,29 +18,14 @@ class SCA:
         self.operations: List[RestOp] = available_ops
 
     @classmethod
-    def create_sca_model(cls, strength: int, available_ops: List[RestOp]):
+    def create_sca_model(cls, strength: int, clusters: List[List[RestOp]]):
         """
-        Create a SCA model
+        Create an SCA model
         :param strength: the strength of the SCA model
-        :param available_ops: a list of RestOp
-        :return: a SCA model
+        :param clusters: a list of RestOp
+        :return: an SCA model
         """
         uncovered: Dict[int, Set[Tuple[RestOp]]] = {k: set() for k in range(1, strength + 1)}
-        # group operations
-        clusters: List[List[RestOp]] = []
-        sorted_ops = sorted(available_ops, key=lambda x: len(x.path.elements), reverse=True)
-        for op in sorted_ops:
-            if len(clusters) == 0:
-                clusters.append([op, ])
-            else:
-                new_cluster = True
-                for c in clusters:
-                    if any([op.path.is_ancestor_of(c_op.path) for c_op in c]):
-                        c.append(op)
-                        new_cluster = False
-
-                if new_cluster:
-                    clusters.append([op, ])
 
         def validate(permutation: Tuple[RestOp]) -> bool:
             if len(permutation) == 0:
@@ -72,7 +57,7 @@ class SCA:
         if max_strength < strength:
             raise ValueError("can not find a permutation of strength {}".format(strength))
 
-        return SCA(strength, available_ops, uncovered)
+        return SCA(strength, list(set(chain(*clusters))), uncovered)
 
     def extend(self, sequence: List[RestOp]) -> Union[List[RestOp], None]:
         # c_size: the size of combinations

@@ -48,6 +48,4 @@ class Enumerated(AbstractEquivalence):
         return f"E: Enumerated {self.value}"
 
     def __deepcopy__(self, memo):
-        ins = super().__deepcopy__(memo)
-        ins.value = self.value
-        return ins
+        return self.__class__(self.value)

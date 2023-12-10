@@ -37,6 +37,9 @@ class FixedLength(AbstractEquivalence):
     def __repr__(self):
         return f"E: FixedLength({self.length})"
 
+    def __deepcopy__(self, memo):
+        return self.__class__(self.length)
+
 
 class VariableLength(AbstractEquivalence):
     def __init__(self, minimum: int, maximum: int):
@@ -57,6 +60,9 @@ class VariableLength(AbstractEquivalence):
     def __repr__(self):
         return f"E: VariableLength({self.min}, {self.max})"
 
+    def __deepcopy__(self, memo):
+        return self.__class__(self.min, self.max)
+
 
 class Regex(AbstractEquivalence):
     def __init__(self, regex: str):
@@ -74,3 +80,6 @@ class Regex(AbstractEquivalence):
 
     def __repr__(self):
         return f"E: Regex({self.regex})"
+
+    def __deepcopy__(self, memo):
+        return self.__class__(self.regex)

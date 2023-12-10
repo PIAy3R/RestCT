@@ -1,11 +1,13 @@
+from typing import Dict
+
 import spacy
 import wordninja
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-from spacy.tokens import Token, Doc, Span
 from spacy.language import Language
 from spacy.matcher import PhraseMatcher
-from typing import Tuple, List, Dict, Any
+from spacy.tokens import Doc, Span
+
 
 def word_similarity(str1: str, str2: str):
     """
@@ -17,6 +19,7 @@ def word_similarity(str1: str, str2: str):
     vectorizer = CountVectorizer().fit_transform([' '.join(str1), ' '.join(str2)])
     cosine_sim = cosine_similarity(vectorizer)
     return cosine_sim[0][1]
+
 
 @Language.factory("restct_param")
 class RestctParamComponent:
@@ -163,7 +166,7 @@ class RestctValueComponent:
         return len([e for e in doc.ents if e.label_ == self.name])
 
     def get_values(self, doc: Doc) -> list:
-        return [ent for ent in doc.ents if ent.label_ == "VALUE"]
+        return [_e for _e in doc.ents if _e.label_ == self.name]
 
 
 def parse_json(response, param_names: Dict[str, str], extra_noun: str = None) -> Dict[str, str]:
@@ -193,7 +196,7 @@ def parse_text(nlp, text, extra_noun):
     valid_sentence = []
     doc = nlp(text)
     for sentence in doc.sents:
-        missing_subject, missing_object = is_complate(sentence)
+        missing_subject, missing_object = is_complete(sentence)
         if missing_subject:
             new_text = f"{extra_noun} {text}"
         else:
@@ -204,7 +207,7 @@ def parse_text(nlp, text, extra_noun):
     return valid_sentence
 
 
-def is_complate(sentence):
+def is_complete(sentence):
     missing_subject = True
     missing_object = True
     for token in sentence:
@@ -216,25 +219,26 @@ def is_complate(sentence):
 
 
 if __name__ == "__main__":
-    nlp = spacy.load("en_core_web_sm")
+    _nlp = spacy.load("en_core_web_sm")
 
-    param_names_dict = {"language": "language", "param1": "param1","param2": "param2"}
-    value = {"language": tuple(["en-US", "de-DE", "fr", "auto"]), "param1": tuple(["test1"]), "param2": tuple(["test1"])}
+    param_names_dict = {"language": "language", "param1": "param1", "param2": "param2"}
+    value = {"language": tuple(["en-US", "de-DE", "fr", "auto"]), "param1": tuple(["test1"]),
+             "param2": tuple(["test1"])}
 
-    nlp.add_pipe("restct_param", None, config={"op_id": "test", "param_names": param_names_dict})
-    nlp.add_pipe("restct_value", None,
-                 config={"op_id": "test", "param_names": param_names_dict, "available_values": value})
+    _nlp.add_pipe("restct_param", None, config={"op_id": "test", "param_names": param_names_dict})
+    _nlp.add_pipe("restct_value", None,
+                  config={"op_id": "test", "param_names": param_names_dict, "available_values": value})
 
     # 处理文本，生成 Doc 对象
     text1 = "A language code like ‘en-US’, ‘de-DE’, ‘fr’ or ‘auto’."
     text2 = "param1 has value test1, and param2 also has value test1"
-    doc = nlp(text2)
+    _doc = _nlp(text2)
 
     # 遍历文档中的实体，打印参数信息
-    for ent in doc.ents:
+    for ent in _doc.ents:
         if ent.label_ == "PARAMETER":
             print(
                 f"Parameter: {ent.text}, Global Name: {ent._.global_name}, Prefix: {ent._.prefix_string}, Suffix: {ent._.suffix_string}")
         if ent.label_ == "VALUE":
-            print(f"Value: {ent.text}, Global Name: {ent._.global_name}, Prefix: {ent._.prefix_string}, Suffix: {ent._.suffix_string}")
-
+            print(
+                f"Value: {ent.text}, Global Name: {ent._.global_name}, Prefix: {ent._.prefix_string}, Suffix: {ent._.suffix_string}")

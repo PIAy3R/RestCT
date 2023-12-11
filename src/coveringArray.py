@@ -23,7 +23,7 @@ class CA:
         self.test_case_id = 0
         self.strength = strength
         self.generator = ArrayGenerator()
-        self.executor = RestRequest()
+        self.executor = None
 
         # historical responses of executed http requests in the case
         self._historical_responses: Dict[str, Union[dict, list, str]] = dict()
@@ -94,7 +94,7 @@ class CA:
             for f in param.factor.get_leaves():
                 f.index = case[f.name]
 
-    def _handle_one_case(self, case: Dict[str, int]):
+    def _handle_one_case(self, case: Dict[str, int]) -> Tuple[int, Union[dict, str]]:
         """
         @param case: 参数覆盖表的一个用例
         """
@@ -103,9 +103,11 @@ class CA:
         self._update_domain_index(op, case)
         self._update_bindings(op)
 
-        self._execute_case(op)
+        status_code, response = self._execute_case(op)
+        if self.response is not None and 200 < status_code < 300:
+            self.response = response
 
-    def _execute_case(self, op: RestOp):
+    def _execute_case(self, op: RestOp) -> Tuple[int, Union[dict, str]]:
         url = op.resolve_url()
         method = op.verb
         query_params = {p.factor.name: p.factor.printable_value for p in op.parameters if
@@ -113,11 +115,13 @@ class CA:
         header_params = {p.factor.name: p.factor.printable_value for p in op.parameters if
                          isinstance(p, HeaderParam) and p.factor.value != Null.NULL_STRING}
         path_param = next(filter(lambda p: isinstance(p, PathParam), op.parameters), None)
+        kwargs = dict()
         body = None
         if path_param is not None:
+            kwargs["Content-Type"] = path_param.factor.content_type
             body = path_param.factor.printable_value
 
-        self.response = self.executor.send(method, url, query_params, header_params, body)
+        return self.executor.send(method, url, headers=header_params, query=query_params, body=body, **kwargs)
 
     def handle(self, sequence: List[RestOp]):
         self.reset()
@@ -142,6 +146,10 @@ class CA:
 
             for case in covering_arrays:
                 self._handle_one_case(case)
+
+            if self.response is not None:
+                self._historical_responses[op.__str__()] = self.response
+                self.response = None
 
 
 class ArrayGenerator:
@@ -272,6 +280,11 @@ if __name__ == '__main__':
     from bindingFactory import Builder
     from sequence import SCA
 
+    from executor import HeaderAuth, Auth
+
+    header_auth = HeaderAuth("Authorization", "Bearer GzyzXQYAsPkcRLZzeNTp")
+    auth = Auth(header_auth=header_auth)
+
     parser = ParserV3("/Users/lixin/Workplace/Jupyter/work/swaggers/GitLab/Project.json")
     operations = parser.extract()
     builder = Builder()
@@ -279,6 +292,7 @@ if __name__ == '__main__':
     builder.initialize_factors_equivalence()
 
     ca = CA(2)
+    ca.executor = RestRequest(auth)
 
     for seq in SCA.create_sca_model(2, builder.op_groups):
         ca.handle(seq)

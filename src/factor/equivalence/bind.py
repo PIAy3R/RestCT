@@ -1,4 +1,5 @@
 import abc
+import copy
 from datetime import datetime
 from enum import Enum
 from typing import Any, Optional, Dict, Union
@@ -82,10 +83,10 @@ class AbstractBindings(AbstractEquivalence, metaclass=abc.ABCMeta):
         return self.generator.check(value)
 
     def __deepcopy__(self, memo):
-        ins = super().__deepcopy__(memo)
+        ins = self.__class__(self.target_op, self.target_param, self.type)
 
         for key, value in self.__dict__.items():
-            setattr(ins, key, value.__deepcopy__(memo))
+            setattr(ins, key, copy.deepcopy(value, memo))
         return ins
 
     def __eq__(self, other):

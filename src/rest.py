@@ -12,6 +12,12 @@ class RestParam(metaclass=abc.ABCMeta):
     def __init__(self, factor: AbstractFactor):
         self.factor: AbstractFactor = factor
 
+    def __str__(self):
+        return f"{self.__class__.__name__}: {self.factor}"
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}: {self.factor}"
+
     def __deepcopy__(self, memo):
         return self.__class__(factor=copy.deepcopy(self.factor, memo))
 

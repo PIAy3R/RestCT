@@ -1,5 +1,6 @@
 import dataclasses
-from typing import Tuple, Union, Optional, Iterable
+from collections import defaultdict
+from typing import Tuple, Union, Optional
 
 import requests
 
@@ -20,21 +21,25 @@ class QueryAuth:
 
 
 class Auth:
-    def __init__(self, header_auths: Optional[Iterable[HeaderAuth]] = None,
-                 query_auths: Optional[Iterable[QueryAuth]] = None):
-        self.header_auths = header_auths if header_auths is not None else []
-        self.query_auths = query_auths if query_auths is not None else []
+    def __init__(self, header_auth: Optional[HeaderAuth] = None,
+                 query_auth: Optional[QueryAuth] = None):
+        self.header_auth = header_auth
+        self.query_auth = query_auth
 
     def __call__(self, r):
-        for a in self.header_auths:
-            r.headers[a.key] = a.token
-        for a in self.query_auths:
-            r.params[a.key] = a.token
+        if self.header_auth is not None:
+            r.headers[self.header_auth.key] = self.header_auth.token
+        if self.query_auth is not None:
+            r.params[self.query_auth.key] = self.query_auth.token
         return r
 
 
 class RestRequest:
     UNEXPECTED = 700
+
+    def __init__(self, auth: Auth):
+        self.info = defaultdict(list)
+        self.auth: Auth = auth
 
     @staticmethod
     def validate(verb: Method, url: str, headers: dict, **kwargs):
@@ -52,21 +57,28 @@ class RestRequest:
     def send(self, verb: Method, url: str, headers: dict, **kwargs) -> Tuple[int, Union[str, dict]]:
         self.validate(verb, url, headers, **kwargs)
 
-        header_auths = kwargs.get("header_auths", None)
-        query_auths = kwargs.get("query_auths", None)
-
-        auth = None
-        if header_auths is not None or query_auths is not None:
-            auth = Auth(header_auths, query_auths)
+        # header_auths = kwargs.get("header_auths", None)
+        # query_auths = kwargs.get("query_auths", None)
+        #
+        # auth = None
+        # if header_auths is not None or query_auths is not None:
+        #     auth = Auth(header_auths, query_auths)
 
         if verb in [Method.POST, Method.PUT]:
-            status_code, response_content = self.send_request_with_content(verb, url, headers, auth, **kwargs)
+            status_code, response_content = self.send_request_with_content(verb, url, headers, self.auth, **kwargs)
 
         elif verb in [Method.GET, Method.DELETE]:
-            status_code, response_content = self.send_request(url, headers, auth, **kwargs)
+            status_code, response_content = self.send_request(url, headers, self.auth, **kwargs)
         else:
             raise TypeError(f"Do not support the http method {verb} now")
+
+        self._record(verb, url, status_code, response_content)
+        print(f"{verb.value}:{url} {status_code}, {response_content}")
         return status_code, response_content
+
+    def _record(self, verb: Method, url: str, status_code: int, response_content: Union[str, dict]):
+        op_id: str = f"{verb.value}:{url}"
+        self.info[op_id].append(status_code)
 
     @staticmethod
     def send_request_with_content(method: Method, url: str, headers: dict, auth: Optional[Auth], **kwargs) \

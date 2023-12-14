@@ -34,6 +34,10 @@ class Snapshot:
     op_num: int = 0
     op_executed_num: int = 0
     op_success_num: int = 0
+    llm_call: int = 0
+    call_time: int = 0
+    token_nums: int = 0
+    money_cost: int = 0
     bug: int = 0
 
 
@@ -73,8 +77,17 @@ class Statistics:
         self.op_num: set = set()  #
         self.op_executed_num: set = set()  #
         self.op_success_num: set = set()  #
+        self.llm_call: int = 0  #
+        self.call_time: int = 0  #
+        self.token_nums: int = 0  #
+        self.money_cost: int = 0  #
         self.bug: set = set()  #
-        self.llm_call: int = 0
+
+    def update_llm_data(self, llm_call, call_time, token_nums, cost):
+        self.llm_call += llm_call
+        self.call_time += call_time
+        self.token_nums += token_nums
+        self.money_cost += cost
 
     def update_all_c_way(self, seq):
         self.C_1_way_all.update(self._compute_combinations(seq, 1))
@@ -132,6 +145,10 @@ class Statistics:
                             len(self.op_num),
                             len(self.op_executed_num),
                             len(self.op_success_num),
+                            self.llm_call,
+                            self.call_time,
+                            self.token_nums,
+                            self.money_cost,
                             len(self.bug))
         self._snapshot_list.append(snapshot)
 

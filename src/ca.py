@@ -255,7 +255,10 @@ class Auth:
 class RuntimeInfoManager:
     def __init__(self):
         self._num_of_requests = 0
-        self._llm_call = 0
+        self.llm_call = 0
+        self.call_time = 0
+        self.prompt_tokens = 0
+        self.cost = 0
 
         self._ok_value_dict: Dict[str, List[Value]] = defaultdict(list)
         self._reused_essential_seq_dict: Dict[Tuple[Operation], List[Dict[str, Value]]] = defaultdict(list)
@@ -267,7 +270,6 @@ class RuntimeInfoManager:
         self._postman_bug_info: list = list()
 
         self._llm_example_value_dict: Dict[Operation, Dict[AbstractParam, Union[dict, list]]] = dict()
-        self._prompt_tokens = 0
 
     def essential_executed(self, operations: Tuple[Operation]):
         return operations in self._reused_essential_seq_dict.keys()
@@ -299,11 +301,37 @@ class RuntimeInfoManager:
     def register_request(self):
         self._num_of_requests += 1
 
-    def register_llm_call(self):
-        self._llm_call += 1
+    def update_llm_data(self, model_token_tuple: Tuple[str, int, int], call_time):
+        """
+        :param model_token_tuple: (model name, total_tokens, input_tokens counted by tiktoken)
+        :call_time: the time of calling language model
+        """
+        self.llm_call += 1
+        self.call_time += call_time
+        self.prompt_tokens += model_token_tuple[1]
+        self.cost += self._count_cost(model_token_tuple)
 
-    def count_prompt_tokens(self, tokens):
-        self._prompt_tokens += tokens
+    def clear_llm(self):
+        self.llm_call = 0
+        self.call_time = 0
+        self.prompt_tokens = 0
+        self.cost = 0
+
+    def _count_cost(self, model_token_tuple: Tuple[str, int, int]):
+        model = model_token_tuple[0]
+        total_tokens = model_token_tuple[1]
+        input_tokens = model_token_tuple[2]
+        out_tokens = total_tokens - input_tokens
+        if model == "gpt-4-1106-preview":
+            return input_tokens * 0.00001 + out_tokens * 0.00003
+        if model == "gpt-4":
+            return input_tokens * 0.00003 + out_tokens * 0.00006
+        if model == "gpt-4-32k":
+            return input_tokens * 0.00006 + out_tokens * 0.00012
+        if model == "gpt-3.5-turbo-1106":
+            return input_tokens * 0.000001 + out_tokens * 0.000002
+        if model == "gpt-3.5-turbo-instruct":
+            return input_tokens * 0.0000015 + out_tokens * 0.000002
 
     def save_reuse(self, url_tuple, is_essential, case):
         if is_essential:
@@ -677,6 +705,9 @@ class CA:
         self._stat.seq_executed_num += 1
         self._stat.sum_len_of_executed_seq += len(sequence)
         self._stat.update_executed_c_way(sequence)
+        self._stat.update_llm_data(self._manager.llm_call, self._manager.call_time, self._manager.prompt_tokens,
+                                   self._manager.cost)
+        self._manager.clear_llm()
         return True
 
 

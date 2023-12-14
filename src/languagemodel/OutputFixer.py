@@ -66,3 +66,13 @@ class ValueOutputFixer(OutputFixer):
                 else:
                     processed_output[p].append(v)
         return processed_output
+
+
+class CodeGenerationFixer(OutputFixer):
+    def __init__(self, manager, operation: Operation):
+        super().__init__(manager)
+
+        self._operation = operation
+
+    def handle(self, output_to_process, parameter_list=None):
+        pass

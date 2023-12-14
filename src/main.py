@@ -163,8 +163,8 @@ class Config:
         os.environ["patternFile"] = self.patterns
         os.environ["model"] = self.language_model
         os.environ["language_model_key"] = self.language_model_key
-        os.environ["http_proxy"] = "http://localhost:7890"
-        os.environ["https_proxy"] = "http://localhost:7890"
+        # os.environ["http_proxy"] = "http://localhost:7890"
+        # os.environ["https_proxy"] = "http://localhost:7890"
 
 
 if __name__ == "__main__":

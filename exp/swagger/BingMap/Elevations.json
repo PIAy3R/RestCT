@@ -3,6 +3,11 @@
     "schemes": [
         "http"
     ],
+    "info": {
+        "description": "",
+        "version": "",
+        "title": ""
+    },
     "host": "dev.virtualearth.net",
     "basePath": "/REST/v1",
     "paths": {

@@ -2,7 +2,7 @@ import json
 import os
 import time
 from pathlib import Path
-from typing import List, Dict
+from typing import List, Dict, Tuple
 
 import tiktoken
 from loguru import logger
@@ -215,20 +215,24 @@ class CodeCompleteModel(BasicLanguageModel):
 
         logger.debug(f"Use generation model to generate code")
 
-    def build_prompt(self) -> str:
-        prompt = "import unittest\nimport requests\n\nclass APITestCase(unittest.TestCase):\n    def test_send_request(self):\n        #This is a test case for a RESTful API\n        #The base url is \"https://127.0.0.1:31080/api/v4\"\n        #The url of the api is \"/projects/50/repository/commits\"\n        #The http method of this request is post\n        #This test case is to create a commit in a branch in a created gitlab project\n        #This request contians 3 parameters. Parameter branch is a string type parameter, it is name of the branch to commit into. Parameter commit_message is a string type parameter, it means Commit message. Parameter actions is a  body type parameter, it is an array of action hashes to commit as a batch, the format of it is 'application/x-www-form-urlencoded'\n        #The items in the array of actions must have 2 required patameters. Parameter action is a string type parameter, it has enum value \"create\", \"delete\", \"move\", \"update\" and \"chmod\". Parameter file_path is a string type parameter, it means the full path to the file.\n        #This request need a Bearer token, the token is \"8b5bfc9f6c6a47c430c03cf2ea6a693972654ffa94b7483d5ded5300ff395689\"\n\n    import unittest\nimport requests\n\nclass APITestCase(unittest.TestCase):\n    def test_send_request(self):\n        #This is a test case for a RESTful API\n        #The base url is \"https://127.0.0.1:31080/api/v4\"\n        #The url of the api is \"/projects/50/repository/commits\"\n        #The http method of this request is post\n        #This test case is to create a commit in a branch in a created gitlab project\n        #This request contians 3 parameters. Parameter branch is a string type parameter, it is name of the branch to commit into. Parameter commit_message is a string type parameter, it means Commit message. Parameter actions is a  body type parameter, it is an array of action hashes to commit as a batch, the format of it is 'application/x-www-form-urlencoded'\n        #The items in the array of actions must have 2 required patameters. Parameter action is a string type parameter, it has enum value \"create\", \"delete\", \"move\", \"update\" and \"chmod\". Parameter file_path is a string type parameter, it means the full path to the file.\n        #This request need a Bearer token, the token is \"8b5bfc9f6c6a47c430c03cf2ea6a693972654ffa94b7483d5ded5300ff395689\"\n\n        #Define the base host\n        self.base_host = \"https://127.0.0.1:31080/api/v4\"\n\n        #Define the rquest url\n        self.url = self.base_host + \"/projects/50/repository/commits\"\n\n        #Define the http request method\n        self.method = \"POST\"\n\n        #Define the request payload\n        self.data = {\"commit_message\": \"commit message\", \"actions\": '[ { \"action\" : \"create\" , \"file_path\": \"app/app.js\", \"content\" : \"puts \\\"Hello, world!\\\" }, { \"action\" : \"delete\", \"file_path\": \"app/views.py\" }, { \"action\" : \"move\", \"file_path\": \"doc/api/index.md\", \"previous_path\": \"docs/api/README.md\" }, { \"action\" : \"update\", \"file_path\": \"app/models/model.py\", \"content\" : \"class Bag(object)\\n def __init__(self):\\n \"\"\"Create bag.\\n See how you can use this API easily now?\\n By the way, we changed the file description that can be seen in a commit.\\n\"\"\"} ]', \"branch\": \"my_branch\"}\n\n        #Define the http request header. It needs authentication info\n        self.header = {\"Content-Type\": \"application/x-www-form-urlencoded\", \"Authorization\": \"Bearer 8b5bfc9f6c6a47c430c03cf2ea6a693972654ffa94b7483d5ded5300ff395689\"}\n\n        #Send the request\n        req = requests.request(method=self.method, url = self.url,data = self.data, headers=self.header)\n\n        #Validate the response status code is 201\n        self.assertEqual(req.status_code, 201,msg='test case failed')\n\n",
+    def build_prompt(self) -> Tuple[str, list[str]]:
+        prompt = ""
         stop_word_list = ["unittest.main()", "if __name__ == '__main__':"]
         return prompt, stop_word_list
 
     def call(self):
         prompt, stop_list = self.build_prompt()
+        start_time = time.time()
         response = self._client.completions.create(
-            model="gpt-3.5-turbo-instruct",
+            model=self._complete_model,
             prompt=prompt,
             temperature=1,
-            max_tokens=2048,
+            max_tokens=4096,
             top_p=1,
             frequency_penalty=0,
             presence_penalty=0,
-            stop=["unittest.main()", "if __name__ == '__main__':"]
+            stop=stop_list
         )
+        end_time = time.time()
+        logger.info(f"call time: {end_time - start_time} s")
+        return response.choices[0].text

@@ -122,27 +122,45 @@ class Template:
     SYS_ROLE = "You are a helpful assistant, helping check the constraint relationship in RESTful APIs and give " \
                "some combination and specific value for parameters.\n"
     EXPLANATION = """
-    Sentence Request is the method and base url of a RESTful API request, and its description of the function.
-    Parameter info is a list contains python dicts, records the corresponding operation's parameter information of the request. A dict corresponds to a parameter, recording the information of the parameter.
-    Sentence Constraint records the constraint relationships that may not documented in the Parameter info. If empty, there is no constraint.
-    The Parameter list is a list where the parameters are a part of the parameters in the Parameter Info, and you need to provide example values for these parameters.
+Sentence Request is the method and base url of a RESTful API request, and its description of the function.
+Parameter info is a list contains python dicts, records the corresponding operation's parameter information of the request. A dict corresponds to a parameter, recording the information of the parameter.
+Sentence Constraint records the constraint relationships that may not documented in the Parameter info. If empty, there is no constraint.
+The Parameter list is a list where the parameters are a part of the parameters in the Parameter Info, and you need to provide example values for these parameters.
     """
     TEXT = """
-    Request:```{}```
-    Parameter info:```{}```
-    Constraint:```{}```
-    Parameter list:```{}```
+Request:```{}```
+Parameter info:```{}```
+Constraint:```{}```
+Parameter list:```{}```
     """
     PARAMETER = "Parameter info:```{}```\n"
-    BODY_EXPLANATION = """There is a body parameter, it contains other parameters, the following description will give 
-        the information of the body parameter. 
-        Body parameter info: {}\n"""
+    # BODY_EXPLANATION = """There is a body parameter, it contains other parameters, the following description will give
+    #     the information of the body parameter.
+    #     Body parameter info: {}\n"""
+    CODEGENERATION = """
+import unittest
+import requests
+class APITestCase(unittest.TestCase):
+    def test_send_request(self):
+        #This is a test case for a RESTful API
+        #The base url is {}
+        #The url of the api is {}
+        #The http method of this request is {}
+        #The content type of this request is {}
+        #This request contians {} parameters.
+        {}
+        {}
+    """
+
+    CODEGEN_PARAM = """
+        #The parameter {} is a {} parameter, its location is {}, its description is {}, it is required: {}.
+    """
 
 
 class TaskTemplate:
     SPECIAL_VALUE = "- According to the Parameter info, give 3 possible values for each parameter in Parameter list. " \
                     "Format your response as a JSON object.\n" \
-                    # "The format is {parameter1:[value1,value2,...],parameter2:[value1,value2,...],...}.\n"
+        # "The format is {parameter1:[value1,value2,...],parameter2:[value1,value2,...],...}.\n"
     COMBINATION = "- According to the Parameter info and Constraint, give 3 possible valid combinations of " \
                   "parameters in Parameter list and their specific value. " \
                   "Format your response as a JSON object.\n" \

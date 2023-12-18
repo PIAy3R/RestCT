@@ -2,7 +2,7 @@ import json
 import os
 import time
 from pathlib import Path
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Set
 
 import tiktoken
 from loguru import logger
@@ -174,8 +174,9 @@ class ParamValueModel(BasicLanguageModel):
                         else:
                             pInfo.append(info)
                             param_to_ask.append(p.getGlobalName())
-        prompt = Template.EXPLANATION + Template.TEXT.format(self._operation, pInfo, self._operation.constraints,
-                                                             param_to_ask) + TaskTemplate.SPECIAL_VALUE
+        prompt = Template.EXPLANATION_VALUE + Template.TEXT_VALUE.format(self._operation, pInfo,
+                                                                         self._operation.constraints,
+                                                                         param_to_ask) + TaskTemplate.SPECIAL_VALUE
         return prompt
 
     def build_message(self) -> List[Dict[str, str]]:
@@ -236,3 +237,20 @@ class CodeCompleteModel(BasicLanguageModel):
         end_time = time.time()
         logger.info(f"call time: {end_time - start_time} s")
         return response.choices[0].text
+
+
+class ResponseModel(BasicLanguageModel):
+    def __init__(self, operation: Operation, manager, data_path, temperature: float = 0.7):
+        super().__init__(operation, manager, data_path, temperature)
+
+        self._response_list: List[(int, object)] = []
+
+        self._fixer = ValueOutputFixer(self._manager, self._operation)
+
+        logger.debug(f"Use llm to handel test cases responses for operation: {self._operation}")
+
+    def build_prompt(self) -> str:
+        pass
+
+    def extract_response_str(self) -> Set[str]:
+        pass

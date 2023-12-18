@@ -7,7 +7,7 @@ import subprocess
 import time
 from collections import defaultdict
 from pathlib import Path
-from typing import List, Tuple, Dict, Union, Set
+from typing import List, Tuple, Dict, Union, Set, Any
 
 import chardet
 import requests
@@ -493,7 +493,7 @@ class CA:
         sortedList = sorted(response_chains, key=lambda c: len(c.keys()), reverse=True)
         return sortedList[:self._maxChainItems] if self._maxChainItems < len(sortedList) else sortedList
 
-    def _executes(self, operation, ca, chain, url_tuple, history, is_essential=True) -> bool:
+    def _executes(self, operation, ca, chain, url_tuple, history, is_essential=True) -> tuple[bool, list[Any]]:
         self._stat.op_executed_num.add(operation)
         history.clear()
 
@@ -519,7 +519,7 @@ class CA:
 
         self._handle_feedback(url_tuple, operation, response_list, chain, ca, is_essential)
 
-        return has_success or has_bug
+        return (has_success or has_bug), response_list
 
     def _handle_feedback(self, url_tuple, operation, response_list, chain, ca, is_essential):
         is_success = False
@@ -576,7 +576,7 @@ class CA:
         logger.info(f"{index + 1}-th operation essential parameters covering array size: {len(e_ca)}, "
                     f"parameters: {len(e_ca[0]) if len(e_ca) > 0 else 0}, constraints: {len(operation.constraints)}")
 
-        is_break_e = self._executes(operation, e_ca, chain, success_url_tuple, history, True)
+        is_break_e, e_response_list = self._executes(operation, e_ca, chain, success_url_tuple, history, True)
 
         if all([p.isEssential for p in operation.parameterList]):
             return is_break_e
@@ -585,7 +585,7 @@ class CA:
         logger.info(f"{index + 1}-th operation all parameters covering array size: {len(a_ca)}, "
                     f"parameters: {len(a_ca[0]) if len(a_ca) > 0 else 0}, constraints: {len(operation.constraints)}")
 
-        is_break_a = self._executes(operation, a_ca, chain, success_url_tuple, history, False)
+        is_break_a, a_response_list = self._executes(operation, a_ca, chain, success_url_tuple, history, False)
 
         return is_break_e or is_break_a
 
@@ -738,7 +738,7 @@ class CAWithLLM(CA):
         logger.info(f"{index + 1}-th operation essential parameters covering array size: {len(e_ca)}, "
                     f"parameters: {len(e_ca[0]) if len(e_ca) > 0 else 0}, constraints: {len(operation.constraints)}")
 
-        is_break_e = self._executes(operation, e_ca, chain, success_url_tuple, history, True)
+        is_break_e, e_response_list = self._executes(operation, e_ca, chain, success_url_tuple, history, True)
 
         if all([p.isEssential for p in operation.parameterList]):
             return is_break_e
@@ -747,7 +747,7 @@ class CAWithLLM(CA):
         logger.info(f"{index + 1}-th operation all parameters covering array size: {len(a_ca)}, "
                     f"parameters: {len(a_ca[0]) if len(a_ca) > 0 else 0}, constraints: {len(operation.constraints)}")
 
-        is_break_a = self._executes(operation, a_ca, chain, success_url_tuple, history, False)
+        is_break_a, a_response_list = self._executes(operation, a_ca, chain, success_url_tuple, history, False)
 
         is_break = is_break_e or is_break_a
 
@@ -794,7 +794,7 @@ class CAWithLLM(CA):
         logger.info(f"{index + 1}-th operation essential parameters covering array size: {len(e_ca)}, "
                     f"parameters: {len(e_ca[0]) if len(e_ca) > 0 else 0}, constraints: {len(operation.constraints)}")
 
-        is_break_e = self._executes(operation, e_ca, chain, success_url_tuple, history, True)
+        is_break_e, e_response_list = self._executes(operation, e_ca, chain, success_url_tuple, history, True)
 
         if all([p.isEssential for p in operation.parameterList]):
             if not is_break_e:
@@ -807,7 +807,7 @@ class CAWithLLM(CA):
         a_ca = self._handle_all_params(operation, sequence[:index], chain, history)
         logger.info(f"{index + 1}-th operation all parameters covering array size: {len(a_ca)}, "
                     f"parameters: {len(a_ca[0]) if len(a_ca) > 0 else 0}, constraints: {len(operation.constraints)}")
-        is_break_a = self._executes(operation, a_ca, chain, success_url_tuple, history, False)
+        is_break_a, a_response_list = self._executes(operation, a_ca, chain, success_url_tuple, history, False)
 
         is_break = is_break_e or is_break_a
 

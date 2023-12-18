@@ -121,23 +121,51 @@ class Tasks:
 class Template:
     SYS_ROLE = "You are a helpful assistant, helping check the constraint relationship in RESTful APIs and give " \
                "some combination and specific value for parameters.\n"
-    EXPLANATION = """
+
+    SYS_ROLE_RESPONSE = "You are a helpful assistant, helping handle the issues related to RESTful APIs. RESTful API " \
+                        "is an API style that uses URLs to locate resources and access operation resources. After " \
+                        "accessing resources, the server of RESTful API usually returns a response, including status " \
+                        "code and content. The status code is used to inform the user whether the operation is " \
+                        "successful and the corresponding situation. The content usually has further instructions. " \
+                        "When executed successfully, it may returns resource-related information. When execution " \
+                        "fails, it may contains error specific information. Now you are an expert related to " \
+                        "RESTful API and help analyze the content of the response the server send back."
+
+    EXPLANATION_VALUE = """
 Sentence Request is the method and base url of a RESTful API request, and its description of the function.
 Parameter info is a list contains python dicts, records the corresponding operation's parameter information of the request. A dict corresponds to a parameter, recording the information of the parameter.
 Sentence Constraint records the constraint relationships that may not documented in the Parameter info. If empty, there is no constraint.
 The Parameter list is a list where the parameters are a part of the parameters in the Parameter Info, and you need to provide example values for these parameters.
     """
-    TEXT = """
+
+    EXPLANATION_RESPONSE = """
+The main content to be analyzed consists of four parts.
+1.Sentence Request is the method and base url of a RESTful API request.
+2.The Parameter list is a list contains the parameters of the request. Some of these parameters may appear in the response content
+3.Content is a set that contains all unique responses, and all responses are server responses of different test cases 
+corresponding to the Sentence Request.
+4.Error Cause Classification is a description, because when the test case corresponding to the requests fails to 
+execute, the response of the server may contain the cause of the error. Error Cause Classification briefly classifies 
+these errors.
+    """
+
+    TEXT_VALUE = """
 Request:```{}```
 Parameter info:```{}```
 Constraint:```{}```
 Parameter list:```{}```
     """
+
+    TEXT_RESPONSE = """
+Request:```{}```
+Parameter List:```{}```
+Content:```{}```
+Error Cause Classification:```{}```
+     """
+
     PARAMETER = "Parameter info:```{}```\n"
-    # BODY_EXPLANATION = """There is a body parameter, it contains other parameters, the following description will give
-    #     the information of the body parameter.
-    #     Body parameter info: {}\n"""
-    CODEGENERATION = """
+
+    CODE_GENERATION = """
 import unittest
 import requests
 class APITestCase(unittest.TestCase):
@@ -161,20 +189,16 @@ class TaskTemplate:
     SPECIAL_VALUE = "- According to the Parameter info, give 3 possible values for each parameter in Parameter list. " \
                     "Format your response as a JSON object.\n" \
         # "The format is {parameter1:[value1,value2,...],parameter2:[value1,value2,...],...}.\n"
-    COMBINATION = "- According to the Parameter info and Constraint, give 3 possible valid combinations of " \
-                  "parameters in Parameter list and their specific value. " \
-                  "Format your response as a JSON object.\n" \
-                  "The format is {combination1:{parameter1:value,parameter2:value,...}, combination2,...}."
-    ALL_VALUE = "- According to the Parameter info, give 3 possible values for each parameter in Parameter list of " \
-                "each request. Format your response as a JSON object. The format is " \
-                "{request1:{parameter1:[value1,value2,...],parameter2:[value1,value2,...],...},request2,...}\n"
-    BODY = "- According to the Body parameter info, give 1 possible value for each parameter in Body parameter. " \
-           "Format your response as a JSON object. "
-    FAKER = "Your task:\n" \
-            "- Give the right methods in the callable method list of faker to generate random value for parameter " \
-            "info(A parameter can use more than one methods). Take the description field into account, " \
-            "it may indicate the format of the data. Format your answer as a JSON object. The format is like {" \
-            "parameter1: method_name, parameter2: [method_name, method_name], .....} "
+    FIND_PARAM = """
+- According to the information provided in Content, analyze which parameters in the Parameter list have problems that 
+cause the test case to fail to execute. Note that the parameter names in the response and the parameter names in the 
+Parameter List may not be exactly the same, and there will be format changes. Format your response as a JSON object. 
+The format is {params:[p1,p2,....]}
+    """
+    CLASSIFY = """
+- Classify the error reason of each parameter. Format your response as a JSON object. 
+The format is {p1:r, p2:r, .....}. Reason is expressed using numerical labels
+    """
 
 
 class URL:

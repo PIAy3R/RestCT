@@ -17,7 +17,7 @@ from src.Dto.constraint import Constraint, Processor
 from src.Dto.keywords import Loc, DataType, Method
 from src.Dto.operation import Operation
 from src.Dto.parameter import AbstractParam, ValueType, Value, EnumParam, BoolParam
-from src.languagemodel.LanguageModel import ParamValueModel
+from src.languagemodel.LanguageModel import ParamValueModel, ResponseModel
 
 
 def _saveChain(responseChains: List[dict], chain: dict, opStr: str, response):
@@ -717,7 +717,7 @@ class CAWithLLM(CA):
 
         self._is_regen = False
 
-    def _re_handle(self, index, operation, chain, sequence, loop_num) -> bool:
+    def _re_handle(self, index, operation, chain, sequence, response_list, loop_num) -> bool:
         self._is_regen = True
         success_url_tuple = tuple([op for op in sequence[:index] if op in chain.keys()] + [operation])
         if len(operation.parameterList) == 0:
@@ -728,9 +728,11 @@ class CAWithLLM(CA):
 
         self._reset_constraints(operation, operation.parameterList)
 
+        self._call_response_language_model(operation, response_list)
+
         if self._manager.get_llm_examples().get(operation) is None or len(
                 self._manager.get_llm_examples().get(operation)) == 0:
-            flag = self._call_language_model(operation)
+            flag = self._call_value_language_model(operation)
             if not flag:
                 return False
 
@@ -758,7 +760,13 @@ class CAWithLLM(CA):
 
         return is_break
 
-    def _call_language_model(self, operation: Operation):
+    def _call_response_language_model(self, operation: Operation, response_list: List[Tuple[int, object]]):
+        if len(response_list) == 0:
+            return
+        response_model = ResponseModel(operation, response_list, self._manager, self._data_path)
+        response_model.execute()
+
+    def _call_value_language_model(self, operation: Operation):
         param_to_ask = []
         loc_set = set()
         for param in operation.parameterList:
@@ -799,7 +807,7 @@ class CAWithLLM(CA):
         if all([p.isEssential for p in operation.parameterList]):
             if not is_break_e:
                 logger.info("no success request, use llm to help re-generate")
-                is_break = self._re_handle(index, operation, chain, sequence, loop_num)
+                is_break = self._re_handle(index, operation, chain, sequence, e_response_list, loop_num)
                 return is_break
             else:
                 return is_break_e
@@ -814,7 +822,7 @@ class CAWithLLM(CA):
         if not is_break:
             logger.info("no success request, use llm to help re-generate")
             self._re_count(e_ca, a_ca)
-            is_break = self._re_handle(index, operation, chain, sequence, loop_num)
+            is_break = self._re_handle(index, operation, chain, sequence, e_response_list + a_response_list, loop_num)
 
         return is_break
 

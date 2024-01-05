@@ -8,7 +8,8 @@ import tiktoken
 from loguru import logger
 from openai import OpenAI
 
-from src.Dto.keywords import Template, TaskTemplate, URL, Loc
+from lib.Template import Template, TaskTemplate
+from src.Dto.keywords import URL, Loc
 from src.Dto.operation import Operation
 from src.Dto.parameter import AbstractParam, ObjectParam, ArrayParam
 from src.languagemodel.OutputFixer import ValueOutputFixer, CodeGenerationFixer
@@ -182,7 +183,7 @@ class ParamValueModel(BasicLanguageModel):
     def build_message(self) -> List[Dict[str, str]]:
         message = []
         prompt = self.build_prompt()
-        message.append({"role": "system", "content": Template.SYS_ROLE})
+        message.append({"role": "system", "content": Template.SYS_ROLE_VALUE})
         message.append({"role": "user", "content": prompt})
         return message
 
@@ -249,8 +250,19 @@ class ResponseModel(BasicLanguageModel):
 
         logger.debug(f"Use llm to handel test cases responses for operation: {self._operation}")
 
-    def build_prompt(self) -> str:
+    def build_first_prompt(self) -> str:
+        response_str_set = self._extract_response_str()
+        param_list = self._get_all_param()
+
+    def _extract_response_str(self) -> Set[str]:
         pass
 
-    def extract_response_str(self) -> Set[str]:
-        pass
+    def _get_all_param(self):
+        param_list = []
+        for param in self.operation.parameterList:
+            if isinstance(param, ObjectParam) or isinstance(param, ArrayParam):
+                for p in param.seeAllParameters():
+                    param_list.append(p.getGlobalName())
+            else:
+                param_list.append(param.name)
+        return param_list

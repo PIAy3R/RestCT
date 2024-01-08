@@ -253,9 +253,15 @@ class ResponseModel(BasicLanguageModel):
     def build_first_prompt(self) -> str:
         response_str_set = self._extract_response_str()
         param_list = self._get_all_param()
+        prompt = Template.EXPLANATION_RESPONSE + Template.TEXT_RESPONSE.format(self._operation, param_list,
+                                                                               response_str_set)
+        return prompt
 
     def _extract_response_str(self) -> Set[str]:
-        pass
+        response_str_set = set()
+        for status_code, response_str in self._response_list:
+            response_str_set.add(response_str)
+        return response_str_set
 
     def _get_all_param(self):
         param_list = []

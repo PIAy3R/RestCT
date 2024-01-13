@@ -43,7 +43,7 @@ class ValueOutputFixer(OutputFixer):
     def handle(self, output_to_process, parameter_list=None) -> dict:
         json_output = self.decode_to_json(output_to_process)
         processed_output = self.del_existing_example(json_output, parameter_list)
-        self._manager.save_language_model_response(self._operation, processed_output)
+        self._manager.save_language_model_value_response(self._operation, processed_output)
         return processed_output
 
     @staticmethod
@@ -76,3 +76,25 @@ class CodeGenerationFixer(OutputFixer):
 
     def handle(self, output_to_process, parameter_list=None):
         pass
+
+
+class ResponseFixer(OutputFixer):
+    def __init__(self, manager, operation: Operation):
+        super().__init__(manager)
+
+        self._operation = operation
+
+    @staticmethod
+    def handle_parameter(output_to_process):
+        output_json: dict = json.loads(output_to_process)
+        try:
+            return output_json["params"]
+        except:
+            for k, v in output_json.items():
+                if isinstance(v, list):
+                    return v
+
+    def handle_cause(self, output_to_process):
+        output_json = json.loads(output_to_process)
+        self._manager.save_language_model_constraint(self._operation, output_json)
+        return output_json

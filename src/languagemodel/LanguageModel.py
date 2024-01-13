@@ -12,7 +12,7 @@ from lib.Template import Template, TaskTemplate
 from src.Dto.keywords import URL, Loc
 from src.Dto.operation import Operation
 from src.Dto.parameter import AbstractParam, ObjectParam, ArrayParam
-from src.languagemodel.OutputFixer import ValueOutputFixer, CodeGenerationFixer
+from src.languagemodel.OutputFixer import ValueOutputFixer, CodeGenerationFixer, ResponseFixer
 
 
 def num_tokens_from_string(messages: List[Dict[str, str]], encoding_name: str = "gpt-3.5-turbo") -> int:
@@ -241,26 +241,40 @@ class CodeCompleteModel(BasicLanguageModel):
 
 
 class ResponseModel(BasicLanguageModel):
-    def __init__(self, operation: Operation, manager, data_path, temperature: float = 0.7):
+    def __init__(self, operation: Operation, manager, data_path, response_list: list = None, temperature: float = 0.9):
         super().__init__(operation, manager, data_path, temperature)
 
-        self._response_list: List[(int, object)] = []
+        self._response_list: List[(int, object)] = response_list
 
-        self._fixer = ValueOutputFixer(self._manager, self._operation)
+        self._fixer = ResponseFixer(self._manager, self._operation)
 
-        logger.debug(f"Use llm to handel test cases responses for operation: {self._operation}")
+        self._complete_model = "gpt-4-1106-preview"
+
+        logger.debug(f"Use llm to handel test cases responses")
 
     def build_first_prompt(self) -> str:
         response_str_set = self._extract_response_str()
         param_list = self._get_all_param()
-        prompt = Template.EXPLANATION_RESPONSE + Template.TEXT_RESPONSE.format(self._operation, param_list,
-                                                                               response_str_set)
+        prompt = (Template.EXPLANATION_RESPONSE + Template.TEXT_RESPONSE.format(self._operation, param_list,
+                                                                                response_str_set)
+                  + TaskTemplate.EXTRACT_PARAM)
         return prompt
+
+    def build_message(self, message: list = None) -> List[Dict[str, str]]:
+        if message is None:
+            messages = []
+            prompt = self.build_first_prompt()
+            messages.append({"role": "system", "content": Template.SYS_ROLE_RESPONSE})
+            messages.append({"role": "user", "content": prompt})
+        else:
+            messages = message
+            messages.append({"role": "user", "content": TaskTemplate.CLASSIFY})
+        return messages
 
     def _extract_response_str(self) -> Set[str]:
         response_str_set = set()
         for status_code, response_str in self._response_list:
-            response_str_set.add(response_str)
+            response_str_set.add(json.dumps(response_str))
         return response_str_set
 
     def _get_all_param(self):
@@ -272,3 +286,54 @@ class ResponseModel(BasicLanguageModel):
             else:
                 param_list.append(param.name)
         return param_list
+
+    def execute(self):
+        first_response, first_message, second_response, second_message = self.call()
+        self.save_message_and_response(second_message, second_response)
+
+    def call(self):
+        logger.debug(f"call language model for to extract parameters from response")
+        first_message = self.build_message()
+        num_tokens = num_tokens_from_string(first_message, self._complete_model)
+        if num_tokens > 16000:
+            return
+        start_time = time.time()
+        response = self._client.chat.completions.create(
+            model=self._complete_model,
+            messages=first_message,
+            temperature=self._temperature,
+            top_p=0.99,
+            frequency_penalty=0,
+            presence_penalty=0,
+            max_tokens=4096,
+            response_format={"type": "json_object"}
+        )
+        end_time = time.time()
+        logger.info(f"call time: {end_time - start_time} s")
+        formatted_output_res = self._fixer.handle_parameter(response.choices[0].message.content)
+        logger.info(f"Language model answer: {formatted_output_res}")
+
+        logger.debug(f"call language model for to classify error cause")
+        second_message = first_message.copy()
+        second_message.append({"role": "user", "content": response.choices[0].message.content})
+        second_message = self.build_message(second_message)
+        # print(second_message)
+        num_tokens = num_tokens_from_string(second_message, self._complete_model)
+        if num_tokens > 16000:
+            return
+        start_time = time.time()
+        response = self._client.chat.completions.create(
+            model=self._complete_model,
+            messages=second_message,
+            temperature=self._temperature,
+            top_p=0.99,
+            frequency_penalty=0,
+            presence_penalty=0,
+            max_tokens=4096,
+            response_format={"type": "json_object"}
+        )
+        end_time = time.time()
+        logger.info(f"call time: {end_time - start_time} s")
+        formatted_output_classify = self._fixer.handle_cause(response.choices[0].message.content)
+        logger.info(f"Language model answer: {formatted_output_classify}")
+        return formatted_output_res, first_message, formatted_output_classify, second_message

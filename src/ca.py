@@ -270,6 +270,7 @@ class RuntimeInfoManager:
         self._postman_bug_info: list = list()
 
         self._llm_example_value_dict: Dict[Operation, Dict[AbstractParam, Union[dict, list]]] = dict()
+        self._llm_constraint_dict: Dict[Operation, List[AbstractParam]] = dict()
 
     def essential_executed(self, operations: Tuple[Operation]):
         return operations in self._reused_essential_seq_dict.keys()
@@ -294,6 +295,9 @@ class RuntimeInfoManager:
 
     def get_llm_examples(self):
         return self._llm_example_value_dict
+
+    def get_llm_constrainted_params(self, operation):
+        return self._llm_constraint_dict.get(operation, [])
 
     def is_unresolved(self, p_name):
         return p_name in self._unresolved_params
@@ -462,11 +466,20 @@ class RuntimeInfoManager:
         sortedList = sorted(self._response_chains, key=lambda c: len(c.keys()), reverse=True)
         return sortedList[:maxChainItems] if maxChainItems < len(sortedList) else sortedList
 
-    def save_language_model_response(self, operation, json_output):
+    def save_language_model_value_response(self, operation, json_output):
         if self._llm_example_value_dict.get(operation) is None:
             self._llm_example_value_dict[operation] = {}
         for k, v in json_output.items():
             self._llm_example_value_dict[operation][k] = v
+
+    def save_language_model_constraint(self, operation, cause_dict: dict):
+        for param, reason in cause_dict.items():
+            if self._llm_constraint_dict.get(operation) is None:
+                self._llm_constraint_dict[operation] = []
+            if int(reason) == 2:
+                for p in operation.parameterList:
+                    if p.name == param:
+                        self._llm_constraint_dict[operation].append(p)
 
 
 class CA:

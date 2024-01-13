@@ -7,15 +7,15 @@ from loguru import logger
 from src.Dto.keywords import URL
 from src.Dto.parameter import EnumParam
 from src.ca import RuntimeInfoManager
-from src.languagemodel.LanguageModel import ParamValueModel
+from src.languagemodel.LanguageModel import ParamValueModel, ResponseModel
 from src.openapiParser import Parser
 
 swagger = "/Users/naariah/Documents/Python_Codes/RestCT/exp/swagger/GitLab/Branch.json"
 os.environ["swagger"] = swagger
 os.environ["model"] = "gpt-3.5-turbo-1106"
-os.environ["language_model_key"] = "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"
-os.environ["http_proxy"] = "http://localhost:7890"
-os.environ["https_proxy"] = "http://localhost:7890"
+os.environ["language_model_key"] = "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"
+# os.environ["http_proxy"] = "http://localhost:7890"
+# os.environ["https_proxy"] = "http://localhost:7890"
 
 with Path(swagger).open("r") as fp:
     spec = json.load(fp)
@@ -30,6 +30,8 @@ p0 = pl[0].getGlobalName()
 definition = spec.get("definitions").copy()
 p_l = spec["paths"][op.url.replace(URL.baseurl, "")][op.method.value]["parameters"]
 plstr = json.dumps(p_l)
+
+
 # ref = str()
 # for p_i in p_l:
 #     if p_i["name"] == bp.name:
@@ -54,10 +56,26 @@ def get_info(param, definition, def_dict, body):
 # print(i)
 
 r = RuntimeInfoManager()
-m = ParamValueModel(op, ep, r, "/Users/naariah/Experiment/LLM")
-pt = m.build_prompt()
+res = [
+    (400, {"message": {"import_url": ["is blocked: Only allowed schemes are http, https, git"], "name": [],
+                       "limit_reached": []}}),
+    (400, {"error": "name, path are missing, at least one parameter must be provided"}),
+    (400, {"error": "avatar is invalid"}),
+    (400, {"message": {"namespace": ["is not valid"], "limit_reached": []}}),
+    (400, {"message": {"project_feature.merge_requests_access_level": [
+        "cannot have higher visibility level than repository access level"], "project_feature.builds_access_level": [
+        "cannot have higher visibility level than repository access level"],
+        "import_url": ["is blocked: Only allowed schemes are http, https, git"],
+        "repository_storage": ["is not included in the list"], "name": [], "limit_reached": []}})
+]
+pv = ParamValueModel(op, ep, r, "/Users/naariah/Experiment/LLM")
+rm = ResponseModel(op, r, "/Users/naariah/Experiment/LLM", res)
+pt = pv.build_prompt()
+a = rm.execute()
+print()
+print(r.get_llm_constrainted_params(op))
 # print(pt)
-a = m.execute()
-print()
-t = r.get_llm_examples().get(op)
-print()
+# a = pv.execute()
+# print()
+# t = r.get_llm_examples().get(op)
+# print()

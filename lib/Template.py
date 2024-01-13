@@ -27,7 +27,7 @@ Sentence Request is the method and base url of a RESTful API request, and its de
 Parameter info is a list contains python dicts, records the corresponding operation's parameter information of the request. A dict corresponds to a parameter, recording the information of the parameter.
 Sentence Constraint records the constraint relationships that may not documented in the Parameter info. If empty, there is no constraint.
 The Parameter list is a list where the parameters are a part of the parameters in the Parameter Info, and you need to provide example values for these parameters.
-    """
+"""
 
     EXPLANATION_RESPONSE = """
 The main content to be analyzed consists of four parts.
@@ -57,7 +57,6 @@ Error Cause Classification:
 3. This operation may depend on a previous operation, and the parameter value may be related to the result of the previous operation. This part of the result is missing.
 """
 
-
 #     CODE_GENERATION = """
 # import unittest
 # import requests
@@ -80,12 +79,14 @@ Error Cause Classification:
 
 class TaskTemplate:
     SPECIAL_VALUE = """
+Your task:
 - According to the Parameter info, give 3 possible values for each parameter in Parameter list. 
 Format your response as a JSON object.
 The format is {parameter1:[value1,value2,...],parameter2:[value1,value2,...],...}.
 """
 
     EXTRACT_PARAM = """
+Your task:
 - According to the information provided in Content, analyze which parameters in the Parameter list have problems that 
 cause the test case to fail to execute. Note that the parameter names in the response and the parameter names in the 
 Parameter List may not be exactly the same, and there will be format changes. Format your response as a JSON object. 
@@ -93,6 +94,7 @@ The format is {params:[p1,p2,....]}.
 """
 
     CLASSIFY = """
+Your task:
 - Classify the error reason of each parameter. Format your response as a JSON object. 
 The format is {p1:r, p2:r, .....}. Reason is expressed using numerical labels.
 """

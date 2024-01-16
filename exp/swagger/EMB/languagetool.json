@@ -26,7 +26,7 @@
                         "name": "text",
                         "in": "query",
                         "type": "string",
-                        "description": "The text to be checked. text or 'data' is required.",
+                        "description": "The text to be checked. this or 'data' is required.",
                         "required": false
                     },
                     {

@@ -96,5 +96,12 @@ class ResponseFixer(OutputFixer):
 
     def handle_cause(self, output_to_process):
         output_json = json.loads(output_to_process)
-        self._manager.save_language_model_constraint(self._operation, output_json)
+        self._manager.save_language_model_cause(self._operation, output_json)
+        # self._manager.save_language_model_constraint(self._operation, output_json)
+        # self._manager.save_language_model_ask(self._operation, output_json)
+        return output_json
+
+    def handle_group(self, output_to_process):
+        output_json = json.loads(output_to_process)
+        self._manager.save_language_model_group(self._operation, output_json)
         return output_json

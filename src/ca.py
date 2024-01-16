@@ -1,6 +1,7 @@
 import dataclasses
 import json
 import os
+import random
 import re
 import shlex
 import subprocess
@@ -270,7 +271,10 @@ class RuntimeInfoManager:
         self._postman_bug_info: list = list()
 
         self._llm_example_value_dict: Dict[Operation, Dict[AbstractParam, Union[dict, list]]] = dict()
-        self._llm_constraint_dict: Dict[Operation, List[AbstractParam]] = dict()
+        self._llm_cause_dict: Dict[Operation, Dict[AbstractParam, List[int]]] = dict()
+        self._llm_constraint_group: Dict[Operation, List[List[str]]] = dict()
+        # self._llm_constraint_dict: Dict[Operation, List[AbstractParam]] = dict()
+        # self._llm_ask_dict: Dict[Operation, List[AbstractParam]] = dict()
 
     def essential_executed(self, operations: Tuple[Operation]):
         return operations in self._reused_essential_seq_dict.keys()
@@ -297,7 +301,26 @@ class RuntimeInfoManager:
         return self._llm_example_value_dict
 
     def get_llm_constrainted_params(self, operation):
-        return self._llm_constraint_dict.get(operation, [])
+        params = []
+        for p in operation.parameterList:
+            if p in self._llm_cause_dict.get(operation, {}) and 2 in self._llm_cause_dict.get(operation, {}).get(p):
+                params.append(p)
+        return params
+
+    def get_llm_ask_params(self, operation):
+        params = []
+        for p in operation.parameterList:
+            if p in self._llm_cause_dict.get(operation, {}) and (
+                    1 in self._llm_cause_dict.get(operation, {}).get(p) or 2 in self._llm_cause_dict.get(operation,
+                                                                                                         {}).get(p)):
+                params.append(p)
+        return params
+
+    def get_llm_cause_params(self, operation):
+        return self._llm_cause_dict.get(operation, {})
+
+    def get_llm_grouped_constraint(self, operation):
+        return self._llm_constraint_group.get(operation, [])
 
     def is_unresolved(self, p_name):
         return p_name in self._unresolved_params
@@ -472,14 +495,36 @@ class RuntimeInfoManager:
         for k, v in json_output.items():
             self._llm_example_value_dict[operation][k] = v
 
-    def save_language_model_constraint(self, operation, cause_dict: dict):
-        for param, reason in cause_dict.items():
-            if self._llm_constraint_dict.get(operation) is None:
-                self._llm_constraint_dict[operation] = []
-            if int(reason) == 2:
-                for p in operation.parameterList:
-                    if p.name == param:
-                        self._llm_constraint_dict[operation].append(p)
+    # def save_language_model_constraint(self, operation, cause_dict: dict):
+    #     if self._llm_constraint_dict.get(operation) is None:
+    #         self._llm_constraint_dict[operation] = []
+    #     for param, reason in cause_dict.items():
+    #         if 2 in reason:
+    #             for p in operation.parameterList:
+    #                 if p.name == param:
+    #                     self._llm_constraint_dict[operation].append(p)
+
+    # def save_language_model_ask(self, operation, cause_dict: dict):
+    #     if self._llm_ask_dict.get(operation) is None:
+    #         self._llm_ask_dict[operation] = []
+    #     for param, reason in cause_dict.items():
+    #         if 1 in reason:
+    #             for p in operation.parameterList:
+    #                 if p.name == param:
+    #                     self._llm_ask_dict[operation].append(p)
+
+    def save_language_model_cause(self, operation, cause_dict: dict):
+        if self._llm_cause_dict.get(operation) is None:
+            self._llm_cause_dict[operation] = {}
+        for p in operation.parameterList:
+            if p.name in cause_dict.keys():
+                self._llm_cause_dict[operation][p] = cause_dict[p.name]
+
+    def save_language_model_group(self, operation, grouped: dict):
+        if self._llm_constraint_group.get(operation) is None:
+            self._llm_constraint_group[operation] = []
+        for k, v in grouped.items():
+            self._llm_constraint_group[operation].append(v)
 
 
 class CA:
@@ -532,7 +577,7 @@ class CA:
 
         self._handle_feedback(url_tuple, operation, response_list, chain, ca, is_essential)
 
-        return (has_success or has_bug), response_list
+        return has_success, response_list
 
     def _handle_feedback(self, url_tuple, operation, response_list, chain, ca, is_essential):
         is_success = False
@@ -739,9 +784,9 @@ class CAWithLLM(CA):
 
         history = []
 
-        self._reset_constraints(operation, operation.parameterList)
-
         self._call_response_language_model(operation, response_list)
+
+        self._reset_constraints(operation, operation.parameterList)
 
         if self._manager.get_llm_examples().get(operation) is None or len(
                 self._manager.get_llm_examples().get(operation)) == 0:
@@ -776,16 +821,23 @@ class CAWithLLM(CA):
     def _call_response_language_model(self, operation: Operation, response_list: List[Tuple[int, object]]):
         if len(response_list) == 0:
             return
-        response_model = ResponseModel(operation, response_list, self._manager, self._data_path)
+        response_model = ResponseModel(operation, self._manager, self._data_path, response_list)
         response_model.execute()
 
     def _call_value_language_model(self, operation: Operation):
         param_to_ask = []
         loc_set = set()
         for param in operation.parameterList:
-            if not isinstance(param, EnumParam) and not isinstance(param, BoolParam) and param.loc != Loc.Path:
+            if param.isEssential and not isinstance(param, EnumParam) and not isinstance(param,
+                                                                                         BoolParam) and param.loc != Loc.Path:
                 param_to_ask.append(param)
                 loc_set.add(param.loc)
+            elif not param.isEssential:
+                if param in self._manager.get_llm_ask_params(operation) and not isinstance(param,
+                                                                                           EnumParam) and not isinstance(
+                    param, BoolParam):
+                    param_to_ask.append(param)
+                    loc_set.add(param.loc)
         if len(param_to_ask) != 0:
             value_model = ParamValueModel(operation, param_to_ask, self._manager, self._data_path)
             value_model.execute()
@@ -863,10 +915,14 @@ class CAWithLLM(CA):
             for p in p_with_children:
                 if self._is_regen:
                     if p.getGlobalName() in example_dict.keys():
-                        for value in example_dict.get(p.getGlobalName()):
-                            value = DataType.from_string(value, p.type)
-                            if not isinstance(p, EnumParam):
-                                p.domain.append(Value(value, ValueType.Example, p.type))
+                        index = random.randint(0, len(example_dict.get(p.getGlobalName())) - 1)
+                        value = DataType.from_string(example_dict.get(p.getGlobalName())[index], p.type)
+                        if not isinstance(p, EnumParam):
+                            p.domain.append(Value(value, ValueType.Example, p.type))
+                        # for value in example_dict.get(p.getGlobalName()):
+                        #     value = DataType.from_string(value, p.type)
+                        #     if not isinstance(p, EnumParam):
+                        #         p.domain.append(Value(value, ValueType.Example, p.type))
 
                 if not self._manager.is_unresolved(operation.__repr__() + p.name):
                     domain_map[p.getGlobalName()] = p.domain
@@ -900,6 +956,10 @@ class CAWithLLM(CA):
         :param chain:
         :return:
         """
+        for p in operation.parameterList:
+            if p in self._manager.get_llm_constrainted_params(operation):
+                if not p.isEssential:
+                    p.isConstrained = True
         parameter_list = list(filter(lambda p: p.isEssential, operation.parameterList))
         if len(parameter_list) == 0:
             return [{}]

@@ -192,7 +192,7 @@ class Fuzzer:
 
 
 class AbstractParam(metaclass=abc.ABCMeta):
-    randomCount = 3
+    randomCount = 2
 
     def __init__(self, specifiedName: str, default: list, loc: Loc, required: bool, paramType: DataType,
                  paramFormat: DataType, description: str):

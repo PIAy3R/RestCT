@@ -54,27 +54,11 @@ Content:```{}```
 Error Cause Classification:
 1. The parameter is assigned the wrong value, which may be a format error or a semantic error.
 2. The constraints that need to be satisfied are broken between parameters of the Request.
-3. This operation may depend on a previous operation, and the parameter value may be related to the result of the previous operation. This part of the result is missing.
 """
 
-#     CODE_GENERATION = """
-# import unittest
-# import requests
-# class APITestCase(unittest.TestCase):
-#     def test_send_request(self):
-#         #This is a test case for a RESTful API
-#         #The base url is {}
-#         #The url of the api is {}
-#         #The http method of this request is {}
-#         #The content type of this request is {}
-#         #This request contians {} parameters.
-#         {}
-#         {}
-#     """
-#
-#     CODEGEN_PARAM = """
-#         #The parameter {} is a {} parameter, its location is {}, its description is {}, it is required: {}.
-#     """
+    OTHER = """
+3. This operation may depend on a previous operation, and the parameter value may be related to the result of the previous operation.
+"""
 
 
 class TaskTemplate:
@@ -97,4 +81,20 @@ The format is {params:[p1,p2,....]}.
 Your task:
 - Classify the error reason of each parameter. Format your response as a JSON object. 
 The format is {p1:r, p2:r, .....}. Reason is expressed using numerical labels.
+Due to the provision of multiple test cases, the reasons for errors caused by the same parameter in different test cases 
+are not the same. If multiple reasons occur, please classify them all.
+"""
+
+    GROUP = """
+Your task:
+- Group the parameters with constraint relationships, that is, the parameters with reason 2 in the classification are then subdivided.
+Format your response as a JSON object. 
+The format is {constraint1:[param1,param2,..], constraint:[param1,param2,....], .....}.     
+"""
+
+    CORNER_CASE = """
+Your task:
+- According to the Parameter info, infer and give one most possible error value for each parameter in Parameter list 
+which can trigger the bugs. Format your response as a JSON object.
+The format is {parameter1:[value1,value2,...],parameter2:[value1,value2,...],...}.
 """

@@ -252,25 +252,6 @@ class ResponseModel(BasicLanguageModel):
 
         logger.debug(f"Use llm to handel test cases responses")
 
-    def build_first_prompt(self) -> str:
-        response_str_set = self._extract_response_str()
-        param_list = self._get_all_param()
-        prompt = (Template.EXPLANATION_RESPONSE + Template.TEXT_RESPONSE.format(self._operation, param_list,
-                                                                                response_str_set)
-                  + TaskTemplate.EXTRACT_PARAM)
-        return prompt
-
-    def build_message(self, message: list = None) -> List[Dict[str, str]]:
-        if message is None:
-            messages = []
-            prompt = self.build_first_prompt()
-            messages.append({"role": "system", "content": Template.SYS_ROLE_RESPONSE})
-            messages.append({"role": "user", "content": prompt})
-        else:
-            messages = message
-            messages.append({"role": "user", "content": TaskTemplate.CLASSIFY})
-        return messages
-
     def _extract_response_str(self) -> Set[str]:
         response_str_set = set()
         for status_code, response_str in self._response_list:
@@ -287,53 +268,81 @@ class ResponseModel(BasicLanguageModel):
                 param_list.append(param.name)
         return param_list
 
+    def build_extract_prompt(self) -> str:
+        response_str_set = self._extract_response_str()
+        param_list = self._get_all_param()
+        prompt = (Template.EXPLANATION_RESPONSE + Template.TEXT_RESPONSE.format(self._operation, param_list,
+                                                                                response_str_set)
+                  + TaskTemplate.EXTRACT_PARAM)
+        return prompt
+
+    def build_messages(self, message, task) -> List[Dict[str, str]]:
+        messages = message
+        if task == "extract":
+            prompt = self.build_extract_prompt()
+            messages.append({"role": "system", "content": Template.SYS_ROLE_RESPONSE})
+            messages.append({"role": "user", "content": prompt})
+        elif task == "classify":
+            messages.append({"role": "user", "content": TaskTemplate.CLASSIFY})
+        elif task == "group":
+            messages.append({"role": "user", "content": TaskTemplate.GROUP})
+        return messages
+
     def execute(self):
-        first_response, first_message, second_response, second_message = self.call()
-        self.save_message_and_response(second_message, second_response)
+        first_response, extract_message, second_response, classify_message = self.call()
+        self.save_message_and_response(classify_message, classify_message)
 
-    def call(self):
+    def _call_model(self, message):
+        num_tokens = num_tokens_from_string(message, self._complete_model)
+        if num_tokens > 16000:
+            return
+        start_time = time.time()
+        response = self._client.chat.completions.create(
+            model=self._complete_model,
+            messages=message,
+            temperature=self._temperature,
+            top_p=0.99,
+            frequency_penalty=0,
+            presence_penalty=0,
+            max_tokens=4096,
+            response_format={"type": "json_object"}
+        )
+        end_time = time.time()
+        logger.info(f"call time: {end_time - start_time} s")
+        return response
+
+    def call_extract_parameter(self):
         logger.debug(f"call language model for to extract parameters from response")
-        first_message = self.build_message()
-        num_tokens = num_tokens_from_string(first_message, self._complete_model)
-        if num_tokens > 16000:
-            return
-        start_time = time.time()
-        response = self._client.chat.completions.create(
-            model=self._complete_model,
-            messages=first_message,
-            temperature=self._temperature,
-            top_p=0.99,
-            frequency_penalty=0,
-            presence_penalty=0,
-            max_tokens=4096,
-            response_format={"type": "json_object"}
-        )
-        end_time = time.time()
-        logger.info(f"call time: {end_time - start_time} s")
-        formatted_output_res = self._fixer.handle_parameter(response.choices[0].message.content)
-        logger.info(f"Language model answer: {formatted_output_res}")
+        extract_message = self.build_messages([], "extract")
+        response = self._call_model(extract_message)
+        formatted_output_extract = self._fixer.handle_parameter(response.choices[0].message.content)
+        logger.info(f"Language model answer: {formatted_output_extract}")
+        return extract_message, formatted_output_extract, response.choices[0].message.content
 
+    def call_classify(self, extract_message, extract_response_str):
         logger.debug(f"call language model for to classify error cause")
-        second_message = first_message.copy()
-        second_message.append({"role": "user", "content": response.choices[0].message.content})
-        second_message = self.build_message(second_message)
-        # print(second_message)
-        num_tokens = num_tokens_from_string(second_message, self._complete_model)
-        if num_tokens > 16000:
-            return
-        start_time = time.time()
-        response = self._client.chat.completions.create(
-            model=self._complete_model,
-            messages=second_message,
-            temperature=self._temperature,
-            top_p=0.99,
-            frequency_penalty=0,
-            presence_penalty=0,
-            max_tokens=4096,
-            response_format={"type": "json_object"}
-        )
-        end_time = time.time()
-        logger.info(f"call time: {end_time - start_time} s")
+        classify_message = extract_message.copy()
+        classify_message.append({"role": "user", "content": extract_response_str})
+        classify_message = self.build_messages(classify_message, "classify")
+        response = self._call_model(classify_message)
         formatted_output_classify = self._fixer.handle_cause(response.choices[0].message.content)
         logger.info(f"Language model answer: {formatted_output_classify}")
-        return formatted_output_res, first_message, formatted_output_classify, second_message
+        return classify_message, formatted_output_classify, response.choices[0].message.content
+
+    def call_group(self, classify_message, classify_response_str):
+        logger.debug(f"call language model to group error cause")
+        group_message = classify_message.copy()
+        group_message.append({"role": "user", "content": classify_response_str})
+        group_message = self.build_messages(group_message, "group")
+        response = self._call_model(group_message)
+        formatted_output_group = self._fixer.handle_group(response.choices[0].message.content)
+        logger.info(f"Language model answer: {formatted_output_group}")
+        return group_message, formatted_output_group, response.choices[0].message.content
+
+    def call(self):
+        extract_message, formatted_output_extract, extract_response_str = self.call_extract_parameter()
+        classify_message, formatted_output_classify, classify_response = self.call_classify(extract_message,
+                                                                                            extract_response_str)
+        group_message, formatted_output_group, group_response = self.call_group(classify_message, classify_response)
+
+        return formatted_output_extract, extract_message, formatted_output_classify, classify_message

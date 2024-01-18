@@ -303,8 +303,9 @@ class RuntimeInfoManager:
     def get_llm_constrainted_params(self, operation):
         params = []
         for p in operation.parameterList:
-            if p in self._llm_cause_dict.get(operation, {}) and 2 in self._llm_cause_dict.get(operation, {}).get(p):
-                params.append(p)
+            if p in self._llm_cause_dict.get(operation, {}):
+                if 2 in self._llm_cause_dict.get(operation, {}).get(p):
+                    params.append(p)
         return params
 
     def get_llm_ask_params(self, operation):

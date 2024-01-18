@@ -76,6 +76,7 @@ analyze which parameters in the Parameter list have problems that
 cause the test case to fail to execute. Note that the parameter names in the response and the parameter names in the 
 Parameter List may not be exactly the same, and there will be format changes. Format your response as a JSON object. 
 The format is {params:[p1,p2,....]}.
+If there is no parameter extracted, please return an empty list. The format is {params:[]}
 """
 
     CLASSIFY = """

@@ -294,6 +294,7 @@ class ResponseModel(BasicLanguageModel):
     def execute(self):
         extract_output, extract_message, classify_output, classify_message, group_output, group_message = self.call()
         logger.info(f"Call language model to parse response complete")
+        # return extract_output, extract_message, classify_output, classify_message, group_output, group_message
 
     def _call_model(self, message):
         num_tokens = num_tokens_from_string(message, self._complete_model)
@@ -347,9 +348,22 @@ class ResponseModel(BasicLanguageModel):
 
     def call(self):
         extract_message, formatted_output_extract, extract_response_str = self.call_extract_parameter()
-        classify_message, formatted_output_classify, classify_response = self.call_classify(extract_message,
-                                                                                            extract_response_str)
-        group_message, formatted_output_group, group_response = self.call_group(classify_message, classify_response)
-
-        return (formatted_output_extract, extract_message, formatted_output_classify, classify_message,
-                formatted_output_group, group_message)
+        if len(formatted_output_extract) == 0:
+            logger.info("No parameter extracted")
+            return formatted_output_extract, extract_message, None, None, None, None
+        else:
+            classify_message, formatted_output_classify, classify_response = self.call_classify(extract_message,
+                                                                                                extract_response_str)
+            flag = False
+            for p, rl in formatted_output_classify.items():
+                if 2 in rl:
+                    flag = True
+                    break
+            if not flag:
+                logger.info("No constraint found")
+                return formatted_output_extract, extract_message, formatted_output_classify, classify_message, None, None
+            else:
+                group_message, formatted_output_group, group_response = self.call_group(classify_message,
+                                                                                        classify_response)
+                return (formatted_output_extract, extract_message, formatted_output_classify, classify_message,
+                        formatted_output_group, group_message)

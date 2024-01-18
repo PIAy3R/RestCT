@@ -121,6 +121,7 @@ class Operation:
         self.responseList: List[Response] = list()
 
         self.constraints = list()
+        self._grouped = False
 
     # def genDomain(self, responseChain, okValues):
     #     paramList = list()
@@ -131,6 +132,13 @@ class Operation:
     @property
     def url(self):
         return self._host + self.path.computed_to_string
+
+    @property
+    def grouped(self):
+        return self._grouped
+
+    def set_grouped(self):
+        self._grouped = True
 
     def addParam(self, param: AbstractParam):
         self.parameterList.append(param)

@@ -551,7 +551,7 @@ class CA:
         sortedList = sorted(response_chains, key=lambda c: len(c.keys()), reverse=True)
         return sortedList[:self._maxChainItems] if self._maxChainItems < len(sortedList) else sortedList
 
-    def _executes(self, operation, ca, chain, url_tuple, history, is_essential=True) -> tuple[bool, list[Any]]:
+    def _executes(self, operation, ca, chain, url_tuple, history, is_essential=True) -> tuple[bool, bool, list[Any]]:
         self._stat.op_executed_num.add(operation)
         history.clear()
 
@@ -577,7 +577,7 @@ class CA:
 
         self._handle_feedback(url_tuple, operation, response_list, chain, ca, is_essential)
 
-        return has_success, response_list
+        return has_success, has_bug, response_list
 
     def _handle_feedback(self, url_tuple, operation, response_list, chain, ca, is_essential):
         is_success = False
@@ -634,7 +634,9 @@ class CA:
         logger.info(f"{index + 1}-th operation essential parameters covering array size: {len(e_ca)}, "
                     f"parameters: {len(e_ca[0]) if len(e_ca) > 0 else 0}, constraints: {len(operation.constraints)}")
 
-        is_break_e, e_response_list = self._executes(operation, e_ca, chain, success_url_tuple, history, True)
+        have_success_e, have_bug_e, e_response_list = self._executes(operation, e_ca, chain, success_url_tuple, history,
+                                                                     True)
+        is_break_e = have_success_e or have_bug_e
 
         if all([p.isEssential for p in operation.parameterList]):
             return is_break_e
@@ -643,7 +645,9 @@ class CA:
         logger.info(f"{index + 1}-th operation all parameters covering array size: {len(a_ca)}, "
                     f"parameters: {len(a_ca[0]) if len(a_ca) > 0 else 0}, constraints: {len(operation.constraints)}")
 
-        is_break_a, a_response_list = self._executes(operation, a_ca, chain, success_url_tuple, history, False)
+        have_success_a, have_bug_a, a_response_list = self._executes(operation, a_ca, chain, success_url_tuple, history,
+                                                                     False)
+        is_break_a = have_success_a or have_bug_a
 
         return is_break_e or is_break_a
 
@@ -784,9 +788,12 @@ class CAWithLLM(CA):
 
         history = []
 
-        self._call_response_language_model(operation, response_list)
+        if not operation.grouped:
+            self._call_response_language_model(operation, response_list)
+            operation.set_grouped()
 
         self._reset_constraints(operation, operation.parameterList)
+        self._add_llm_constraints(operation)
 
         if self._manager.get_llm_examples().get(operation) is None or len(
                 self._manager.get_llm_examples().get(operation)) == 0:
@@ -798,7 +805,9 @@ class CAWithLLM(CA):
         logger.info(f"{index + 1}-th operation essential parameters covering array size: {len(e_ca)}, "
                     f"parameters: {len(e_ca[0]) if len(e_ca) > 0 else 0}, constraints: {len(operation.constraints)}")
 
-        is_break_e, e_response_list = self._executes(operation, e_ca, chain, success_url_tuple, history, True)
+        have_success_e, have_bug_e, e_response_list = self._executes(operation, e_ca, chain, success_url_tuple, history,
+                                                                     True)
+        is_break_e = have_success_e or have_bug_e
 
         if all([p.isEssential for p in operation.parameterList]):
             return is_break_e
@@ -807,7 +816,9 @@ class CAWithLLM(CA):
         logger.info(f"{index + 1}-th operation all parameters covering array size: {len(a_ca)}, "
                     f"parameters: {len(a_ca[0]) if len(a_ca) > 0 else 0}, constraints: {len(operation.constraints)}")
 
-        is_break_a, a_response_list = self._executes(operation, a_ca, chain, success_url_tuple, history, False)
+        have_success_a, have_bug_a, a_response_list = self._executes(operation, a_ca, chain, success_url_tuple, history,
+                                                                     False)
+        is_break_a = have_success_a or have_bug_a
 
         is_break = is_break_e or is_break_a
 
@@ -817,6 +828,10 @@ class CAWithLLM(CA):
             self._manager.get_llm_examples().get(operation).clear()
 
         return is_break
+
+    def _add_llm_constraints(self, operation: Operation):
+        llm_constraints = []
+        constraint_param_list = self._manager.get_llm_constrainted_params(operation)
 
     def _call_response_language_model(self, operation: Operation, response_list: List[Tuple[int, object]]):
         if len(response_list) == 0:
@@ -833,9 +848,8 @@ class CAWithLLM(CA):
                 param_to_ask.append(param)
                 loc_set.add(param.loc)
             elif not param.isEssential:
-                if param in self._manager.get_llm_ask_params(operation) and not isinstance(param,
-                                                                                           EnumParam) and not isinstance(
-                    param, BoolParam):
+                if (param in self._manager.get_llm_ask_params(operation)
+                        and not isinstance(param, EnumParam) and not isinstance(param, BoolParam)):
                     param_to_ask.append(param)
                     loc_set.add(param.loc)
         if len(param_to_ask) != 0:
@@ -867,7 +881,9 @@ class CAWithLLM(CA):
         logger.info(f"{index + 1}-th operation essential parameters covering array size: {len(e_ca)}, "
                     f"parameters: {len(e_ca[0]) if len(e_ca) > 0 else 0}, constraints: {len(operation.constraints)}")
 
-        is_break_e, e_response_list = self._executes(operation, e_ca, chain, success_url_tuple, history, True)
+        have_success_e, have_bug_e, e_response_list = self._executes(operation, e_ca, chain, success_url_tuple, history,
+                                                                     True)
+        is_break_e = have_success_e or have_bug_e
 
         if all([p.isEssential for p in operation.parameterList]):
             if not is_break_e:
@@ -880,11 +896,13 @@ class CAWithLLM(CA):
         a_ca = self._handle_all_params(operation, sequence[:index], chain, history)
         logger.info(f"{index + 1}-th operation all parameters covering array size: {len(a_ca)}, "
                     f"parameters: {len(a_ca[0]) if len(a_ca) > 0 else 0}, constraints: {len(operation.constraints)}")
-        is_break_a, a_response_list = self._executes(operation, a_ca, chain, success_url_tuple, history, False)
+        have_success_a, have_bug_a, a_response_list = self._executes(operation, a_ca, chain, success_url_tuple, history,
+                                                                     False)
+        is_break_a = have_success_a or have_bug_a
 
         is_break = is_break_e or is_break_a
 
-        if not is_break:
+        if not (have_success_e or have_success_a):
             logger.info("no success request, use llm to help re-generate")
             self._re_count(e_ca, a_ca)
             is_break = self._re_handle(index, operation, chain, sequence, e_response_list + a_response_list, loop_num)

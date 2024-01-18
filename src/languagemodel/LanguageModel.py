@@ -1,8 +1,9 @@
+import csv
 import json
 import os
 import time
 from pathlib import Path
-from typing import List, Dict, Tuple, Set
+from typing import List, Dict, Set
 
 import tiktoken
 from loguru import logger
@@ -12,7 +13,7 @@ from lib.Template import Template, TaskTemplate
 from src.Dto.keywords import URL, Loc
 from src.Dto.operation import Operation
 from src.Dto.parameter import AbstractParam, ObjectParam, ArrayParam
-from src.languagemodel.OutputFixer import ValueOutputFixer, CodeGenerationFixer, ResponseFixer
+from src.languagemodel.OutputFixer import ValueOutputFixer, ResponseFixer
 
 
 def num_tokens_from_string(messages: List[Dict[str, str]], encoding_name: str = "gpt-3.5-turbo") -> int:
@@ -60,8 +61,8 @@ class BasicLanguageModel:
         self._operation = operation
         self._manager = manager
         self._constraint: list = operation.constraints
-        self._data_path = Path(data_path) / "prompt_response.json"
-
+        self._data_path = Path(data_path)
+        self._llm_data_path = Path(data_path) / "prompt_response.csv"
         self._max_query_len: int = 3900
 
         swagger = Path(os.getenv("swagger"))
@@ -128,15 +129,17 @@ class BasicLanguageModel:
     def execute(self):
         pass
 
-    def save_message_and_response(self, prompt, response):
-        pr_info = {
-            "operation": self.operation.__repr__(),
-            "temperature": self.temperature,
-            "prompt": prompt,
-            "llm_response": response
-        }
-        with self._data_path.open("a+") as fp:
-            json.dump(pr_info, fp)
+    def save_message_and_response(self, message, response):
+        if not self._llm_data_path.exists():
+            with self._llm_data_path.open("a+") as fp:
+                writer = csv.writer(fp, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+                # Write the header row
+                header = ["operation", "model", "temperature", "messages", "llm_response"]
+                writer.writerow(header)
+        with self._llm_data_path.open("a+") as fp:
+            writer = csv.writer(fp, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+            row_data = [self._operation.__repr__(), self._complete_model, self._temperature, message, response]
+            writer.writerow(row_data)
 
 
 class ParamValueModel(BasicLanguageModel):
@@ -206,38 +209,38 @@ class ParamValueModel(BasicLanguageModel):
         return param_list
 
 
-class CodeCompleteModel(BasicLanguageModel):
-    def __init__(self, operation: Operation, target_param: List[AbstractParam], manager, data_path,
-                 temperature: float = 0.7):
-        super().__init__(operation, manager, data_path, temperature)
-
-        self._target_param: List[AbstractParam] = target_param
-        self._fixer = CodeGenerationFixer(self._manager, self._operation)
-        self._complete_model = "gpt-3.5-turbo-instruct"
-
-        logger.debug(f"Use generation model to generate code")
-
-    def build_prompt(self) -> Tuple[str, list[str]]:
-        prompt = ""
-        stop_word_list = ["unittest.main()", "if __name__ == '__main__':"]
-        return prompt, stop_word_list
-
-    def call(self):
-        prompt, stop_list = self.build_prompt()
-        start_time = time.time()
-        response = self._client.completions.create(
-            model=self._complete_model,
-            prompt=prompt,
-            temperature=1,
-            max_tokens=4096,
-            top_p=1,
-            frequency_penalty=0,
-            presence_penalty=0,
-            stop=stop_list
-        )
-        end_time = time.time()
-        logger.info(f"call time: {end_time - start_time} s")
-        return response.choices[0].text
+# class CodeCompleteModel(BasicLanguageModel):
+#     def __init__(self, operation: Operation, target_param: List[AbstractParam], manager, data_path,
+#                  temperature: float = 0.7):
+#         super().__init__(operation, manager, data_path, temperature)
+#
+#         self._target_param: List[AbstractParam] = target_param
+#         self._fixer = CodeGenerationFixer(self._manager, self._operation)
+#         self._complete_model = "gpt-3.5-turbo-instruct"
+#
+#         logger.debug(f"Use generation model to generate code")
+#
+#     def build_prompt(self) -> Tuple[str, list[str]]:
+#         prompt = ""
+#         stop_word_list = ["unittest.main()", "if __name__ == '__main__':"]
+#         return prompt, stop_word_list
+#
+#     def call(self):
+#         prompt, stop_list = self.build_prompt()
+#         start_time = time.time()
+#         response = self._client.completions.create(
+#             model=self._complete_model,
+#             prompt=prompt,
+#             temperature=1,
+#             max_tokens=4096,
+#             top_p=1,
+#             frequency_penalty=0,
+#             presence_penalty=0,
+#             stop=stop_list
+#         )
+#         end_time = time.time()
+#         logger.info(f"call time: {end_time - start_time} s")
+#         return response.choices[0].text
 
 
 class ResponseModel(BasicLanguageModel):
@@ -289,8 +292,8 @@ class ResponseModel(BasicLanguageModel):
         return messages
 
     def execute(self):
-        first_response, extract_message, second_response, classify_message = self.call()
-        self.save_message_and_response(classify_message, classify_message)
+        extract_output, extract_message, classify_output, classify_message, group_output, group_message = self.call()
+        logger.info(f"Call language model to parse response complete")
 
     def _call_model(self, message):
         num_tokens = num_tokens_from_string(message, self._complete_model)
@@ -317,6 +320,7 @@ class ResponseModel(BasicLanguageModel):
         response = self._call_model(extract_message)
         formatted_output_extract = self._fixer.handle_parameter(response.choices[0].message.content)
         logger.info(f"Language model answer: {formatted_output_extract}")
+        self.save_message_and_response(extract_message, formatted_output_extract)
         return extract_message, formatted_output_extract, response.choices[0].message.content
 
     def call_classify(self, extract_message, extract_response_str):
@@ -327,6 +331,7 @@ class ResponseModel(BasicLanguageModel):
         response = self._call_model(classify_message)
         formatted_output_classify = self._fixer.handle_cause(response.choices[0].message.content)
         logger.info(f"Language model answer: {formatted_output_classify}")
+        self.save_message_and_response(classify_message, formatted_output_classify)
         return classify_message, formatted_output_classify, response.choices[0].message.content
 
     def call_group(self, classify_message, classify_response_str):
@@ -335,8 +340,9 @@ class ResponseModel(BasicLanguageModel):
         group_message.append({"role": "user", "content": classify_response_str})
         group_message = self.build_messages(group_message, "group")
         response = self._call_model(group_message)
-        formatted_output_group = self._fixer.handle_group(response.choices[0].message.content)
+        formatted_output_group = self._fixer.handle_group(response.choices[0].message.content, self._data_path)
         logger.info(f"Language model answer: {formatted_output_group}")
+        self.save_message_and_response(group_message, formatted_output_group)
         return group_message, formatted_output_group, response.choices[0].message.content
 
     def call(self):
@@ -345,4 +351,5 @@ class ResponseModel(BasicLanguageModel):
                                                                                             extract_response_str)
         group_message, formatted_output_group, group_response = self.call_group(classify_message, classify_response)
 
-        return formatted_output_extract, extract_message, formatted_output_classify, classify_message
+        return (formatted_output_extract, extract_message, formatted_output_classify, classify_message,
+                formatted_output_group, group_message)

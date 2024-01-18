@@ -71,7 +71,8 @@ The format is {parameter1:[value1,value2,...],parameter2:[value1,value2,...],...
 
     EXTRACT_PARAM = """
 Your task:
-- According to the information provided in Content, analyze which parameters in the Parameter list have problems that 
+- According to the information provided in Content, causes of errors are described in Error Cause Classification, 
+analyze which parameters in the Parameter list have problems that 
 cause the test case to fail to execute. Note that the parameter names in the response and the parameter names in the 
 Parameter List may not be exactly the same, and there will be format changes. Format your response as a JSON object. 
 The format is {params:[p1,p2,....]}.

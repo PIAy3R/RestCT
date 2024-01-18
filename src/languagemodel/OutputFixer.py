@@ -1,3 +1,4 @@
+import csv
 import json
 import re
 from typing import Dict, List
@@ -84,6 +85,19 @@ class ResponseFixer(OutputFixer):
 
         self._operation = operation
 
+    def save_group(self, data_path, output_json):
+        group_path = data_path / "grouped_constraint.csv"
+        if not group_path.exists():
+            with group_path.open("a+") as fp:
+                writer = csv.writer(fp, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+                writer.writerow(["operation", "constraint_param_pair"])
+        with group_path.open("a+") as fp:
+            writer = csv.writer(fp, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+            for constraint, parameters in output_json.items():
+                writer.writerow([self._operation, parameters])
+
+
+
     @staticmethod
     def handle_parameter(output_to_process):
         output_json: dict = json.loads(output_to_process)
@@ -101,7 +115,8 @@ class ResponseFixer(OutputFixer):
         # self._manager.save_language_model_ask(self._operation, output_json)
         return output_json
 
-    def handle_group(self, output_to_process):
+    def handle_group(self, output_to_process, data_path):
         output_json = json.loads(output_to_process)
         self._manager.save_language_model_group(self._operation, output_json)
+        self.save_group(data_path, output_json)
         return output_json

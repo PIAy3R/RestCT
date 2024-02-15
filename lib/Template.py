@@ -56,6 +56,13 @@ Error Cause Classification:
 2. The constraints that need to be satisfied are broken between parameters of the Request.
 """
 
+    TEXT_RES_VALUE = """
+Now you are given the information about the parameters in Parameter info.It is a list contains python dicts, each dict 
+corresponds to a parameter, recording the information of the parameter.
+Parameter info:```{}```
+Ask Parameter list:```{}```
+"""
+
     OTHER = """
 3. This operation may depend on a previous operation, and the parameter value may be related to the result of the previous operation.
 """
@@ -99,4 +106,14 @@ Your task:
 - According to the Parameter info, infer and give one most possible error value for each parameter in Parameter list 
 which can trigger the bugs. Format your response as a JSON object.
 The format is {parameter1:[value1,value2,...],parameter2:[value1,value2,...],...}.
+"""
+
+    RES_VALUE = """
+Your task:
+- According to the constraints above and the information in Parameter info, give 3 possible values for each parameter 
+in Ask Parameter list. 
+Format your response as a JSON object.
+The format is {parameter1:[value1,value2,...],parameter2:[value1,value2,...],...}. 
+Pay attention to the constraints between parameters, especially when some parameters take a value, another parameter 
+cannot take a value, or when some parameters take a value, the other parameter must take a certain value, etc.
 """

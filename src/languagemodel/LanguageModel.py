@@ -104,7 +104,7 @@ class BasicLanguageModel:
     def build_message(self) -> List[Dict[str, str]]:
         pass
 
-    def call(self):
+    def call_without_res(self):
         message = self.build_message()
         num_tokens = num_tokens_from_string(message, self._complete_model)
         if num_tokens > self._max_query_len:
@@ -126,7 +126,7 @@ class BasicLanguageModel:
         logger.info(f"call time: {end_time - start_time} s")
         return response.choices[0].message.content, message
 
-    def execute(self):
+    def execute(self, message_res):
         pass
 
     def save_message_and_response(self, message, response):
@@ -153,6 +153,41 @@ class ParamValueModel(BasicLanguageModel):
         logger.debug(f"target parameter list: {self._target_param}")
 
     def build_prompt(self) -> str:
+        pInfo, param_to_ask = self.get_param_info()
+        prompt = Template.EXPLANATION_VALUE + Template.TEXT_VALUE.format(self._operation, pInfo,
+                                                                         self._operation.constraints,
+                                                                         param_to_ask) + TaskTemplate.SPECIAL_VALUE
+        return prompt
+
+    def build_message(self) -> List[Dict[str, str]]:
+        message = []
+        prompt = self.build_prompt()
+        message.append({"role": "system", "content": Template.SYS_ROLE_VALUE})
+        message.append({"role": "user", "content": prompt})
+        return message
+
+    def execute(self, message_res=None):
+        if message_res is None:
+            response_str, message = self.call_without_res()
+        else:
+            response_str, message = self.call_with_res(message_res)
+        parameters = self._spec.get("paths").get(self._operation.url.replace(URL.baseurl, "")).get(
+            self._operation.method.value).get("parameters")
+        formatted_output = self._fixer.handle(response_str, parameters)
+        logger.info(f"Language model answer: {formatted_output}")
+        self.save_message_and_response(message, formatted_output)
+
+    def real_param(self):
+        param_list = []
+        for param in self._target_param:
+            if isinstance(param, ObjectParam) or isinstance(param, ArrayParam):
+                for p in param.seeAllParameters():
+                    param_list.append(p.getGlobalName())
+            else:
+                param_list.append(param.name)
+        return param_list
+
+    def get_param_info(self):
         pInfo = []
         param_to_ask = []
         parameters = self._spec.get("paths").get(self._operation.url.replace(URL.baseurl, "")).get(
@@ -178,69 +213,38 @@ class ParamValueModel(BasicLanguageModel):
                         else:
                             pInfo.append(info)
                             param_to_ask.append(p.getGlobalName())
-        prompt = Template.EXPLANATION_VALUE + Template.TEXT_VALUE.format(self._operation, pInfo,
-                                                                         self._operation.constraints,
-                                                                         param_to_ask) + TaskTemplate.SPECIAL_VALUE
-        return prompt
+        return pInfo, param_to_ask
 
-    def build_message(self) -> List[Dict[str, str]]:
-        message = []
-        prompt = self.build_prompt()
-        message.append({"role": "system", "content": Template.SYS_ROLE_VALUE})
+    def call_with_res(self, message_res):
+        self._complete_model = "gpt-4-1106-preview"
+        self.temperature = 0.9
+        message = message_res
+        pInfo, param_to_ask = self.get_param_info()
+        prompt = Template.TEXT_RES_VALUE.format(pInfo, param_to_ask) + TaskTemplate.RES_VALUE
         message.append({"role": "user", "content": prompt})
-        return message
-
-    def execute(self):
-        response_str, message = self.call()
-        parameters = self._spec.get("paths").get(self._operation.url.replace(URL.baseurl, "")).get(
-            self._operation.method.value).get("parameters")
-        formatted_output = self._fixer.handle(response_str, parameters)
-        logger.info(f"Language model answer: {formatted_output}")
-        self.save_message_and_response(message, formatted_output)
-
-    def real_param(self):
-        param_list = []
-        for param in self._target_param:
-            if isinstance(param, ObjectParam) or isinstance(param, ArrayParam):
-                for p in param.seeAllParameters():
-                    param_list.append(p.getGlobalName())
-            else:
-                param_list.append(param.name)
-        return param_list
-
-
-# class CodeCompleteModel(BasicLanguageModel):
-#     def __init__(self, operation: Operation, target_param: List[AbstractParam], manager, data_path,
-#                  temperature: float = 0.7):
-#         super().__init__(operation, manager, data_path, temperature)
-#
-#         self._target_param: List[AbstractParam] = target_param
-#         self._fixer = CodeGenerationFixer(self._manager, self._operation)
-#         self._complete_model = "gpt-3.5-turbo-instruct"
-#
-#         logger.debug(f"Use generation model to generate code")
-#
-#     def build_prompt(self) -> Tuple[str, list[str]]:
-#         prompt = ""
-#         stop_word_list = ["unittest.main()", "if __name__ == '__main__':"]
-#         return prompt, stop_word_list
-#
-#     def call(self):
-#         prompt, stop_list = self.build_prompt()
-#         start_time = time.time()
-#         response = self._client.completions.create(
-#             model=self._complete_model,
-#             prompt=prompt,
-#             temperature=1,
-#             max_tokens=4096,
-#             top_p=1,
-#             frequency_penalty=0,
-#             presence_penalty=0,
-#             stop=stop_list
-#         )
-#         end_time = time.time()
-#         logger.info(f"call time: {end_time - start_time} s")
-#         return response.choices[0].text
+        num_tokens = num_tokens_from_string(message, self._complete_model)
+        # if num_tokens > self._max_query_len:
+        #     self._complete_model = "gpt-3.5-turbo-16k"
+        #     recount_tokens = num_tokens_from_string(message)
+        #     if recount_tokens > 16384:
+        #         logger.warning("Exceeding the maximum token limit")
+        #         return
+        start_time = time.time()
+        response = self._client.chat.completions.create(
+            model=self._complete_model,
+            messages=message,
+            temperature=self._temperature,
+            top_p=0.99,
+            frequency_penalty=0,
+            presence_penalty=0,
+            max_tokens=4096,
+            response_format={"type": "json_object"}
+        )
+        end_time = time.time()
+        self._manager.update_llm_data((self._complete_model, response.usage.total_tokens, num_tokens),
+                                      end_time - start_time)
+        logger.info(f"call time: {end_time - start_time} s")
+        return response.choices[0].message.content, message
 
 
 class ResponseModel(BasicLanguageModel):
@@ -291,9 +295,13 @@ class ResponseModel(BasicLanguageModel):
             messages.append({"role": "user", "content": TaskTemplate.GROUP})
         return messages
 
-    def execute(self):
-        extract_output, extract_message, classify_output, classify_message, group_output, group_message = self.call()
+    def execute(self, message_res=None):
+        (extract_output, extract_message, classify_output, classify_message,
+         group_output, group_message, group_response_str) = self.call_without_res()
+        final_message = group_message.copy()
+        final_message.append({"role": "user", "content": group_response_str})
         logger.info(f"Call language model to parse response complete")
+        return final_message
         # return extract_output, extract_message, classify_output, classify_message, group_output, group_message
 
     def _call_model(self, message):
@@ -346,7 +354,7 @@ class ResponseModel(BasicLanguageModel):
         self.save_message_and_response(group_message, formatted_output_group)
         return group_message, formatted_output_group, response.choices[0].message.content
 
-    def call(self):
+    def call_without_res(self):
         extract_message, formatted_output_extract, extract_response_str = self.call_extract_parameter()
         if len(formatted_output_extract) == 0:
             logger.info("No parameter extracted")
@@ -366,4 +374,4 @@ class ResponseModel(BasicLanguageModel):
                 group_message, formatted_output_group, group_response = self.call_group(classify_message,
                                                                                         classify_response)
                 return (formatted_output_extract, extract_message, formatted_output_classify, classify_message,
-                        formatted_output_group, group_message)
+                        formatted_output_group, group_message, group_response)

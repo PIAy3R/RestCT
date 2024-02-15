@@ -780,7 +780,11 @@ class CAWithLLM(CA):
 
         self._is_regen = False
 
-    def _re_handle(self, index, operation, chain, sequence, response_list, loop_num) -> bool:
+    def _check_llm_response(self, operation, e_response_list, a_response_list, e_ca, a_ca):
+        pass
+
+    def _re_handle(self, index, operation, chain, sequence: list, response_list: list, loop_num: int,
+                   status_tuple: tuple, message) -> bool:
         self._is_regen = True
         success_url_tuple = tuple([op for op in sequence[:index] if op in chain.keys()] + [operation])
         if len(operation.parameterList) == 0:
@@ -789,17 +793,14 @@ class CAWithLLM(CA):
 
         history = []
 
-        if not operation.grouped:
-            self._call_response_language_model(operation, response_list)
-            operation.set_grouped()
-
         self._reset_constraints(operation, operation.parameterList)
         self._add_llm_constraints(operation)
 
         if self._manager.get_llm_examples().get(operation) is None or len(
                 self._manager.get_llm_examples().get(operation)) == 0:
-            flag = self._call_value_language_model(operation)
+            flag = self._call_value_language_model(operation, message)
             if not flag:
+                logger.info("no param to ask")
                 return False
 
         e_ca = self._handle_essential_params(operation, sequence[:index], chain, history)
@@ -823,9 +824,11 @@ class CAWithLLM(CA):
 
         is_break = is_break_e or is_break_a
 
+        self._check_llm_response(operation, e_response_list, a_response_list, e_ca, a_ca)
+
         if loop_num == 3 and self._manager.get_llm_examples().get(operation) is not None and not is_break:
             logger.info(
-                "the previous example value of the operation did not work, clear the language model value")
+                "previous example values provided by LLM of this operation did not work, clear the value")
             self._manager.get_llm_examples().get(operation).clear()
 
         return is_break
@@ -838,14 +841,15 @@ class CAWithLLM(CA):
         if len(response_list) == 0:
             return
         response_model = ResponseModel(operation, self._manager, self._data_path, response_list)
-        response_model.execute()
+        message = response_model.execute()
+        return message
 
-    def _call_value_language_model(self, operation: Operation):
+    def _call_value_language_model(self, operation: Operation, message):
         param_to_ask = []
         loc_set = set()
         for param in operation.parameterList:
-            if param.isEssential and not isinstance(param, EnumParam) and not isinstance(param,
-                                                                                         BoolParam) and param.loc != Loc.Path:
+            if (param.isEssential and not isinstance(param, EnumParam)
+                    and not isinstance(param, BoolParam) and param.loc != Loc.Path):
                 param_to_ask.append(param)
                 loc_set.add(param.loc)
             elif not param.isEssential:
@@ -855,9 +859,8 @@ class CAWithLLM(CA):
                     loc_set.add(param.loc)
         if len(param_to_ask) != 0:
             value_model = ParamValueModel(operation, param_to_ask, self._manager, self._data_path)
-            value_model.execute()
+            value_model.execute(message)
         else:
-            logger.info("no param to ask")
             return False
         return True
 
@@ -889,7 +892,8 @@ class CAWithLLM(CA):
         if all([p.isEssential for p in operation.parameterList]):
             if not is_break_e:
                 logger.info("no success request, use llm to help re-generate")
-                is_break = self._re_handle(index, operation, chain, sequence, e_response_list, loop_num)
+                is_break = self._re_handle(index, operation, chain, sequence, e_response_list, loop_num,
+                                           (have_success_e, have_bug_e), None)
                 return is_break
             else:
                 return is_break_e
@@ -902,11 +906,25 @@ class CAWithLLM(CA):
         is_break_a = have_success_a or have_bug_a
 
         is_break = is_break_e or is_break_a
+        response_list = e_response_list + a_response_list
 
-        if not (have_success_e or have_success_a):
-            logger.info("no success request, use llm to help re-generate")
+        sc_set = set([sc for (sc, r) in response_list])
+        message = None
+        if len(sc_set) == 1 and 200 <= sc_set.pop() < 300:
+            pass
+        elif len(sc_set) == 2 and all((200 <= x < 300) if i == 0 else x == 500 for i, x in enumerate(sorted(sc_set))):
+            pass
+        else:
+            if not operation.grouped:
+                message = self._call_response_language_model(operation, response_list)
+                operation.set_grouped()
+
+        if not (have_success_e and have_success_a and have_bug_e and have_bug_a):
+            status_tuple = (have_success_e, have_success_a, have_bug_e, have_bug_a)
+            logger.info("Expected status code(2xx or 500) missing, use llm to help re-generate")
             self._re_count(e_ca, a_ca)
-            is_break = self._re_handle(index, operation, chain, sequence, e_response_list + a_response_list, loop_num)
+            is_break = self._re_handle(index, operation, chain, sequence, response_list, loop_num, status_tuple,
+                                       message)
 
         return is_break
 

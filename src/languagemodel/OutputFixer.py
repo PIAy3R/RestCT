@@ -102,9 +102,9 @@ class ResponseFixer(OutputFixer):
 
     def handle_res(self, output_to_process, data_path):
         json_output = json.loads(output_to_process)
-        # param_list = json_output.get("Task1").get("params")
+        param_list = json_output.get("Task1").get("params")
         reason_dict = json_output.get("Task2")
-        group_dict = json_output.get("Task3")
+        group_dict = json_output.get("Task2")
         self.handle_group(group_dict, data_path)
         self.handle_cause(reason_dict)
         return json_output

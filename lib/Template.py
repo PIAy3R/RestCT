@@ -133,15 +133,12 @@ same, and there will be format changes.
 Format your response as a JSON object. The format is {params:[p1,p2,....]}. 
 If there is no parameter extracted, please return an empty list. The format is {params:[]}'}
 
-2. Classify the error reason of each parameter. Format your response as a JSON object. 
-The format is {p1:r, p2:r, .....}. Reason is expressed using numerical labels.
-Due to the provision of multiple test cases, the reasons for errors caused by the same parameter in different test 
-cases are not the same. If multiple reasons occur, please classify them all.
-
-3. Group the parameters with constraint relationships.Format your response as a JSON object. 
+2. Group the parameters with constraint relationships.Format your response as a JSON object. 
 The format is {constraint1:[param1,param2,..], constraint:[param1,param2,....], .....}.
 
 
-Finish the 3 tasks step by step because the results of the previous step may be useful for the next step. 
-The format is {Task1:result, Task2: result, Task3:result}
+Finish the 2 tasks step by step because the results of the previous step may be useful for the next step. 
+Don't return the results of your thinking, just return the json result.
+If there is no result for a task, None is returned and all subsequent tasks return None.
+The format is {Task1:result, Task2:result}
 """

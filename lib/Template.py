@@ -61,6 +61,10 @@ Now you are given the information about the parameters in Parameter info.It is a
 corresponds to a parameter, recording the information of the parameter.
 Parameter info:```{}```
 Ask Parameter list:```{}```
+Constraint:```{}```
+"""
+
+    TEXT_RES_RESPONSE = """
 """
 
     OTHER = """
@@ -89,7 +93,7 @@ If there is no parameter extracted, please return an empty list. The format is {
     CLASSIFY = """
 Your task:
 - Classify the error reason of each parameter. Format your response as a JSON object. 
-The format is {p1:r, p2:r, .....}. Reason is expressed using numerical labels.
+The format is {p1:r, p2:r, .....}. Reason is expressed using numerical labels, now there are only two reasons.
 Due to the provision of multiple test cases, the reasons for errors caused by the same parameter in different test cases 
 are not the same. If multiple reasons occur, please classify them all.
 """
@@ -116,4 +120,28 @@ Format your response as a JSON object.
 The format is {parameter1:[value1,value2,...],parameter2:[value1,value2,...],...}. 
 Pay attention to the constraints between parameters, especially when some parameters take a value, another parameter 
 cannot take a value, or when some parameters take a value, the other parameter must take a certain value, etc.
+Pay attention to the constraint relationship when giving the value. If there is a constraint relationship between p1 
+and p2, the value of the corresponding position must comply with the constraint relationship.
+"""
+
+    ALL = """
+Your task:
+1. According to the information provided in Content, causes of errors are described in Error Cause Classification, 
+analyze which parameters in the Parameter list have problems that  cause the test case to fail to execute. 
+Note that the parameter names in the response and the parameter names in the Parameter List may not be exactly the 
+same, and there will be format changes. 
+Format your response as a JSON object. The format is {params:[p1,p2,....]}. 
+If there is no parameter extracted, please return an empty list. The format is {params:[]}'}
+
+2. Classify the error reason of each parameter. Format your response as a JSON object. 
+The format is {p1:r, p2:r, .....}. Reason is expressed using numerical labels.
+Due to the provision of multiple test cases, the reasons for errors caused by the same parameter in different test 
+cases are not the same. If multiple reasons occur, please classify them all.
+
+3. Group the parameters with constraint relationships.Format your response as a JSON object. 
+The format is {constraint1:[param1,param2,..], constraint:[param1,param2,....], .....}.
+
+
+Finish the 3 tasks step by step because the results of the previous step may be useful for the next step. 
+The format is {Task1:result, Task2: result, Task3:result}
 """

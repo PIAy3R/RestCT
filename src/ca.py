@@ -272,7 +272,7 @@ class RuntimeInfoManager:
 
         self._llm_example_value_dict: Dict[Operation, Dict[AbstractParam, Union[dict, list]]] = dict()
         self._llm_cause_dict: Dict[Operation, Dict[AbstractParam, List[int]]] = dict()
-        self._llm_constraint_group: Dict[Operation, List[List[str]]] = dict()
+        self._llm_constraint_group: Dict[Operation, List[List[AbstractParam]]] = dict()
         # self._llm_constraint_dict: Dict[Operation, List[AbstractParam]] = dict()
         # self._llm_ask_dict: Dict[Operation, List[AbstractParam]] = dict()
 
@@ -301,12 +301,15 @@ class RuntimeInfoManager:
         return self._llm_example_value_dict
 
     def get_llm_constrainted_params(self, operation):
-        params = []
+        params = set()
         for p in operation.parameterList:
-            if p in self._llm_cause_dict.get(operation, {}):
-                if 2 in self._llm_cause_dict.get(operation, {}).get(p):
-                    params.append(p)
-        return params
+            for constraint in self._llm_constraint_group.get(operation, []):
+                if p in constraint:
+                    params.add(p)
+            # if p in self._llm_cause_dict.get(operation, {}):
+            #     if 2 in self._llm_cause_dict.get(operation, {}).get(p):
+            #         params.append(p)
+        return list(params)
 
     def get_llm_ask_params(self, operation):
         params = []
@@ -494,7 +497,9 @@ class RuntimeInfoManager:
         if self._llm_example_value_dict.get(operation) is None:
             self._llm_example_value_dict[operation] = {}
         for k, v in json_output.items():
-            self._llm_example_value_dict[operation][k] = v
+            for p in operation.parameterList:
+                if p.getGlobalName() == k:
+                    self._llm_example_value_dict[operation][k] = v
 
     # def save_language_model_constraint(self, operation, cause_dict: dict):
     #     if self._llm_constraint_dict.get(operation) is None:
@@ -525,7 +530,11 @@ class RuntimeInfoManager:
         if self._llm_constraint_group.get(operation) is None:
             self._llm_constraint_group[operation] = []
         for k, v in grouped.items():
-            self._llm_constraint_group[operation].append(v)
+            new_v_list = []
+            for p in operation.parameterList:
+                if p.getGlobalName() in v:
+                    new_v_list.append(p)
+            self._llm_constraint_group[operation].append(new_v_list)
 
 
 class CA:
@@ -786,56 +795,64 @@ class CAWithLLM(CA):
     def _re_handle(self, index, operation, chain, sequence: list, response_list: list, loop_num: int,
                    status_tuple: tuple, message) -> bool:
         self._is_regen = True
-        success_url_tuple = tuple([op for op in sequence[:index] if op in chain.keys()] + [operation])
-        if len(operation.parameterList) == 0:
-            self._executes(operation, [{}], chain, success_url_tuple, [])
-            return True
+        if not (status_tuple[0] and status_tuple[1]):
+            logger.info("no success request, use llm to help re-generate")
+            success_url_tuple = tuple([op for op in sequence[:index] if op in chain.keys()] + [operation])
+            if len(operation.parameterList) == 0:
+                self._executes(operation, [{}], chain, success_url_tuple, [])
+                return True
 
-        history = []
+            history = []
 
-        self._reset_constraints(operation, operation.parameterList)
-        self._add_llm_constraints(operation)
+            self._reset_constraints(operation, operation.parameterList)
+            # self._add_llm_constraints(operation)
 
-        if self._manager.get_llm_examples().get(operation) is None or len(
-                self._manager.get_llm_examples().get(operation)) == 0:
-            flag = self._call_value_language_model(operation, message)
-            if not flag:
-                logger.info("no param to ask")
-                return False
+            if self._manager.get_llm_examples().get(operation) is None or len(
+                    self._manager.get_llm_examples().get(operation)) == 0:
+                flag = self._call_value_language_model(operation, message)
+                if not flag:
+                    logger.info("no param to ask")
+                    return False
 
-        e_ca = self._handle_essential_params(operation, sequence[:index], chain, history)
-        logger.info(f"{index + 1}-th operation essential parameters covering array size: {len(e_ca)}, "
-                    f"parameters: {len(e_ca[0]) if len(e_ca) > 0 else 0}, constraints: {len(operation.constraints)}")
+            e_ca = self._handle_essential_params(operation, sequence[:index], chain, history)
+            logger.info(f"{index + 1}-th operation essential parameters covering array size: {len(e_ca)}, "
+                        f"parameters: {len(e_ca[0]) if len(e_ca) > 0 else 0}, constraints: {len(operation.constraints)}")
 
-        have_success_e, have_bug_e, e_response_list = self._executes(operation, e_ca, chain, success_url_tuple, history,
-                                                                     True)
-        is_break_e = have_success_e or have_bug_e
+            have_success_e, have_bug_e, e_response_list = self._executes(operation, e_ca, chain, success_url_tuple,
+                                                                         history,
+                                                                         True)
+            is_break_e = have_success_e or have_bug_e
 
-        if all([p.isEssential for p in operation.parameterList]):
-            return is_break_e
+            if all([p.isEssential for p in operation.parameterList]):
+                return is_break_e
 
-        a_ca = self._handle_all_params(operation, sequence[:index], chain, history)
-        logger.info(f"{index + 1}-th operation all parameters covering array size: {len(a_ca)}, "
-                    f"parameters: {len(a_ca[0]) if len(a_ca) > 0 else 0}, constraints: {len(operation.constraints)}")
+            a_ca = self._handle_all_params(operation, sequence[:index], chain, history)
+            logger.info(f"{index + 1}-th operation all parameters covering array size: {len(a_ca)}, "
+                        f"parameters: {len(a_ca[0]) if len(a_ca) > 0 else 0}, constraints: {len(operation.constraints)}")
 
-        have_success_a, have_bug_a, a_response_list = self._executes(operation, a_ca, chain, success_url_tuple, history,
-                                                                     False)
-        is_break_a = have_success_a or have_bug_a
+            have_success_a, have_bug_a, a_response_list = self._executes(operation, a_ca, chain, success_url_tuple,
+                                                                         history,
+                                                                         False)
+            is_break_a = have_success_a or have_bug_a
 
-        is_break = is_break_e or is_break_a
+            is_break = is_break_e or is_break_a
 
-        self._check_llm_response(operation, e_response_list, a_response_list, e_ca, a_ca)
+            self._check_llm_response(operation, e_response_list, a_response_list, e_ca, a_ca)
 
-        if loop_num == 3 and self._manager.get_llm_examples().get(operation) is not None and not is_break:
-            logger.info(
-                "previous example values provided by LLM of this operation did not work, clear the value")
-            self._manager.get_llm_examples().get(operation).clear()
+            if loop_num == 3 and self._manager.get_llm_examples().get(operation) is not None and not is_break:
+                logger.info(
+                    "previous example values provided by LLM of this operation did not work, clear the value")
+                self._manager.get_llm_examples().get(operation).clear()
 
-        return is_break
+            return is_break
+        elif not (status_tuple[2] and status_tuple[3]):
+            is_break = True
+            logger.info("no 500 status code, use llm to help re-generate")
+            return is_break
 
-    def _add_llm_constraints(self, operation: Operation):
-        llm_constraints = []
-        constraint_param_list = self._manager.get_llm_constrainted_params(operation)
+    # def _add_llm_constraints(self, operation: Operation):
+    #     llm_constraints = []
+    #     constraint_param_list = self._manager.get_llm_constrainted_params(operation)
 
     def _call_response_language_model(self, operation: Operation, response_list: List[Tuple[int, object]]):
         if len(response_list) == 0:
@@ -940,6 +957,7 @@ class CAWithLLM(CA):
         """
 
         example_dict = self._manager.get_llm_examples().get(operation)
+        llm = False
 
         if history_ca_of_current_op is None:
             history_ca_of_current_op = []
@@ -964,7 +982,26 @@ class CAWithLLM(CA):
                 if not self._manager.is_unresolved(operation.__repr__() + p.name):
                     domain_map[p.getGlobalName()] = p.domain
 
+        raw_domain_map = domain_map.copy()
+
+        if (self._manager.get_llm_examples().get(operation) is not None and
+                len(self._manager.get_llm_examples().get(operation)) > 0):
+            if self._manager.get_llm_grouped_constraint(operation) is not None:
+                new_domain_map = {}
+                constraint_params = self._manager.get_llm_constrainted_params(operation)
+                llm = True
+                # example = self._manager.get_llm_examples().get(operation)
+                for n, llm_constraints in enumerate(self._manager.get_llm_grouped_constraint(operation)):
+                    p_name = f"constraint{n}"
+                    new_domain_map[p_name] = [Value(f"combination{i}", ValueType.Example, DataType.String) for i in
+                                              range(3)]
+                for p in domain_map.keys():
+                    if p not in [cp.getGlobalName() for cp in constraint_params]:
+                        new_domain_map[p] = domain_map.get(p)
+                domain_map = new_domain_map
+
         if history_ca_of_current_op is not None and len(history_ca_of_current_op) > 0:
+            domain_map = raw_domain_map
             new_domain_map = {
                 "history_ca_of_current_op": [Value(v, ValueType.Reused, DataType.Int32) for v in
                                              range(len(history_ca_of_current_op))]}
@@ -983,7 +1020,11 @@ class CAWithLLM(CA):
         for p, v in domain_map.items():
             logger.debug(f"            {p}: {len(v)} - {v}")
 
-        return self._call_acts(domain_map, constraints, self._eStrength, history_ca_of_current_op)
+        acts = self._call_acts(domain_map, constraints, self._eStrength, history_ca_of_current_op)
+        if llm:
+            return self._unpack_llm_response(acts, operation)
+        else:
+            return acts
 
     def _handle_essential_params(self, operation, exec_ops, chain, history):
         """
@@ -1008,3 +1049,29 @@ class CAWithLLM(CA):
         parameter_list = operation.parameterList
 
         return self._cover_params(operation, parameter_list, operation.constraints, chain, history)
+
+    def _unpack_llm_response(self, acts, operation):
+        new_acts = []
+        constraint_params = self._manager.get_llm_grouped_constraint(operation)
+        example = self._manager.get_llm_examples().get(operation)
+        for array in acts:
+            new_array = {}
+            for c, v in array.items():
+                if "constraint" in c:
+                    con_index = int(c.replace("constraint", ""))
+                    com_index = int(v.val.replace("combination", ""))
+                    param_to_unpack = constraint_params[con_index]
+                    for p in param_to_unpack:
+                        if example[p.getGlobalName()][com_index] != '':
+                            value = Value(example[p.getGlobalName()][com_index], ValueType.Example, p.type)
+                            new_array[p.getGlobalName()] = value
+                        else:
+                            if p.required:
+                                value = Value(example[p.getGlobalName()][com_index], ValueType.Example, p.type)
+                            else:
+                                value = Value(None, ValueType.Example, p.type)
+                            new_array[p.getGlobalName()] = value
+                else:
+                    new_array[c] = v
+            new_acts.append(new_array)
+        return new_acts

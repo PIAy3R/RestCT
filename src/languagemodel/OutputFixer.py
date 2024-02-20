@@ -87,36 +87,24 @@ class ResponseFixer(OutputFixer):
 
     def save_group(self, data_path, output_json):
         group_path = data_path / "grouped_constraint.csv"
-        if not group_path.exists():
-            with group_path.open("a+") as fp:
-                writer = csv.writer(fp, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-                writer.writerow(["operation", "constraint_param_pair"])
-        with group_path.open("a+") as fp:
+        with group_path.open("w") as fp:
             writer = csv.writer(fp, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+            writer.writerow(["operation", "constraint_param_pair"])
             for constraint, parameters in output_json.items():
                 writer.writerow([self._operation, parameters])
 
+    def handle_cause(self, reason_dict):
+        self._manager.save_language_model_cause(self._operation, reason_dict)
 
+    def handle_group(self, group_dict, data_path):
+        self._manager.save_language_model_group(self._operation, group_dict)
+        self.save_group(data_path, group_dict)
 
-    @staticmethod
-    def handle_parameter(output_to_process):
-        output_json: dict = json.loads(output_to_process)
-        try:
-            return output_json["params"]
-        except:
-            for k, v in output_json.items():
-                if isinstance(v, list):
-                    return v
-
-    def handle_cause(self, output_to_process):
-        output_json = json.loads(output_to_process)
-        self._manager.save_language_model_cause(self._operation, output_json)
-        # self._manager.save_language_model_constraint(self._operation, output_json)
-        # self._manager.save_language_model_ask(self._operation, output_json)
-        return output_json
-
-    def handle_group(self, output_to_process, data_path):
-        output_json = json.loads(output_to_process)
-        self._manager.save_language_model_group(self._operation, output_json)
-        self.save_group(data_path, output_json)
-        return output_json
+    def handle_res(self, output_to_process, data_path):
+        json_output = json.loads(output_to_process)
+        # param_list = json_output.get("Task1").get("params")
+        reason_dict = json_output.get("Task2")
+        group_dict = json_output.get("Task3")
+        self.handle_group(group_dict, data_path)
+        self.handle_cause(reason_dict)
+        return json_output

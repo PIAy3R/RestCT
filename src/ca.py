@@ -984,38 +984,35 @@ class CAWithLLM(CA):
 
         raw_domain_map = domain_map.copy()
 
-        if (self._manager.get_llm_examples().get(operation) is not None and
-                len(self._manager.get_llm_examples().get(operation)) > 0):
-            if self._manager.get_llm_grouped_constraint(operation) is not None:
-                new_domain_map = {}
-                constraint_params = self._manager.get_llm_constrainted_params(operation)
-                llm = True
-                # example = self._manager.get_llm_examples().get(operation)
-                for n, llm_constraints in enumerate(self._manager.get_llm_grouped_constraint(operation)):
-                    p_name = f"constraint{n}"
-                    new_domain_map[p_name] = [Value(f"combination{i}", ValueType.Example, DataType.String) for i in
-                                              range(3)]
-                for p in domain_map.keys():
-                    if p not in [cp.getGlobalName() for cp in constraint_params]:
-                        new_domain_map[p] = domain_map.get(p)
-                domain_map = new_domain_map
-
         if history_ca_of_current_op is not None and len(history_ca_of_current_op) > 0:
             domain_map = raw_domain_map
             new_domain_map = {
                 "history_ca_of_current_op": [Value(v, ValueType.Reused, DataType.Int32) for v in
                                              range(len(history_ca_of_current_op))]}
-
             for p in domain_map.keys():
                 if p not in history_ca_of_current_op[0].keys():
                     new_domain_map[p] = domain_map.get(p)
-
             for c in operation.constraints:
                 for p in c.paramNames:
                     if self._manager.is_unresolved(p):
                         return [{}]
-
             domain_map = new_domain_map
+        else:
+            if (self._manager.get_llm_examples().get(operation) is not None and
+                    len(self._manager.get_llm_examples().get(operation)) > 0):
+                if self._manager.get_llm_grouped_constraint(operation) is not None:
+                    new_domain_map = {}
+                    constraint_params = self._manager.get_llm_constrainted_params(operation)
+                    llm = True
+                    # example = self._manager.get_llm_examples().get(operation)
+                    for n, llm_constraints in enumerate(self._manager.get_llm_grouped_constraint(operation)):
+                        p_name = f"constraint{n}"
+                        new_domain_map[p_name] = [Value(f"combination{i}", ValueType.Example, DataType.String) for i in
+                                                  range(3)]
+                    for p in domain_map.keys():
+                        if p not in [cp.getGlobalName() for cp in constraint_params]:
+                            new_domain_map[p] = domain_map.get(p)
+                    domain_map = new_domain_map
 
         for p, v in domain_map.items():
             logger.debug(f"            {p}: {len(v)} - {v}")

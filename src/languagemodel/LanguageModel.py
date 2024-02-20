@@ -224,12 +224,6 @@ class ParamValueModel(BasicLanguageModel):
         prompt = Template.TEXT_RES_VALUE.format(pInfo, param_to_ask, constraint) + TaskTemplate.RES_VALUE
         message.append({"role": "user", "content": prompt})
         num_tokens = num_tokens_from_string(message, self._complete_model)
-        # if num_tokens > self._max_query_len:
-        #     self._complete_model = "gpt-3.5-turbo-16k"
-        #     recount_tokens = num_tokens_from_string(message)
-        #     if recount_tokens > 16384:
-        #         logger.warning("Exceeding the maximum token limit")
-        #         return
         start_time = time.time()
         response = self._client.chat.completions.create(
             model=self._complete_model,
@@ -274,14 +268,6 @@ class ResponseModel(BasicLanguageModel):
                 param_list.append(param.name)
         return param_list
 
-    # def build_extract_prompt(self) -> str:
-    #     response_str_set = self._extract_response_str()
-    #     param_list = self._get_all_param()
-    #     prompt = (Template.EXPLANATION_RESPONSE + Template.TEXT_RESPONSE.format(self._operation, param_list,
-    #                                                                             response_str_set)
-    #               + TaskTemplate.EXTRACT_PARAM)
-    #     return prompt
-
     def build_prompt(self) -> str:
         response_str_set = self._extract_response_str()
         param_list = self._get_all_param()
@@ -295,14 +281,6 @@ class ResponseModel(BasicLanguageModel):
         prompt = self.build_prompt()
         messages.append({"role": "system", "content": Template.SYS_ROLE_RESPONSE})
         messages.append({"role": "user", "content": prompt})
-        # if task == "extract":
-        #     prompt = self.build_extract_prompt()
-        #     messages.append({"role": "system", "content": Template.SYS_ROLE_RESPONSE})
-        #     messages.append({"role": "user", "content": prompt})
-        # elif task == "classify":
-        #     messages.append({"role": "user", "content": TaskTemplate.CLASSIFY})
-        # elif task == "group":
-        #     messages.append({"role": "user", "content": TaskTemplate.GROUP})
         return messages
 
     def execute(self, message_res=None):
@@ -312,13 +290,7 @@ class ResponseModel(BasicLanguageModel):
         formatted_output = self._fixer.handle_res(response.choices[0].message.content, self._data_path)
         logger.info(f"Language model answer: {formatted_output}")
         messages.append({"role": "user", "content": response.choices[0].message.content})
-        # (extract_output, extract_message, classify_output, classify_message,
-        #  group_output, group_message, group_response_str) = self.call_without_res()
-        # final_message = group_message.copy()
-        # final_message.append({"role": "user", "content": group_response_str})
-        # logger.info(f"Call language model to parse response complete")
         return messages
-        # return extract_output, extract_message, classify_output, classify_message, group_output, group_message
 
     def _call_model(self, message):
         num_tokens = num_tokens_from_string(message, self._complete_model)
@@ -338,56 +310,3 @@ class ResponseModel(BasicLanguageModel):
         end_time = time.time()
         logger.info(f"call time: {end_time - start_time} s")
         return response
-
-    # def call_extract_parameter(self):
-    #     logger.debug(f"call language model for to extract parameters from response")
-    #     extract_message = self.build_messages([], "extract")
-    #     response = self._call_model(extract_message)
-    #     formatted_output_extract = self._fixer.handle_parameter(response.choices[0].message.content)
-    #     logger.info(f"Language model answer: {formatted_output_extract}")
-    #     self.save_message_and_response(extract_message, formatted_output_extract)
-    #     return extract_message, formatted_output_extract, response.choices[0].message.content
-    #
-    # def call_classify(self, extract_message, extract_response_str):
-    #     logger.debug(f"call language model for to classify error cause")
-    #     classify_message = extract_message.copy()
-    #     classify_message.append({"role": "user", "content": extract_response_str})
-    #     classify_message = self.build_messages(classify_message, "classify")
-    #     response = self._call_model(classify_message)
-    #     formatted_output_classify = self._fixer.handle_cause(response.choices[0].message.content)
-    #     logger.info(f"Language model answer: {formatted_output_classify}")
-    #     self.save_message_and_response(classify_message, formatted_output_classify)
-    #     return classify_message, formatted_output_classify, response.choices[0].message.content
-    #
-    # def call_group(self, classify_message, classify_response_str):
-    #     logger.debug(f"call language model to group error cause")
-    #     group_message = classify_message.copy()
-    #     group_message.append({"role": "user", "content": classify_response_str})
-    #     group_message = self.build_messages(group_message, "group")
-    #     response = self._call_model(group_message)
-    #     formatted_output_group = self._fixer.handle_group(response.choices[0].message.content, self._data_path)
-    #     logger.info(f"Language model answer: {formatted_output_group}")
-    #     self.save_message_and_response(group_message, formatted_output_group)
-    #     return group_message, formatted_output_group, response.choices[0].message.content
-    #
-    # def call_without_res(self):
-    #     extract_message, formatted_output_extract, extract_response_str = self.call_extract_parameter()
-    #     if len(formatted_output_extract) == 0:
-    #         logger.info("No parameter extracted")
-    #         return formatted_output_extract, extract_message, None, None, None, None
-    #     else:
-    #         classify_message, formatted_output_classify, classify_response = self.call_classify(extract_message,
-    #                                                                                             extract_response_str)
-    #         flag = False
-    #         for p, rl in formatted_output_classify.items():
-    #             if 2 in rl:
-    #                 flag = True
-    #                 break
-    #         if not flag:
-    #             logger.info("No constraint found")
-    #             return formatted_output_extract, extract_message, formatted_output_classify, classify_message, None, None
-    #         else:
-    #             group_message, formatted_output_group, group_response = self.call_group(classify_message,
-    #                                                                                     classify_response)
-    #             return (formatted_output_extract, extract_message, formatted_output_classify, classify_message,
-    #                     formatted_output_group, group_message, group_response)

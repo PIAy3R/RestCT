@@ -793,9 +793,9 @@ class CAWithLLM(CA):
     def _check_llm_response(self, operation, e_response_list, a_response_list, e_ca, a_ca):
         pass
 
-    def _re_handle(self, index, operation, chain, sequence: list, response_list: list, loop_num: int,
-                   status_tuple: tuple, message) -> bool:
+    def _re_handle(self, index, operation, chain, sequence: list, loop_num: int, status_tuple: tuple, message) -> bool:
         self._is_regen = True
+        is_break = False
         if not (status_tuple[0] and status_tuple[1]):
             logger.info("no success request, use llm to help re-generate")
             success_url_tuple = tuple([op for op in sequence[:index] if op in chain.keys()] + [operation])
@@ -838,18 +838,19 @@ class CAWithLLM(CA):
 
             is_break = is_break_e or is_break_a
 
-            self._check_llm_response(operation, e_response_list, a_response_list, e_ca, a_ca)
+            # self._check_llm_response(operation, e_response_list, a_response_list, e_ca, a_ca)
 
             if loop_num == 3 and self._manager.get_llm_examples().get(operation) is not None and not is_break:
                 logger.info(
                     "previous example values provided by LLM of this operation did not work, clear the value")
                 self._manager.get_llm_examples().get(operation).clear()
 
-            return is_break
-        elif not (status_tuple[2] and status_tuple[3]):
+        if not (status_tuple[2] and status_tuple[3]):
             is_break = True
             logger.info("no 500 status code, use llm to help re-generate")
             return is_break
+
+        return is_break
 
     # def _add_llm_constraints(self, operation: Operation):
     #     llm_constraints = []
@@ -859,7 +860,7 @@ class CAWithLLM(CA):
         if len(response_list) == 0:
             return
         response_model = ResponseModel(operation, self._manager, self._data_path, response_list)
-        message = response_model.execute()
+        message, formatted_output = response_model.execute()
         return message
 
     def _call_value_language_model(self, operation: Operation, message):
@@ -941,8 +942,7 @@ class CAWithLLM(CA):
             status_tuple = (have_success_e, have_success_a, have_bug_e, have_bug_a)
             logger.info("Expected status code(2xx or 500) missing, use llm to help re-generate")
             self._re_count(e_ca, a_ca)
-            is_break = self._re_handle(index, operation, chain, sequence, response_list, loop_num, status_tuple,
-                                       message)
+            is_break = self._re_handle(index, operation, chain, sequence, loop_num, status_tuple, message)
 
         return is_break
 

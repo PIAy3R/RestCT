@@ -105,6 +105,8 @@ class ResponseFixer(OutputFixer):
         param_list = json_output.get("Task1").get("params")
         reason_dict = json_output.get("Task2")
         group_dict = json_output.get("Task2")
-        self.handle_group(group_dict, data_path)
-        self.handle_cause(reason_dict)
+        if reason_dict is not None:
+            self.handle_cause(reason_dict)
+        if group_dict is not None:
+            self.handle_group(group_dict, data_path)
         return json_output

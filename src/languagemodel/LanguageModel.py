@@ -8,6 +8,8 @@ from typing import List, Dict, Set
 import tiktoken
 from loguru import logger
 from openai import OpenAI
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 
 from lib.Template import Template, TaskTemplate
 from src.Dto.keywords import URL, Loc
@@ -252,10 +254,27 @@ class ResponseModel(BasicLanguageModel):
 
         self._complete_model = "gpt-4-1106-preview"
 
+    @staticmethod
+    def calculate_cosine_similarity(string1, string2):
+        documents = [string1, string2]
+        count_vectorizer = CountVectorizer()
+        sparse_matrix = count_vectorizer.fit_transform(documents)
+        cosine_sim = cosine_similarity(sparse_matrix, sparse_matrix)
+        similarity_value = cosine_sim[0][1]
+        return similarity_value
+
     def _extract_response_str(self) -> Set[str]:
         response_str_set = set()
         for status_code, response_str in self._response_list:
-            response_str_set.add(json.dumps(response_str))
+            if len(response_str_set) == 0:
+                response_str_set.add(json.dumps(response_str))
+            else:
+                add = True
+                for added in response_str_set:
+                    if self.calculate_cosine_similarity(added, response_str) >= 0.7:
+                        add = False
+                if add:
+                    response_str_set.add(json.dumps(response_str))
         return response_str_set
 
     def _get_all_param(self):
@@ -290,7 +309,7 @@ class ResponseModel(BasicLanguageModel):
         formatted_output = self._fixer.handle_res(response.choices[0].message.content, self._data_path)
         logger.info(f"Language model answer: {formatted_output}")
         messages.append({"role": "user", "content": response.choices[0].message.content})
-        return messages
+        return messages, formatted_output
 
     def _call_model(self, message):
         num_tokens = num_tokens_from_string(message, self._complete_model)

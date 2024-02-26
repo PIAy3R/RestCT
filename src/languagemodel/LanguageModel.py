@@ -156,8 +156,10 @@ class ParamValueModel(BasicLanguageModel):
 
     def build_prompt(self) -> str:
         pInfo, param_to_ask = self.get_param_info()
-        prompt = Template.EXPLANATION_VALUE + Template.TEXT_VALUE.format(self._operation, pInfo,
-                                                                         self._operation.constraints,
+        constraint = self._manager.get_llm_grouped_constraint(self._operation).copy()
+        for c in self._operation.constraints:
+            constraint.append(c.ents)
+        prompt = Template.EXPLANATION_VALUE + Template.TEXT_VALUE.format(self._operation, pInfo, constraint,
                                                                          param_to_ask) + TaskTemplate.SPECIAL_VALUE
         return prompt
 
@@ -222,7 +224,9 @@ class ParamValueModel(BasicLanguageModel):
         self.temperature = 0.9
         message = message_res
         pInfo, param_to_ask = self.get_param_info()
-        constraint = self._manager.get_llm_grouped_constraint(self._operation)
+        constraint = self._manager.get_llm_grouped_constraint(self._operation).copy()
+        for c in self._operation.constraints:
+            constraint.append(c.ents)
         prompt = Template.TEXT_RES_VALUE.format(pInfo, param_to_ask, constraint) + TaskTemplate.RES_VALUE
         message.append({"role": "user", "content": prompt})
         num_tokens = num_tokens_from_string(message, self._complete_model)
@@ -270,8 +274,10 @@ class ResponseModel(BasicLanguageModel):
                 response_str_set.add(json.dumps(response_str))
             else:
                 add = True
+                if status_code < 400:
+                    add = False
                 for added in response_str_set:
-                    if self.calculate_cosine_similarity(added, response_str) >= 0.7:
+                    if self.calculate_cosine_similarity(added, json.dumps(response_str)) >= 0.7:
                         add = False
                 if add:
                     response_str_set.add(json.dumps(response_str))
@@ -313,8 +319,8 @@ class ResponseModel(BasicLanguageModel):
 
     def _call_model(self, message):
         num_tokens = num_tokens_from_string(message, self._complete_model)
-        if num_tokens > 16000:
-            return
+        # if num_tokens > 16000:
+        #     return
         start_time = time.time()
         response = self._client.chat.completions.create(
             model=self._complete_model,

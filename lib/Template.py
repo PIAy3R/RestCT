@@ -129,12 +129,14 @@ Your task:
 1. According to the information provided in Content, causes of errors are described in Error Cause Classification, 
 analyze which parameters in the Parameter list have problems that  cause the test case to fail to execute. 
 Note that the parameter names in the response and the parameter names in the Parameter List may not be exactly the 
-same, and there will be format changes. 
+same, and there will be format changes.
 Format your response as a JSON object. The format is {params:[p1,p2,....]}. 
 If there is no parameter extracted, please return an empty list. The format is {params:[]}'}
+NOTE: The name in your response must be the name in the Parameter List.
 
 2. Group the parameters with constraint relationships.Format your response as a JSON object. 
 The format is {constraint1:[param1,param2,..], constraint:[param1,param2,....], .....}.
+If a parameter has constraints on multiple parameters, list these constraints separately.
 
 
 Finish the 2 tasks step by step because the results of the previous step may be useful for the next step. 

@@ -531,6 +531,8 @@ class RuntimeInfoManager:
         if self._llm_constraint_group.get(operation) is None:
             self._llm_constraint_group[operation] = []
         for k, v in grouped.items():
+            if len(v) == 1:
+                continue
             new_v_list = []
             for p in operation.parameterList:
                 if p.getGlobalName() in v:
@@ -796,7 +798,7 @@ class CAWithLLM(CA):
     def _re_handle(self, index, operation, chain, sequence: list, loop_num: int, status_tuple: tuple, message) -> bool:
         self._is_regen = True
         is_break = False
-        if not (status_tuple[0] and status_tuple[1]):
+        if not (status_tuple[0] or status_tuple[1]):
             logger.info("no success request, use llm to help re-generate")
             success_url_tuple = tuple([op for op in sequence[:index] if op in chain.keys()] + [operation])
             if len(operation.parameterList) == 0:
@@ -844,11 +846,11 @@ class CAWithLLM(CA):
                 logger.info(
                     "previous example values provided by LLM of this operation did not work, clear the value")
                 self._manager.get_llm_examples().get(operation).clear()
+                self._manager.get_llm_grouped_constraint(operation).clear()
 
-        if not (status_tuple[2] and status_tuple[3]):
-            is_break = True
-            logger.info("no 500 status code, use llm to help re-generate")
-            return is_break
+        if not (status_tuple[2] or status_tuple[3]):
+            pass
+            # logger.info("no 500 status code, use llm to help re-generate")
 
         return is_break
 
@@ -911,7 +913,7 @@ class CAWithLLM(CA):
         if all([p.isEssential for p in operation.parameterList]):
             if not is_break_e:
                 logger.info("no success request, use llm to help re-generate")
-                is_break = self._re_handle(index, operation, chain, sequence, e_response_list, loop_num,
+                is_break = self._re_handle(index, operation, chain, sequence, loop_num,
                                            (have_success_e, have_bug_e), None)
                 return is_break
             else:
@@ -959,6 +961,7 @@ class CAWithLLM(CA):
 
         example_dict = self._manager.get_llm_examples().get(operation)
         llm = False
+        constraints_pair = set()
 
         if history_ca_of_current_op is None:
             history_ca_of_current_op = []
@@ -1003,10 +1006,20 @@ class CAWithLLM(CA):
                     len(self._manager.get_llm_examples().get(operation)) > 0):
                 if self._manager.get_llm_grouped_constraint(operation) is not None:
                     new_domain_map = {}
-                    constraint_params = self._manager.get_llm_constrainted_params(operation)
+                    constraint_params = set()
+                    for p in self._manager.get_llm_constrainted_params(operation) + self.get_op_constraints(operation):
+                        constraint_params.add(p)
+                    for pairs in self._manager.get_llm_grouped_constraint(operation):
+                        constraints_pair.add(tuple(pairs))
+                    for c in operation.constraints:
+                        c_l = []
+                        for p in operation.parameterList:
+                            if p.getGlobalName() in c.ents:
+                                c_l.append(p)
+                        constraints_pair.add(tuple(c_l))
                     llm = True
                     # example = self._manager.get_llm_examples().get(operation)
-                    for n, llm_constraints in enumerate(self._manager.get_llm_grouped_constraint(operation)):
+                    for n, llm_constraints in enumerate(constraints_pair):
                         p_name = f"constraint{n}"
                         new_domain_map[p_name] = [Value(f"combination{i}", ValueType.Example, DataType.String) for i in
                                                   range(3)]
@@ -1020,7 +1033,7 @@ class CAWithLLM(CA):
 
         acts = self._call_acts(domain_map, constraints, self._eStrength, history_ca_of_current_op)
         if llm:
-            return self._unpack_llm_response(acts, operation)
+            return self._unpack_llm_response(acts, operation, constraints_pair)
         else:
             return acts
 
@@ -1048,9 +1061,10 @@ class CAWithLLM(CA):
 
         return self._cover_params(operation, parameter_list, operation.constraints, chain, history)
 
-    def _unpack_llm_response(self, acts, operation):
+    def _unpack_llm_response(self, acts, operation, constraints_pair):
         new_acts = []
-        constraint_params = self._manager.get_llm_grouped_constraint(operation)
+        # constraint_params = self._manager.get_llm_grouped_constraint(operation)
+        constraint_params = constraints_pair
         example = self._manager.get_llm_examples().get(operation)
         for array in acts:
             new_array = {}
@@ -1058,7 +1072,7 @@ class CAWithLLM(CA):
                 if "constraint" in c:
                     con_index = int(c.replace("constraint", ""))
                     com_index = int(v.val.replace("combination", ""))
-                    param_to_unpack = constraint_params[con_index]
+                    param_to_unpack = list(constraint_params)[con_index]
                     for p in param_to_unpack:
                         if example[p.getGlobalName()][com_index] != '':
                             value = Value(example[p.getGlobalName()][com_index], ValueType.Example, p.type)
@@ -1073,3 +1087,15 @@ class CAWithLLM(CA):
                     new_array[c] = v
             new_acts.append(new_array)
         return new_acts
+
+    @staticmethod
+    def get_op_constraints(operation):
+        constraint_str = []
+        constraint_param = []
+        for c in operation.constraints:
+            for p in c.ents:
+                constraint_str.append(p)
+        for p in operation.parameterList:
+            if p.getGlobalName() in constraint_str:
+                constraint_param.append(p)
+        return constraint_param

@@ -3,9 +3,10 @@ import os
 from pathlib import Path
 from urllib.parse import urlparse
 
+import yaml
+
 from src.Dto.keywords import DocKey, ParamKey, DataType, Method, URL
 from src.Dto.operation import Operation
-from src.Dto.operation import Response
 from src.Dto.parameter import buildParam, Example
 
 
@@ -31,8 +32,12 @@ class Parser:
             2.3 get examples dto
         """
         swagger = Path(os.getenv("swagger"))
-        with swagger.open("r") as fp:
-            spec = json.load(fp)
+        if swagger.suffix == ".json":
+            with swagger.open("r") as fp:
+                spec = json.load(fp)
+        elif swagger.suffix == ".yaml":
+            with swagger.open("r") as fp:
+                spec = yaml.safe_load(fp)
 
         parsed_url = urlparse(self._compile_url(spec))
         self._host = f"{parsed_url.scheme}://{parsed_url.netloc}"

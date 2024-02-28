@@ -5,7 +5,7 @@ from typing import Set
 from loguru import logger
 
 from src.Dto.parameter import Example
-from src.ca import CA, CAWithLLM
+from src.ca import CAWithLLM, PICA
 from src.controller import RemoteController
 from src.openapiParser import Parser
 from src.sca import SCA
@@ -34,13 +34,13 @@ class RestCT:
         self._sca = SCA(self._config.s_strength, self._operations, self._statistics)
 
         if not config.use_llm:
-            self._ca = CA(self._config.dataPath,
-                          self._config.jar,
-                          self._config.a_strength,
-                          self._config.s_strength,
-                          query_auth=self._config.query,
-                          header_auth=self._config.header,
-                          stat=self._statistics)
+            self._ca = PICA(self._config.dataPath,
+                            self._config.jar,
+                            self._config.a_strength,
+                            self._config.s_strength,
+                            query_auth=self._config.query,
+                            header_auth=self._config.header,
+                            stat=self._statistics)
         else:
             self._ca = CAWithLLM(self._config.dataPath,
                                  self._config.jar,

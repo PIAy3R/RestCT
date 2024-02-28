@@ -19,6 +19,7 @@ from src.Dto.keywords import Loc, DataType, Method
 from src.Dto.operation import Operation
 from src.Dto.parameter import AbstractParam, ValueType, Value, EnumParam, BoolParam
 from src.languagemodel.LanguageModel import ParamValueModel, ResponseModel
+from src.pict import PICT
 
 
 def _saveChain(responseChains: List[dict], chain: dict, opStr: str, response):
@@ -1099,3 +1100,58 @@ class CAWithLLM(CA):
             if p.getGlobalName() in constraint_str:
                 constraint_param.append(p)
         return constraint_param
+
+
+class PICA(CA):
+    def __init__(self, data_path, acts_jar, a_strength, e_strength, **kwargs):
+        super().__init__(data_path, acts_jar, a_strength, e_strength, **kwargs)
+        pict_path = "/Users/naariah/Documents/Python_Codes/RestCT/lib/pict"
+        self._pict = PICT(data_path, pict_path)
+
+    def _cover_params(self, operation, parameters, constraints, chain, history_ca_of_current_op: List[dict]):
+        """
+        generate domain for each parameter of the current operation
+        @param history_ca_of_current_op: ca_1 -> ca_2 -> ca_3, currently, essential_ca -> all_ca
+        @param operation: the target operation
+        @param parameters: parameter list
+        @param constraints: the constraints among parameters
+        @param chain: a response chain
+        @return: the parameters and their domains
+        """
+
+        if history_ca_of_current_op is None:
+            history_ca_of_current_op = []
+
+        domain_map = defaultdict(list)
+        for root_p in parameters:
+            p_with_children = root_p.genDomain(operation.__repr__(), chain, self._manager.get_ok_value_dict())
+            for p in p_with_children:
+                if not self._manager.is_unresolved(operation.__repr__() + p.name):
+                    domain_map[p.getGlobalName()] = p.domain
+
+        if history_ca_of_current_op is not None and len(history_ca_of_current_op) > 0:
+            new_domain_map = {
+                "history_ca_of_current_op": [Value(v, ValueType.Reused, DataType.Int32) for v in
+                                             range(len(history_ca_of_current_op))]}
+
+            for p in domain_map.keys():
+                if p not in history_ca_of_current_op[0].keys():
+                    new_domain_map[p] = domain_map.get(p)
+
+            for c in operation.constraints:
+                for p in c.paramNames:
+                    if self._manager.is_unresolved(p):
+                        return [{}]
+
+            domain_map = new_domain_map
+
+        for p, v in domain_map.items():
+            logger.debug(f"            {p}: {len(v)} - {v}")
+
+        return self._call_pict(domain_map, constraints, self._eStrength, history_ca_of_current_op)
+
+    def _call_pict(self, operation, domain_map, constraints, strength, history_ca_of_current_op):
+        try:
+            return self._pict.handle(domain_map, constraints, strength, history_ca_of_current_op)
+        except Exception:
+            logger.warning("call pict wrong")

@@ -1,5 +1,6 @@
 import argparse
 import json
+import os
 from argparse import Namespace
 from pathlib import Path
 
@@ -17,18 +18,6 @@ class Config:
 
         # essential parameter covering strength
         self.e_strength = 3
-
-        # maximum of op_cover_strength
-        self.MAX_OP_COVER_STRENGTH = 5
-
-        # minimum of op_cover_strength
-        self.MIN_OP_COVER_STRENGTH = 1
-
-        # maximum of param_cover_strength
-        self.MAX_PARAM_COVER_STRENGTH = 5
-
-        # minimum of param_cover_strength
-        self.MIN_PARAM_COVER_STRENGTH = 1
 
         # output folder
         self.output_folder = ""
@@ -52,20 +41,19 @@ class Config:
         self.columnId = ""
 
         # data and log path
-        self.dataPath = ""
+        self.data_path = ""
 
         # snapshot interval
         self.interval = .10
 
-        # forwarding base url
-        # self.forwarding_url = "http://localhost:8081"
-        self.forwarding_url = None
+        self.server = None
 
+        # Language Model Settings
         self.use_llm = False
         self.language_model = "gpt-3.5-turbo-1106"
         self.language_model_key = ""
 
-    def checkAndPrehandling(self, settings: Namespace):
+    def check(self, settings: Namespace):
         curFile = Path(__file__)
 
         if Path(settings.swagger).exists():
@@ -73,31 +61,24 @@ class Config:
         else:
             raise Exception("swagger json does not exist")
 
-        if self.MIN_OP_COVER_STRENGTH <= settings.SStrength <= self.MAX_OP_COVER_STRENGTH:
+        if 1 <= settings.SStrength <= 5:
             self.s_strength = settings.SStrength
         else:
-            raise Exception(
-                "operation sequence covering strength must be in [{}, {}]".format(self.MIN_OP_COVER_STRENGTH,
-                                                                                  self.MAX_OP_COVER_STRENGTH))
+            raise Exception(f"operation sequence covering strength must be in [{1}, {5}]")
 
-        if self.MIN_PARAM_COVER_STRENGTH <= settings.EStrength <= self.MAX_PARAM_COVER_STRENGTH:
+        if 1 <= settings.EStrength <= 5:
             self.e_strength = settings.EStrength
         else:
-            raise Exception(
-                "essential parameter covering strength must be in [{}, {}]".format(self.MIN_PARAM_COVER_STRENGTH,
-                                                                                   self.MAX_PARAM_COVER_STRENGTH))
+            raise Exception(f"essential parameter covering strength must be in [{1}, {5}]")
 
-        if self.MIN_PARAM_COVER_STRENGTH <= settings.AStrength <= self.MAX_PARAM_COVER_STRENGTH:
+        if 1 <= settings.AStrength <= 5:
             self.a_strength = settings.AStrength
         else:
-            raise Exception(
-                "all parameter covering strength must be in [{}, {}]".format(self.MIN_PARAM_COVER_STRENGTH,
-                                                                             self.MAX_PARAM_COVER_STRENGTH))
-
-        folder = Path(settings.dir)
+            raise Exception(f"all parameter covering strength must be in [{1}, {5}]")
 
         self.output_folder = settings.dir
-        folder.mkdir(exist_ok=True)
+        if not os.path.exists(self.output_folder):
+            os.makedirs(self.output_folder)
 
         if settings.budget == 0:
             raise Exception("test budget cannot be zero")
@@ -106,77 +87,64 @@ class Config:
 
         self.interval = settings.interval
 
-        if settings.patterns == "":
-            patterns = curFile.parent.parent / "lib/matchrules.json"
-        else:
-            patterns = Path(settings.patterns)
-        if patterns.exists() and patterns.is_file():
-            self.patterns = patterns.as_posix()
+        self.patterns = Path(settings.patterns)
+        if self.patterns.exists() and self.patterns.is_file():
+            self.patterns = self.patterns.as_posix()
         else:
             raise Exception("patterns are not provided")
 
-        if settings.jar == "":
-            jarFile = curFile.parent.parent / "lib/acts_2.93.jar"
-        else:
-            jarFile = Path(settings.jar)
-        if jarFile.exists() and jarFile.is_file():
-            self.jar = jarFile.as_posix()
+        self.jar = Path(settings.jar)
+        if self.jar.exists() and self.jar.is_file():
+            self.jar = self.jar.as_posix()
         else:
             raise Exception("acts jar is not provided")
 
         try:
-            authToken = json.loads(settings.header)
+            auth_token = json.loads(settings.header)
         except json.JSONDecodeError:
             raise Exception("expecting strings enclosed in double quotes")
         else:
-            self.header.update(authToken)
+            self.header.update(auth_token)
 
         try:
-            authToken = json.loads(settings.query)
+            auth_token = json.loads(settings.query)
         except json.JSONDecodeError:
             raise Exception("expecting strings enclosed in double quotes")
         else:
-            self.query.update(authToken)
+            self.query.update(auth_token)
 
         if settings.columnId is None or settings.columnId == "":
             self.columnId = Path(settings.swagger).with_suffix("").name
         else:
             self.columnId = settings.columnId
 
-        dataPath = folder / self.columnId
-        self.dataPath = dataPath.as_posix()
-        if not dataPath.exists():
-            dataPath.mkdir()
+        data_path = Path(f"{self.output_folder}/{self.columnId}")
+        self.data_path = data_path.as_posix()
+        if not data_path.exists():
+            data_path.mkdir()
 
-        if settings.UseLLM is None or settings.UseLLM == "":
-            raise Exception("whether UseLLM need to be decided")
-        else:
-            if settings.UseLLM.lower() == "true":
-                self.use_llm = True
-                if settings.LanguageModelKey is None or settings.LanguageModelKey == "":
-                    raise Exception("api key of language model should be provided")
-                else:
-                    self.language_model_key = settings.LanguageModelKey
+        if settings.UseLLM.lower() == "true":
+            self.use_llm = True
+            if settings.LanguageModelKey is None or settings.LanguageModelKey == "":
+                raise Exception("api key of language model should be provided")
+            else:
+                self.language_model_key = settings.LanguageModelKey
 
-        os.environ["dataPath"] = self.dataPath
+        os.environ["dataPath"] = self.data_path
         os.environ["swagger"] = self.swagger
         os.environ["patternFile"] = self.patterns
         os.environ["model"] = self.language_model
         os.environ["language_model_key"] = self.language_model_key
 
 
-if __name__ == "__main__":
-    import sys
-    import os
-
-    curPath = os.path.abspath(os.path.dirname(__file__))
-    rootPath = os.path.split(curPath)[0]
-    sys.path.append(rootPath)
-
+def parse_args(root_path) -> Namespace:
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--swagger',
                         help='abs path of swagger file',
+                        type=str, required=True)
+    parser.add_argument('--dir',
+                        help='output folder',
                         type=str, required=True)
     parser.add_argument('--SStrength',
                         help='operation sequence covering strength',
@@ -187,18 +155,15 @@ if __name__ == "__main__":
     parser.add_argument('--AStrength',
                         help='all parameter covering strength',
                         type=int, required=False, default=2)
-    parser.add_argument('--dir',
-                        help='output folder',
-                        type=str, required=True)
     parser.add_argument('--budget',
                         help='test budget(Secs), default=3600',
                         type=int, required=False, default=3600)
     parser.add_argument('--patterns',
                         help='constraint patterns for nlp processes',
-                        type=str, required=False, default="")
+                        type=str, required=False, default=f"{root_path}/lib/matchrules.json")
     parser.add_argument('--jar',
                         help='acts jar file',
-                        type=str, required=False, default="")
+                        type=str, required=False, default=f"{root_path}/lib/acts_2.93.jar")
     parser.add_argument('--header',
                         help='auth token: {keyName: token}',
                         type=str, required=False, default="{}")
@@ -219,14 +184,7 @@ if __name__ == "__main__":
                         type=str, required=True, default="False")
     parser.add_argument('--LanguageModelKey',
                         help='api key of languae model',
-                        type=str, required=False, default="False")
+                        type=str, required=False, default="")
 
     args = parser.parse_args()
-
-    config = Config()
-    config.checkAndPrehandling(args)
-
-    from src.restct import RestCT
-
-    restCT = RestCT(config)
-    restCT.run()
+    return args

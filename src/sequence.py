@@ -5,14 +5,14 @@ from typing import List, Set
 from loguru import logger
 
 from src.Dto.keywords import Method
-from src.Dto.operation import Operation
+from src.Dto.rest import RestOp
 
 
 class SemanticValidator:
     """handle CURD semantic, and other sequence dependencies in the future"""
 
     @staticmethod
-    def _validate_post(post: Operation, seq_before: List[Operation]):
+    def _validate_post(post: RestOp, seq_before: List[RestOp]):
         for pre in seq_before:
             if post.path.is_ancestor_of(pre.path):
                 return False
@@ -20,7 +20,7 @@ class SemanticValidator:
         return True
 
     @staticmethod
-    def _validate_delete(delete: Operation, seq_after: List[Operation]):
+    def _validate_delete(delete: RestOp, seq_after: List[RestOp]):
         for aft in seq_after:
             if delete.path.is_ancestor_of(aft.path):
                 return False
@@ -30,10 +30,10 @@ class SemanticValidator:
     @staticmethod
     def is_valid(permutation):
         for index, operation in enumerate(permutation):
-            if operation.method is Method.POST and not SemanticValidator._validate_post(operation, permutation[:index]):
+            if operation.verb is Method.POST and not SemanticValidator._validate_post(operation, permutation[:index]):
                 return False
-            elif operation.method is Method.DELETE and not SemanticValidator._validate_delete(operation,
-                                                                                              permutation[index + 1:]):
+            elif operation.verb is Method.DELETE and not SemanticValidator._validate_delete(operation,
+                                                                                            permutation[index + 1:]):
                 return False
         return True
 
@@ -41,7 +41,7 @@ class SemanticValidator:
 class SCA:
     def __init__(self, strength, operations, stat):
         self._strength = min(strength, len(operations))
-        self._operations: Set[Operation] = operations
+        self._operations: Set[RestOp] = operations
         self._stat = stat
 
         self._uncovered = self._compute_all_combinations()
@@ -55,7 +55,7 @@ class SCA:
         return cover
 
     def build_one_sequence(self):
-        seq: List[Operation] = list()
+        seq: List[RestOp] = list()
 
         is_loop = True
         while is_loop:
@@ -87,23 +87,23 @@ class SCA:
         self._stat.update_all_c_way(seq)
         return seq
 
-    def _update_uncovered(self, sequence: List[Operation]):
+    def _update_uncovered(self, sequence: List[RestOp]):
         covered = set(combinations(sequence, self._strength))
         self._uncovered -= covered
         self._stat.t_way_covered.update(covered)
 
-    def _retrieve_dependent_ops(self, op: Operation, seq: List[Operation]):
-        result: List[Operation] = []
+    def _retrieve_dependent_ops(self, op: RestOp, seq: List[RestOp]):
+        result: List[RestOp] = []
         for candidate in self._operations:
             if candidate in seq or candidate == op:
                 continue
-            if candidate.method is Method.POST and candidate.path.is_ancestor_of(op.path):
+            if candidate.verb is Method.POST and candidate.path.is_ancestor_of(op.path):
                 result.append(candidate)
         result = sorted(result, key=lambda o: len(o.path.elements))
         result.append(op)
         return result
 
-    def _get_candidates(self, seq: List[Operation]):
+    def _get_candidates(self, seq: List[RestOp]):
         candidates = set()
 
         for op in self._operations:
@@ -111,7 +111,7 @@ class SCA:
                 continue
             is_destroy = False
             for member in seq:
-                if member.method is Method.DELETE and member.path.is_ancestor_of(op.path):
+                if member.verb is Method.DELETE and member.path.is_ancestor_of(op.path):
                     is_destroy = True
                     break
 

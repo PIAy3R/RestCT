@@ -678,7 +678,7 @@ class CA:
             logger.debug("        use reuseSeq info: {}, parameters: {}", len(reused_case), len(reused_case[0].keys()))
             return reused_case
 
-        parameter_list = list(filter(lambda p: p.isEssential, operation.parameterList))
+        parameter_list = list(filter(lambda p: p.is_essential, operation.parameterList))
         if len(parameter_list) == 0:
             return [{}]
 
@@ -826,7 +826,7 @@ class CAWithLLM(CA):
                                                                          True)
             is_break_e = have_success_e or have_bug_e
 
-            if all([p.isEssential for p in operation.parameterList]):
+            if all([p.is_essential for p in operation.parameterList]):
                 return is_break_e
 
             a_ca = self._handle_all_params(operation, sequence[:index], chain, history)
@@ -911,10 +911,28 @@ class CAWithLLM(CA):
         is_break_e = have_success_e or have_bug_e
 
         if all([p.isEssential for p in operation.parameterList]):
+            message = None
+            sc_set = set([sc for (sc, r) in e_response_list])
+            if len(sc_set) == 1 and 200 <= sc_set.pop() < 300:
+                pass
+            elif len(sc_set) == 2 and all(
+                    (200 <= x < 300) if i == 0 else x == 500 for i, x in enumerate(sorted(sc_set))):
+                pass
+            else:
+                if not operation.grouped:
+                    all_param = []
+                    for p in operation.parameterList:
+                        all_param.extend(p.seeAllParameters())
+                    if len(all_param) <= 1:
+                        logger.info("Only one parameter, no need to use llm")
+                        operation.set_grouped()
+                    else:
+                        message = self._call_response_language_model(operation, e_response_list)
+                        operation.set_grouped()
             if not is_break_e:
                 logger.info("no success request, use llm to help re-generate")
                 is_break = self._re_handle(index, operation, chain, sequence, loop_num,
-                                           (have_success_e, have_bug_e), None)
+                                           (have_success_e, have_bug_e), message)
                 return is_break
             else:
                 return is_break_e
@@ -937,8 +955,15 @@ class CAWithLLM(CA):
             pass
         else:
             if not operation.grouped:
-                message = self._call_response_language_model(operation, response_list)
-                operation.set_grouped()
+                all_param = []
+                for p in operation.parameterList:
+                    all_param.extend(p.seeAllParameters())
+                if len(all_param) <= 1:
+                    logger.info("Only one parameter or less, no need to use llm")
+                    operation.set_grouped()
+                else:
+                    message = self._call_response_language_model(operation, e_response_list)
+                    operation.set_grouped()
 
         if not (have_success_e and have_success_a and have_bug_e and have_bug_a):
             status_tuple = (have_success_e, have_success_a, have_bug_e, have_bug_a)
@@ -1047,9 +1072,9 @@ class CAWithLLM(CA):
         """
         for p in operation.parameterList:
             if p in self._manager.get_llm_constrainted_params(operation):
-                if not p.isEssential:
+                if not p.is_essential:
                     p.isConstrained = True
-        parameter_list = list(filter(lambda p: p.isEssential, operation.parameterList))
+        parameter_list = list(filter(lambda p: p.is_essential, operation.parameterList))
         if len(parameter_list) == 0:
             return [{}]
 

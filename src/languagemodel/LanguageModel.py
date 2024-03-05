@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import List, Dict, Set
 
 import tiktoken
+import yaml
 from loguru import logger
 from openai import OpenAI
 from sklearn.feature_extraction.text import CountVectorizer
@@ -68,8 +69,12 @@ class BasicLanguageModel:
         self._max_query_len: int = 3900
 
         swagger = Path(os.getenv("swagger"))
-        with swagger.open("r") as fp:
-            self._spec = json.load(fp)
+        if swagger.suffix == ".json":
+            with swagger.open("r") as fp:
+                self._spec = json.load(fp)
+        elif swagger.suffix == ".yaml":
+            with swagger.open("r") as fp:
+                self._spec = yaml.safe_load(fp)
 
         self._complete_model: str = os.environ.get("model")
         api_key = os.environ.get("language_model_key")
@@ -262,7 +267,10 @@ class ResponseModel(BasicLanguageModel):
     def calculate_cosine_similarity(string1, string2):
         documents = [string1, string2]
         count_vectorizer = CountVectorizer()
-        sparse_matrix = count_vectorizer.fit_transform(documents)
+        try:
+            sparse_matrix = count_vectorizer.fit_transform(documents)
+        except:
+            return 1
         cosine_sim = cosine_similarity(sparse_matrix, sparse_matrix)
         similarity_value = cosine_sim[0][1]
         return similarity_value
@@ -270,17 +278,20 @@ class ResponseModel(BasicLanguageModel):
     def _extract_response_str(self) -> Set[str]:
         response_str_set = set()
         for status_code, response_str in self._response_list:
-            if len(response_str_set) == 0:
-                response_str_set.add(json.dumps(response_str))
-            else:
-                add = True
-                if status_code < 400:
+            response_str = json.dumps(response_str)
+            # response_str = re.sub(r"(['\"])(.*?)\1", '', response_str)
+            if len(response_str) == 0 or response_str in ["''", '""', " ", "", "{}", "[]", "null", "None"]:
+                continue
+            add = True
+            if status_code < 400:
+                add = False
+            elif len(response_str_set) == 0:
+                response_str_set.add(response_str)
+            for added in response_str_set:
+                if self.calculate_cosine_similarity(added, response_str) >= 0.7:
                     add = False
-                for added in response_str_set:
-                    if self.calculate_cosine_similarity(added, json.dumps(response_str)) >= 0.7:
-                        add = False
-                if add:
-                    response_str_set.add(json.dumps(response_str))
+            if add:
+                response_str_set.add(response_str)
         return response_str_set
 
     def _get_all_param(self):
@@ -295,6 +306,9 @@ class ResponseModel(BasicLanguageModel):
 
     def build_prompt(self) -> str:
         response_str_set = self._extract_response_str()
+        if len(response_str_set) == 0:
+            logger.info("No useful response to analyze")
+            return ""
         param_list = self._get_all_param()
         prompt = (Template.EXPLANATION_RESPONSE + Template.TEXT_RESPONSE.format(self._operation, param_list,
                                                                                 response_str_set)
@@ -304,6 +318,8 @@ class ResponseModel(BasicLanguageModel):
     def build_messages(self) -> List[Dict[str, str]]:
         messages = []
         prompt = self.build_prompt()
+        if prompt == "":
+            return []
         messages.append({"role": "system", "content": Template.SYS_ROLE_RESPONSE})
         messages.append({"role": "user", "content": prompt})
         return messages
@@ -311,6 +327,8 @@ class ResponseModel(BasicLanguageModel):
     def execute(self, message_res=None):
         logger.debug("Call language model to parse response")
         messages = self.build_messages()
+        if len(messages) == 0:
+            return None, None
         response = self._call_model(messages)
         formatted_output = self._fixer.handle_res(response.choices[0].message.content, self._data_path)
         logger.info(f"Language model answer: {formatted_output}")

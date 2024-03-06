@@ -147,19 +147,19 @@ class AbstractFactor(metaclass=abc.ABCMeta):
         return round((length_total - distance) / length_total, 2)
 
     def __repr__(self):
-        return self.getGlobalName()
+        return self.get_global_name()
 
-    def getGlobalName(self):
+    def get_global_name(self):
         if self.parent is not None:
-            return f"{self.parent.getGlobalName()}@{self.name}"
+            return f"{self.parent.get_global_name()}@{self.name}"
         else:
             return self.name
 
     def __hash__(self):
-        return hash(self.getGlobalName())
+        return hash(self.get_global_name())
 
     def __eq__(self, other):
-        if isinstance(other, self.__class__) and self.getGlobalName() == other.getGlobalName():
+        if isinstance(other, self.__class__) and self.get_global_name() == other.get_global_name():
             return True
         else:
             return False

@@ -106,6 +106,7 @@ class CA:
                 root_p.factor.gen_path(operation, chain)
             else:
                 root_p.factor.gen_domain()
+            domain_map[root_p] = root_p.factor.domain
 
 
 class CAWithLLM(CA):

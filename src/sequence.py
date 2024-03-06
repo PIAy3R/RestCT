@@ -30,9 +30,10 @@ class SemanticValidator:
     @staticmethod
     def is_valid(permutation):
         for index, operation in enumerate(permutation):
-            if operation.verb is Method.POST and not SemanticValidator._validate_post(operation, permutation[:index]):
+            if operation.verb.value is Method.POST.value and not SemanticValidator._validate_post(operation,
+                                                                                                  permutation[:index]):
                 return False
-            elif operation.verb is Method.DELETE and not SemanticValidator._validate_delete(operation,
+            elif operation.verb.value is Method.DELETE.value and not SemanticValidator._validate_delete(operation,
                                                                                             permutation[index + 1:]):
                 return False
         return True
@@ -97,7 +98,7 @@ class SCA:
         for candidate in self._operations:
             if candidate in seq or candidate == op:
                 continue
-            if candidate.verb is Method.POST and candidate.path.is_ancestor_of(op.path):
+            if candidate.verb.value is Method.POST.value and candidate.path.is_ancestor_of(op.path):
                 result.append(candidate)
         result = sorted(result, key=lambda o: len(o.path.elements))
         result.append(op)
@@ -111,7 +112,7 @@ class SCA:
                 continue
             is_destroy = False
             for member in seq:
-                if member.verb is Method.DELETE and member.path.is_ancestor_of(op.path):
+                if member.verb.value is Method.DELETE.value and member.path.is_ancestor_of(op.path):
                     is_destroy = True
                     break
 

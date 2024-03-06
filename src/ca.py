@@ -499,7 +499,7 @@ class RuntimeInfoManager:
             self._llm_example_value_dict[operation] = {}
         for k, v in json_output.items():
             for p in operation.parameterList:
-                if p.getGlobalName() == k:
+                if p.get_global_name() == k:
                     self._llm_example_value_dict[operation][k] = v
 
     # def save_language_model_constraint(self, operation, cause_dict: dict):
@@ -535,7 +535,7 @@ class RuntimeInfoManager:
                 continue
             new_v_list = []
             for p in operation.parameterList:
-                if p.getGlobalName() in v:
+                if p.get_global_name() in v:
                     new_v_list.append(p)
             self._llm_constraint_group[operation].append(new_v_list)
 
@@ -714,7 +714,7 @@ class CA:
             p_with_children = root_p.genDomain(operation.__repr__(), chain, self._manager.get_ok_value_dict())
             for p in p_with_children:
                 if not self._manager.is_unresolved(operation.__repr__() + p.name):
-                    domain_map[p.getGlobalName()] = p.domain
+                    domain_map[p.get_global_name()] = p.domain
 
         if history_ca_of_current_op is not None and len(history_ca_of_current_op) > 0:
             new_domain_map = {
@@ -998,9 +998,9 @@ class CAWithLLM(CA):
 
             for p in p_with_children:
                 if self._is_regen:
-                    if p.getGlobalName() in example_dict.keys():
-                        index = random.randint(0, len(example_dict.get(p.getGlobalName())) - 1)
-                        value = DataType.from_string(example_dict.get(p.getGlobalName())[index], p.type)
+                    if p.get_global_name() in example_dict.keys():
+                        index = random.randint(0, len(example_dict.get(p.get_global_name())) - 1)
+                        value = DataType.from_string(example_dict.get(p.get_global_name())[index], p.type)
                         if not isinstance(p, EnumParam):
                             p.domain.append(Value(value, ValueType.Example, p.type))
                         # for value in example_dict.get(p.getGlobalName()):
@@ -1039,7 +1039,7 @@ class CAWithLLM(CA):
                     for c in operation.constraints:
                         c_l = []
                         for p in operation.parameterList:
-                            if p.getGlobalName() in c.ents:
+                            if p.get_global_name() in c.ents:
                                 c_l.append(p)
                         constraints_pair.add(tuple(c_l))
                     llm = True
@@ -1049,7 +1049,7 @@ class CAWithLLM(CA):
                         new_domain_map[p_name] = [Value(f"combination{i}", ValueType.Example, DataType.String) for i in
                                                   range(3)]
                     for p in domain_map.keys():
-                        if p not in [cp.getGlobalName() for cp in constraint_params]:
+                        if p not in [cp.get_global_name() for cp in constraint_params]:
                             new_domain_map[p] = domain_map.get(p)
                     domain_map = new_domain_map
 
@@ -1099,15 +1099,15 @@ class CAWithLLM(CA):
                     com_index = int(v.val.replace("combination", ""))
                     param_to_unpack = list(constraint_params)[con_index]
                     for p in param_to_unpack:
-                        if example[p.getGlobalName()][com_index] != '':
-                            value = Value(example[p.getGlobalName()][com_index], ValueType.Example, p.type)
-                            new_array[p.getGlobalName()] = value
+                        if example[p.get_global_name()][com_index] != '':
+                            value = Value(example[p.get_global_name()][com_index], ValueType.Example, p.type)
+                            new_array[p.get_global_name()] = value
                         else:
                             if p.required:
-                                value = Value(example[p.getGlobalName()][com_index], ValueType.Example, p.type)
+                                value = Value(example[p.get_global_name()][com_index], ValueType.Example, p.type)
                             else:
                                 value = Value(None, ValueType.Example, p.type)
-                            new_array[p.getGlobalName()] = value
+                            new_array[p.get_global_name()] = value
                 else:
                     new_array[c] = v
             new_acts.append(new_array)
@@ -1121,6 +1121,6 @@ class CAWithLLM(CA):
             for p in c.ents:
                 constraint_str.append(p)
         for p in operation.parameterList:
-            if p.getGlobalName() in constraint_str:
+            if p.get_global_name() in constraint_str:
                 constraint_param.append(p)
         return constraint_param

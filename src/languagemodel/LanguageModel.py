@@ -35,7 +35,7 @@ def num_tokens_from_string(messages: List[Dict[str, str]], encoding_name: str = 
 
 
 def get_info(param, definition, def_dict, body):
-    for split_name in param.getGlobalName().split("@"):
+    for split_name in param.get_global_name().split("@"):
         if split_name == body.name:
             continue
         elif split_name == "_item":
@@ -216,9 +216,9 @@ class ParamValueModel(BasicLanguageModel):
                             for ap in all_param:
                                 add_info = get_info(ap, definitions, def_dict, p)
                                 if add_info.get('enum') is None and add_info.get('type') != "boolean":
-                                    add_info.update({"name": ap.getGlobalName()})
+                                    add_info.update({"name": ap.get_global_name()})
                                     pInfo.append(add_info)
-                                    param_to_ask.append(ap.getGlobalName())
+                                    param_to_ask.append(ap.get_global_name())
                         else:
                             pInfo.append(info)
                             param_to_ask.append(p.getGlobalName())

@@ -44,7 +44,7 @@ class Snapshot:
 class Statistics:
     def __init__(self, config):
         self.start = time.time()
-        self.name = config.columnId
+        self.name = config.exp_name
         self.s_s = config.s_strength
         self.e_s = config.e_strength
         self.a_s = config.a_strength

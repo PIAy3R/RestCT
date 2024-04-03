@@ -13,9 +13,9 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
 from lib.Template import Template, TaskTemplate
-from src.Dto.keywords import URL, Loc
 from src.Dto.operation import Operation
 from src.Dto.parameter import AbstractParam, ObjectParam, ArrayParam
+from src.keywords import URL, Loc
 from src.languagemodel.OutputFixer import ValueOutputFixer, ResponseFixer
 
 

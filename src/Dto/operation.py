@@ -1,9 +1,9 @@
 from typing import List
 
 from src.Dto.constraint import Constraint
-from src.Dto.keywords import Method, ParamKey, DocKey
 from src.Dto.parameter import AbstractParam, buildParam
 from src.Exception.exceptions import UnsupportedError
+from src.keywords import Method, ParamKey, DocKey
 
 
 class Response:

@@ -4,8 +4,8 @@ from typing import List, Set
 
 from loguru import logger
 
-from src.Dto.keywords import Method
-from src.Dto.rest import RestOp
+from src.keywords import Method
+from src.rest import RestOp
 
 
 class SemanticValidator:

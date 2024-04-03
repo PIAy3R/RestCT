@@ -1,7 +1,7 @@
-from src.Dto.parameter import buildParam
 from src.Dto.parameter import AbstractParam
-from src.Dto.keywords import ParamKey, DocKey
+from src.Dto.parameter import buildParam
 from src.Exception.exceptions import UnsupportedError
+from src.keywords import ParamKey, DocKey
 
 
 class Response:

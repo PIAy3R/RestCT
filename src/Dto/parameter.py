@@ -10,7 +10,7 @@ from typing import List, Union, Dict
 
 import Levenshtein
 
-from src.Dto.keywords import Loc, ParamKey, DataType, DocKey
+from src.keywords import Loc, ParamKey, DataType, DocKey
 
 
 def buildParam(info: dict, definitions: dict, specifiedName: str = None):

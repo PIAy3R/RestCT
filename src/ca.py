@@ -15,9 +15,9 @@ import requests
 from loguru import logger
 
 from src.Dto.constraint import Constraint, Processor
-from src.Dto.keywords import Loc, DataType, Method
 from src.Dto.operation import Operation
 from src.Dto.parameter import AbstractParam, ValueType, Value, EnumParam, BoolParam
+from src.keywords import Loc, DataType, Method
 from src.languagemodel.LanguageModel import ParamValueModel, ResponseModel
 
 
@@ -726,7 +726,7 @@ class CA:
                     new_domain_map[p] = domain_map.get(p)
 
             for c in operation.constraints:
-                for p in c.paramNames:
+                for p in c.param_names:
                     if self._manager.is_unresolved(p):
                         return [{}]
 
@@ -1022,7 +1022,7 @@ class CAWithLLM(CA):
                 if p not in history_ca_of_current_op[0].keys():
                     new_domain_map[p] = domain_map.get(p)
             for c in operation.constraints:
-                for p in c.paramNames:
+                for p in c.param_names:
                     if self._manager.is_unresolved(p):
                         return [{}]
             domain_map = new_domain_map

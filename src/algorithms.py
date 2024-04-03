@@ -29,14 +29,6 @@ class RestCT:
         else:
             self._ca = CAWithLLM(self._config, stat=self._statistics)
 
-    def _update_log_config(self):
-        loggerPath = Path(self._config.data_path) / "log/log_{time}.log"
-        logger.remove(0)
-        logger.add(loggerPath.as_posix(), rotation="100 MB",
-                   format="<level>{level: <6}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>")
-        logger.add(sys.stderr,
-                   format="<level>{level: <6}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>")
-
     def run(self):
         self._statistics.dump_snapshot()
         self._logger.info("operations: {}".format(len(self._operations)))
@@ -54,3 +46,11 @@ class RestCT:
                 break
 
         self._statistics.write_report()
+
+    def _update_log_config(self):
+        loggerPath = Path(self._config.data_path) / "log/log_{time}.log"
+        logger.remove(0)
+        logger.add(loggerPath.as_posix(), rotation="100 MB",
+                   format="<level>{level: <6}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>")
+        logger.add(sys.stderr,
+                   format="<level>{level: <6}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>")

@@ -10,8 +10,7 @@ import spacy
 from spacy.matcher import Matcher
 from spacy.tokens import Doc
 
-from src.Dto.factor import EnumFactor
-from src.Dto.rest import RestParam
+from src.factor import EnumFactor
 
 Doc.set_extension("constraints", default=None, force=True)
 
@@ -62,20 +61,21 @@ class EntityLabel(Enum):
 
 
 class Processor:
-    def __init__(self, param_entities: List[RestParam]):
+    def __init__(self, paramEntities: List):
         self.nlp = spacy.load("en_core_web_sm")
-        self._param_entities: List[RestParam] = param_entities
-        self._descriptions = [param.factor.description for param in param_entities]
-        assert len({param.factor.name for param in param_entities}) == len(param_entities)
-        self._param_names = {param.factor: param for param in param_entities}
-        self._param_values = {param.name: param.enum_value for param in param_entities if isinstance(param, EnumFactor)}
+        self._paramEntities: List = paramEntities
+        self._descriptions = [param.factor.description for param in paramEntities]
+        assert len({param.factor.name for param in paramEntities}) == len(paramEntities)
+        self._paramNames = {param.factor.name: param for param in paramEntities}
+        self._paramValues = {param.factor.name: param.factor.enum_value for param in paramEntities if
+                             isinstance(param.factor, EnumFactor)}
 
         self.setNLP()
 
     def setNLP(self):
         patterns = [{"label": EntityLabel.Param.value, "pattern": name, "id": name} for name in
-                    self._param_names.keys()]
-        for valueSet in self._param_values.values():
+                    self._paramNames.keys()]
+        for valueSet in self._paramValues.values():
             for value in valueSet:
                 patterns.append({"label": EntityLabel.Value.value, "pattern": str(value), "id": str(value)})
 
@@ -108,11 +108,11 @@ class Processor:
         paramNames = set()
         for c in constraints:
             paramNames.update(c.paramNames)
-        for parameter in self._param_entities:
-            if parameter.name in paramNames:
-                parameter.isConstrained = True
+        for parameter in self._paramEntities:
+            if parameter.factor.name in paramNames:
+                parameter.factor.is_constraint = True
             else:
-                parameter.isConstrained = False
+                parameter.factor.is_constraint = False
 
     def analyseError(self, errorResponses):
         unresolvedParams = list()
@@ -133,7 +133,6 @@ class Processor:
             if ent.label_ == EntityLabel.Param.value:
                 records.add(ent.ent_id_)
         return records
-
 
 class Constraint:
     def __init__(self, template, paramNames, values, ents):

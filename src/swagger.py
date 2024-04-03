@@ -5,9 +5,9 @@ from loguru import logger
 from openapi_parser.parser import _create_parser
 from openapi_parser.specification import *
 
-from src.Dto.factor import *
-from src.Dto.rest import *
 from src.config import Config
+from src.factor import *
+from src.rest import *
 
 
 def recursion_limit_handler(limit, parsed_url, recursions=()):
@@ -116,6 +116,7 @@ class SwaggerParser:
         # factor info: AbstractFactor
         factor: AbstractFactor = SwaggerParser._extract_factor(param.name, param.schema)
         factor.required = param.required
+        factor.set_description(param.description if param.description is not None else None)
         if param.location is ParameterLocation.QUERY:
             rest_param = QueryParam(factor)
         elif param.location is ParameterLocation.HEADER:
@@ -145,9 +146,9 @@ class SwaggerParser:
         elif isinstance(schema, Object):
             factor = SwaggerParser._build_object_factor(name, schema)
         elif isinstance(schema, (AnyOf, OneOf)):
-            _schema = next(filter(lambda x: x.type is DataType.OBJECT, schema.schemas), None)
+            _schema = next(filter(lambda x: x.type is DataType.Object, schema.schemas), None)
             if _schema is None:
-                _schema = next(filter(lambda x: x.type is DataType.ARRAY, schema.schemas), None)
+                _schema = next(filter(lambda x: x.type is DataType.Array, schema.schemas), None)
             if _schema is None:
                 _schema = schema.schemas[0]
             factor = SwaggerParser._extract_factor(name, _schema)
@@ -159,8 +160,8 @@ class SwaggerParser:
                 factor.set_example(schema.example)
             if schema.default is not None:
                 factor.set_default(schema.default)
-        if schema.description is not None:
-            factor.set_description(schema.description)
+        # if schema.description is not None:
+        #     factor.set_description(schema.description)
 
         return factor
 
@@ -213,3 +214,28 @@ class SwaggerParser:
             minimum=schema.minimum if schema.minimum is not None else -1000,
             maximum=schema.maximum if schema.maximum is not None else 1000,
         )
+
+
+if __name__ == '__main__':
+    import json
+
+    root_path = "/Users/naariah/Documents/Python_Codes/api-suts/specifications/v3"
+    config = Config()
+    leave_dict = {}
+    for f in os.listdir(root_path):
+        if "gitlab" in f:
+            sut_name = f.split("-")[1]
+            config.swagger = f"{root_path}/{f}"
+            leave_dict[sut_name] = {}
+            parser = SwaggerParser(config)
+            operations = parser.extract()
+            for op in operations:
+                leaves = []
+                for p in op.parameters:
+                    leave = p.factor.get_leaves()
+                    for l in leave:
+                        leaves.append(l.__repr__())
+                leave_dict[sut_name][op.id] = leaves
+
+    with open("/Users/naariah/Documents/Python_Codes/api-exp-scripts/leave_dict.json", "w") as f:
+        json.dump(leave_dict, f, indent=4)

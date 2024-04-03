@@ -3,8 +3,8 @@ from typing import Tuple, Union, Optional
 import requests
 from loguru import logger
 
-from src.Dto.rest import ContentType
-from src.Dto.rest import Method
+from src.rest import ContentType
+from src.rest import Method
 
 
 class Auth:

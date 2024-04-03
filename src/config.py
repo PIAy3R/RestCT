@@ -38,7 +38,7 @@ class Config:
         self.query = dict()
 
         # experiment unique name
-        self.columnId = ""
+        self.exp_name = ""
 
         # data and log path
         self.data_path = ""
@@ -113,12 +113,12 @@ class Config:
         else:
             self.query.update(auth_token)
 
-        if settings.columnId is None or settings.columnId == "":
-            self.columnId = Path(settings.swagger).with_suffix("").name
+        if settings.exp_name is None or settings.exp_name == "":
+            self.exp_name = Path(settings.swagger).with_suffix("").name
         else:
-            self.columnId = settings.columnId
+            self.exp_name = settings.exp_name
 
-        data_path = Path(f"{self.output_folder}/{self.columnId}")
+        data_path = Path(f"{self.output_folder}/{self.exp_name}")
         self.data_path = data_path.as_posix()
         if not data_path.exists():
             data_path.mkdir()
@@ -170,7 +170,7 @@ def parse_args(root_path) -> Namespace:
     parser.add_argument('--query',
                         help='auth token: {keyName: token}',
                         type=str, required=False, default="{}")
-    parser.add_argument('--columnId',
+    parser.add_argument('--exp_name',
                         help='experiment unique name for statistic data',
                         type=str, required=False, default="")
     parser.add_argument('--interval',

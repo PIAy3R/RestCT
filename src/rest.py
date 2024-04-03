@@ -3,7 +3,9 @@ from enum import Enum
 from typing import List, Tuple, Optional
 from urllib.parse import quote
 
-from src.Dto.factor import AbstractFactor, ArrayFactor
+from src.factor import AbstractFactor, ArrayFactor
+from src.keywords import Method
+from src.nlp import Constraint
 
 
 class RestParam(metaclass=abc.ABCMeta):
@@ -175,13 +177,6 @@ class RestPath:
                     value = str(p.factor.printable_value)
 
                     if not value.strip() or value == "__null__":
-                        """
-                        We should avoid having path params that are blank,
-                        as they would easily lead to useless 404/405 errors
-
-                        TODO handle this case better, eg avoid having blank in
-                        the first place
-                        """
                         value = "1"
 
                     path += value
@@ -234,25 +229,6 @@ class RestPath:
         return self.computed_to_string == other.computed_to_string
 
 
-class Method(Enum):
-    POST = "post"
-    GET = "get"
-    DELETE = "delete"
-    PUT = "put"
-    OPTIONS = "options"
-    HEAD = "head"
-    PATCH = "patch"
-
-    @classmethod
-    def of(cls, text: str):
-        text_lower = text.lower()
-        for member in cls.__members__.values():
-            if member.value.lower() == text_lower:
-                return member
-        else:
-            raise ValueError(f"Unknown method: {text}")
-
-
 class RestOp:
     def __init__(self, host: str, path: str, verb: str):
         self._host = host
@@ -265,6 +241,9 @@ class RestOp:
 
         self.responses: List[RestResponse] = []
 
+        self.constraints: List[Constraint] = []
+        self.analysed = False
+
     @property
     def resolved_url(self) -> str:
         path = self.path.resolve_path_param(self.parameters)
@@ -276,6 +255,12 @@ class RestOp:
             leaves.extend(p.factor.get_leaves())
 
         return leaves
+
+    def set_constraints(self, constraints: List[Constraint]):
+        self.constraints = constraints
+
+    def set_analysed(self):
+        self.analysed = True
 
     @property
     def id(self):

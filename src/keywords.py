@@ -110,6 +110,18 @@ class Method(Enum):
     GET = "get"
     DELETE = "delete"
     PUT = "put"
+    OPTIONS = "options"
+    HEAD = "head"
+    PATCH = "patch"
+
+    @classmethod
+    def of(cls, text: str):
+        text_lower = text.lower()
+        for member in cls.__members__.values():
+            if member.value.lower() == text_lower:
+                return member
+        else:
+            raise ValueError(f"Unknown method: {text}")
 
 
 class URL:

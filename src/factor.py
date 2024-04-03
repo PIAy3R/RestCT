@@ -7,9 +7,11 @@ import re
 import string
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional, Any, List, Union
+from typing import Optional, Any, List, Union, Tuple
 
-from src.Dto.keywords import DataType
+import Levenshtein
+
+from src.keywords import DataType
 
 
 class ValueType(Enum):
@@ -32,7 +34,7 @@ class Value:
 class AbstractFactor(metaclass=abc.ABCMeta):
     value_nums = 2
     """
-    Abstract class for Factoreters
+    Abstract class for Factors
     """
 
     def __init__(self, name: str):
@@ -50,8 +52,10 @@ class AbstractFactor(metaclass=abc.ABCMeta):
         self.domain: list[Value] = list()
         self.isReuse: bool = False
 
+        self.value = None
+
     @staticmethod
-    def getRef(ref: str, definitions: dict):
+    def get_ref(ref: str, definitions: dict):
         """get definition with the ref name"""
         return definitions.get(ref.split("/")[-1], {})
 
@@ -73,14 +77,14 @@ class AbstractFactor(metaclass=abc.ABCMeta):
         dynamic_values = list()
         response_value = list()
         op_set = chain.keys()
-        high_weight, low_weight = AbstractFactor._analyseUrlRelation(op, op_set, self.name)
+        high_weight, low_weight = AbstractFactor._analyse_url_relation(op, op_set, self.name)
         for predecessor in high_weight:
             response = chain.get(predecessor)
             similarity_max = 0
             path_depth_minimum = 10
             right_path = None
             right_value = None
-            for path, similarity, value in AbstractFactor.findDynamic(self.name, response):
+            for path, similarity, value in AbstractFactor.find_dynamic(self.name, response):
                 if similarity > similarity_max:
                     right_path = path
                     path_depth_minimum = len(path)
@@ -94,17 +98,17 @@ class AbstractFactor(metaclass=abc.ABCMeta):
             if similarity_max > 0 and right_value not in response_value:
                 dynamic_values.append((predecessor, right_path))
         if len(dynamic_values) > 0:
-            return [Value(v, ValueType.Dynamic, DataType.NULL) for v in dynamic_values]
+            self.domain = [Value(v, ValueType.Dynamic, DataType.NULL) for v in dynamic_values]
         else:
-            return list()
+            self.domain = [Value(1, ValueType.Default, DataType.Integer)]
 
     @staticmethod
-    def _analyseUrlRelation(op, op_set, param_name):
+    def _analyse_url_relation(op, op_set, param_name):
         high_weight = list()
         low_weight = list()
-        url = op.path
+        url = op.path.__repr__()
         for candidate in op_set:
-            other_url = candidate.path
+            other_url = candidate.path.__repr__()
             if other_url.strip("/") == url.split("{" + param_name + "}")[0].strip("/"):
                 high_weight.append(candidate)
             elif other_url.strip("/") == url.split("{" + param_name + "}")[0].strip("/") + "/{" + param_name + "}":
@@ -114,7 +118,7 @@ class AbstractFactor(metaclass=abc.ABCMeta):
         return high_weight, low_weight
 
     @staticmethod
-    def findDynamic(paramName, response, path=None):
+    def find_dynamic(paramName, response, path=None):
         if re.search(r"[-_]?id[-_]?", paramName) is not None:
             name = "id"
         if path is None:
@@ -122,7 +126,7 @@ class AbstractFactor(metaclass=abc.ABCMeta):
         if isinstance(response, list):
             local_path = path[:]
             if response:
-                for result in AbstractFactor.findDynamic(paramName, response[0], local_path):
+                for result in AbstractFactor.find_dynamic(paramName, response[0], local_path):
                     yield result
         elif isinstance(response, dict):
             for k, v in response.items():
@@ -133,7 +137,7 @@ class AbstractFactor(metaclass=abc.ABCMeta):
                     yield local_path, similarity, v
                 elif isinstance(v, (list, dict)):
                     local_path.append(k)
-                    for result in AbstractFactor.findDynamic(paramName, v, local_path[:]):
+                    for result in AbstractFactor.find_dynamic(paramName, v, local_path[:]):
                         yield result
         else:
             pass
@@ -146,20 +150,71 @@ class AbstractFactor(metaclass=abc.ABCMeta):
         length_total = len(str_a) + len(str_b)
         return round((length_total - distance) / length_total, 2)
 
-    def __repr__(self):
-        return self.get_global_name()
+    def add_domain_to_map(self, domain_map: dict):
+        domain_map[self.get_global_name] = self.domain
+        return domain_map
 
+    def set_value(self, case):
+        self.value = None
+        for name, value in case.items():
+            if name == self.get_global_name:
+                self.value = value
+
+    @property
+    def printable_value(self, response=None):
+        if self.value is not None and self.value.generator is ValueType.Dynamic:
+            if response is None or len(response) == 0:
+                value = "1"
+            else:
+                op_str, path = self.value.val
+                response = response.get(op_str)
+                value = self._assemble_dynamic(path, response)
+            self.value = Value(value, ValueType.Dynamic, DataType.NULL)
+        if self.value is not None:
+            return self.value.val
+        else:
+            return None
+
+    @staticmethod
+    def _assemble_dynamic(path, response):
+        value = response
+        for p in path:
+            if isinstance(value, list):
+                try:
+                    value = value[0]
+                except IndexError:
+                    return None
+            try:
+                value = value.get(p)
+            except (AttributeError, TypeError):
+                return None
+            else:
+                if value is None:
+                    return None
+        return value
+
+    def get_leaves(self) -> Tuple:
+        """
+        Get all leaves of the factor tree,
+        excluding arrays and objects themselves.
+        """
+        return self,
+
+    def __repr__(self):
+        return self.get_global_name
+
+    @property
     def get_global_name(self):
         if self.parent is not None:
-            return f"{self.parent.get_global_name()}@{self.name}"
+            return f"{self.parent.get_global_name}@{self.name}"
         else:
             return self.name
 
     def __hash__(self):
-        return hash(self.get_global_name())
+        return hash(self.get_global_name)
 
     def __eq__(self, other):
-        if isinstance(other, self.__class__) and self.get_global_name() == other.get_global_name():
+        if isinstance(other, self.__class__) and self.get_global_name == other.get_global_name:
             return True
         else:
             return False
@@ -222,11 +277,11 @@ class StringFactor(AbstractFactor):
                 if self.format == "date":
                     random_date = datetime.date.fromtimestamp(
                         random.randint(0, int(datetime.datetime.now().timestamp()))).strftime('%Y-%m-%d')
-                    self.domain.append(Value(random_date, ValueType.Random, DataType.String))
+                    self.domain.append(Value(str(random_date), ValueType.Random, DataType.String))
                 elif self.format == "date-time":
                     random_datetime = datetime.datetime.fromtimestamp(
                         random.randint(0, int(datetime.datetime.now().timestamp())))
-                    self.domain.append(Value(random_datetime, ValueType.Random, DataType.String))
+                    self.domain.append(Value(str(random_datetime), ValueType.Random, DataType.String))
                 elif self.format == "password":
                     random_password_length = random.randint(5, 10)
                     characters = string.ascii_letters + string.digits + string.punctuation
@@ -235,7 +290,7 @@ class StringFactor(AbstractFactor):
                 elif self.format == "byte":
                     random_byte_length = random.randint(1, 10)
                     byte_str = base64.b64encode(os.urandom(random_byte_length)).decode('utf-8')
-                    self.domain.append(Value(byte_str, ValueType.Random, DataType.String))
+                    self.domain.append(Value(str(byte_str), ValueType.Random, DataType.String))
                 elif self.format == "binary":
                     random_binary_length = random.randint(1, 10)
                     binary_str = ''.join(random.choice(['0', '1']) for _ in range(random_binary_length))
@@ -343,6 +398,33 @@ class ObjectFactor(AbstractFactor):
         for p in self.properties:
             p.gen_domain()
 
+    def add_domain_to_map(self, domain_map: dict):
+        for p in self.properties:
+            p.add_domain_to_map(domain_map)
+        return domain_map
+
+    def set_value(self, case):
+        self.value = None
+        for p in self.properties:
+            p.set_value(case)
+        property_not_none = [p for p in self.properties if p.printable_value is not None]
+        if len(property_not_none) > 0:
+            self.value = {}
+            for p in property_not_none:
+                self.value[p.name] = p.printable_value
+
+    def get_leaves(self) -> Tuple:
+        leaves = []
+        for p in self.properties:
+            leaves.extend(p.get_leaves())
+        return tuple(leaves)
+
+    @property
+    def printable_value(self, response=None):
+        if self.value is None:
+            return None
+        return self.value
+
 
 class ArrayFactor(AbstractFactor):
     def __init__(self, name: str):
@@ -358,6 +440,27 @@ class ArrayFactor(AbstractFactor):
         self.domain.clear()
         if self.item is not None:
             self.item.gen_domain()
+
+    def add_domain_to_map(self, domain_map: dict):
+        if self.item is not None:
+            self.item.add_domain_to_map(domain_map)
+        return domain_map
+
+    def set_value(self, case):
+        self.value = None
+        self.item.set_value(case)
+        if self.item.printable_value is not None:
+            self.value = []
+            self.value.append(self.item.printable_value)
+
+    def get_leaves(self) -> Tuple:
+        return self.item.get_leaves()
+
+    @property
+    def printable_value(self, response=None):
+        if self.value is None:
+            return None
+        return self.value
 
 
 class EnumFactor(AbstractFactor):

@@ -6,11 +6,12 @@ from loguru import logger
 
 from src.config import Config
 from src.executor import RestRequest
-from src.factor import Value, ValueType
+from src.factor import Value, ValueType, AbstractFactor
 from src.generator import ACTS
 from src.info import RuntimeInfoManager
 from src.keywords import DataType
 from src.keywords import Method
+from src.languagemodel.llm import ResponseModel
 from src.nlp import Processor, Constraint
 from src.rest import RestOp, RestParam, PathParam, QueryParam, BodyParam, HeaderParam
 
@@ -27,7 +28,7 @@ class CA:
         self._a_strength = config.a_strength  # cover strength for all parameters
         self._e_strength = config.e_strength  # cover strength for essential parameters
 
-        self._manager = RuntimeInfoManager()
+        self._manager = RuntimeInfoManager(config)
         self._executor = RestRequest(config.query, config.header, self._manager)
 
         self._data_path = config.data_path
@@ -60,6 +61,7 @@ class CA:
         self._stat.seq_executed_num += 1
         self._stat.sum_len_of_executed_seq += len(sequence)
         self._stat.update_executed_c_way(sequence)
+        self._manager.save_response_to_file()
         return True
 
     def _handle_one_operation(self, index, operation: RestOp, chain: dict, sequence, loop_num) -> bool:
@@ -72,7 +74,7 @@ class CA:
         history = []
         self._reset_constraints(operation, operation.parameters)
 
-        have_success_e, have_bug_e, e_response_list = self._handle_params(operation, sequence[:index],
+        (have_success_e, have_bug_e, e_response_list), e_ca = self._handle_params(operation, sequence[:index],
                                                                           success_url_tuple, chain, history, index,
                                                                           True)
         # e_ca = self._handle_essential_params(operation, sequence[:index], success_url_tuple, chain, history)
@@ -87,28 +89,29 @@ class CA:
         #             f"parameters: {len(a_ca[0]) if len(a_ca) > 0 else 0}, constraints: {len(operation.constraints)}")
         # have_success_a, have_bug_a, a_response_list = self._execute(operation, a_ca, chain, success_url_tuple, history,
         #                                                             False)
-        have_success_a, have_bug_a, a_response_list = self._handle_params(operation, sequence[:index],
+        (have_success_a, have_bug_a, a_response_list), a_ca = self._handle_params(operation, sequence[:index],
                                                                           success_url_tuple, chain, history, index,
                                                                           False)
         is_break_a = have_success_a or have_bug_a
+        self._manager.save_response(operation, e_response_list + a_response_list, e_ca + a_ca)
 
         return is_break_e or is_break_a
 
     @staticmethod
-    def set_param_value(op: RestOp, case):
+    def set_param_value(op: RestOp, case, is_reuse=False):
         for p in op.parameters:
-            p.factor.set_value(case)
+            p.factor.set_value(case, is_reuse)
 
-    def process(self, op: RestOp, case):
-        self.set_param_value(op, case)
-        url = op.resolved_url
+    def process(self, op: RestOp, case, chain, is_reuse=False):
+        self.set_param_value(op, case, is_reuse)
+        url = op.resolved_url(chain)
         method = op.verb
-        query_param = {p.factor.name: p.factor.printable_value for p in op.parameters
+        query_param = {p.factor.name: p.factor.printable_value() for p in op.parameters
                        if isinstance(p, QueryParam) and p.factor.value is not None}
-        header_param = {p.factor.name: p.factor.printable_value for p in op.parameters
+        header_param = {p.factor.name: p.factor.printable_value() for p in op.parameters
                         if isinstance(p, HeaderParam) and p.factor.value is not None}
         body_param = next(filter(lambda p: isinstance(p, BodyParam), op.parameters), None)
-        body = body_param.factor.printable_value if body_param is not None else None
+        body = body_param.factor.printable_value() if body_param is not None else None
         kwargs = dict()
         if body is not None:
             kwargs["Content-Type"] = body_param.content_type
@@ -122,7 +125,7 @@ class CA:
         )
         return status_code, response_data
 
-    def _execute(self, op: RestOp, ca, chain, url_tuple, history, is_essential=True):
+    def _execute(self, op: RestOp, ca, chain, url_tuple, history, is_reuse=False, is_essential=True):
         self._stat.op_executed_num.add(op)
         history.clear()
 
@@ -136,7 +139,7 @@ class CA:
 
         for case in ca:
             self._stat.dump_snapshot()
-            status_code, response_data = self.process(op, case)
+            status_code, response_data = self.process(op, case, chain, is_reuse)
             if status_code < 300:
                 has_success = True
                 history.append(case)
@@ -183,20 +186,40 @@ class CA:
             parameter_list = operation.parameters
         if len(parameter_list) == 0:
             cover_array = [{}]
-            return self._execute(operation, cover_array, chain, success_url_tuple, history, True)
+            return self._execute(operation, cover_array, chain, success_url_tuple, history, False, True), [{}]
         else:
+            is_reuse = False
             if is_essential:
-                cover_array = self._cover_params(operation, parameter_list, operation.constraints, chain,
-                                                 self._e_strength, history)
-                logger.info(f"{index + 1}-th operation essential parameters covering array size: {len(cover_array)}, "
-                            f"parameters: {len(cover_array[0]) if len(cover_array) > 0 else 0}, constraints: {len(operation.constraints)}")
-                return self._execute(operation, cover_array, chain, success_url_tuple, history, True)
+                reused_case = self._manager.get_reused_with_essential_p(tuple(executed + [operation]))
+                if len(reused_case) > 0:
+                    # 执行过
+                    logger.debug("        use reuseSeq info: {}, parameters: {}", len(reused_case),
+                                 len(reused_case[0].keys()))
+                    is_reuse = True
+                    cover_array = reused_case
+                else:
+                    cover_array = self._cover_params(operation, parameter_list, operation.constraints, chain,
+                                                     self._e_strength, history)
+                    logger.info(
+                        f"{index + 1}-th operation essential parameters covering array size: {len(cover_array)}, "
+                        f"parameters: {len(cover_array[0]) if len(cover_array) > 0 else 0}, constraints: {len(operation.constraints)}")
+                return self._execute(operation, cover_array, chain, success_url_tuple, history, is_reuse,
+                                     True), cover_array
             else:
-                cover_array = self._cover_params(operation, parameter_list, operation.constraints, chain,
-                                                 self._a_strength, history)
-                logger.info(f"{index + 1}-th operation all parameters covering array size: {len(cover_array)}, "
-                            f"parameters: {len(cover_array[0]) if len(cover_array) > 0 else 0}, constraints: {len(operation.constraints)}")
-                return self._execute(operation, cover_array, chain, success_url_tuple, history, False)
+                reused_case = self._manager.get_reused_with_all_p(tuple(executed + [operation]))
+                if len(reused_case) > 0:
+                    # 执行过
+                    logger.debug("        use reuseSeq info: {}, parameters: {}", len(reused_case),
+                                 len(reused_case[0].keys()))
+                    is_reuse = True
+                    cover_array = reused_case
+                else:
+                    cover_array = self._cover_params(operation, parameter_list, operation.constraints, chain,
+                                                     self._a_strength, history)
+                    logger.info(f"{index + 1}-th operation all parameters covering array size: {len(cover_array)}, "
+                                f"parameters: {len(cover_array[0]) if len(cover_array) > 0 else 0}, constraints: {len(operation.constraints)}")
+                return self._execute(operation, cover_array, chain, success_url_tuple, history, is_reuse,
+                                     False), cover_array
 
     def _cover_params(self, operation: RestOp,
                       parameters: List[RestParam],
@@ -224,6 +247,9 @@ class CA:
             for p in domain_map.keys():
                 if p not in history_ca_of_current_op[0].keys():
                     new_domain_map[p] = domain_map.get(p)
+                else:
+                    for i in range(len(history_ca_of_current_op)):
+                        history_ca_of_current_op[i][p] = AbstractFactor.mutate_value(history_ca_of_current_op[i].get(p))
 
             for c in operation.constraints:
                 for p in c.paramNames:
@@ -281,9 +307,7 @@ class CAWithLLM(CA):
         self._is_regenerate = False
 
     def _handle_one_operation(self, index, operation: RestOp, chain: dict, sequence, loop_num) -> bool:
-        self._is_regen = False
         success_url_tuple = tuple([op for op in sequence[:index] if op in chain.keys()] + [operation])
-
         if len(operation.parameters) == 0:
             logger.debug("operation has no parameter, execute and return")
             self._execute(operation, [{}], chain, success_url_tuple, [])
@@ -291,26 +315,26 @@ class CAWithLLM(CA):
 
         history = []
         self._reset_constraints(operation, operation.parameters)
-        e_ca = self._handle_essential_params(operation, sequence[:index], success_url_tuple, chain, history)
-        logger.info(f"{index + 1}-th operation essential parameters covering array size: {len(e_ca)}, "
-                    f"parameters: {len(e_ca[0]) if len(e_ca) > 0 else 0}, constraints: {len(operation.constraints)}")
-        have_success_e, have_bug_e, e_response_list = self._execute(operation, e_ca, chain, success_url_tuple, history,
-                                                                    True)
+
+        have_success_e, have_bug_e, e_response_list = self._handle_params(operation, sequence[:index],
+                                                                          success_url_tuple, chain, history, index,
+                                                                          True)
         is_break_e = have_success_e or have_bug_e
 
-        a_ca = self._handle_all_params(operation, sequence[:index], success_url_tuple, chain, history)
-        logger.info(f"{index + 1}-th operation essential parameters covering array size: {len(a_ca)}, "
-                    f"parameters: {len(a_ca[0]) if len(a_ca) > 0 else 0}, constraints: {len(operation.constraints)}")
-        have_success_a, have_bug_a, a_response_list = self._execute(operation, a_ca, chain, success_url_tuple, history,
-                                                                    False)
-        message, is_success_llm = self._analyse_constraint(operation, e_response_list + a_response_list)
-        if is_success_llm:
-            operation.set_analysed()
+        have_success_a, have_bug_a, a_response_list = self._handle_params(operation, sequence[:index],
+                                                                          success_url_tuple, chain, history, index,
+                                                                          False)
         is_break_a = have_success_a or have_bug_a
+
+        message = None
+        if not operation.analysed:
+            message, is_success_llm = self._analyse_constraint(operation, e_response_list + a_response_list)
+            if is_success_llm:
+                operation.set_analysed()
 
         if not (have_success_e and have_success_a and have_bug_e and have_bug_a):
             status_tuple = (have_success_e, have_success_a, have_bug_e, have_bug_a)
-            logger.info("Expected status code(2xx or 500) missing, use llm to help test")
+            logger.info("Expected status code(2xx or 500) missing, use llm to help re-generate")
             is_break = self._re_handle(index, operation, chain, sequence, loop_num, status_tuple, message)
 
         return is_break_e or is_break_a
@@ -333,9 +357,18 @@ class CAWithLLM(CA):
     def _call_response_language_model(self, operation: RestOp, response_list: List[Tuple[int, object]]):
         if len(response_list) == 0:
             return
-        response_model = ResponseModel(operation, self._manager, self._data_path, response_list)
-        message, formatted_output = response_model.execute()
-        return message
+        response_model = ResponseModel(operation, self._manager, self._config, response_list=response_list)
+        message, formatted_output, is_success = response_model.execute()
+        return message, is_success
 
     def _re_handle(self, index, operation, chain, sequence: list, loop_num: int, status_tuple: tuple, message) -> bool:
-        pass
+        self._is_regen = True
+        is_break = False
+        if not (status_tuple[0] or status_tuple[1]):
+            logger.info("no success request, use llm to help re-generate")
+            success_url_tuple = tuple([op for op in sequence[:index] if op in chain.keys()] + [operation])
+            if len(operation.parameterList) == 0:
+                self._executes(operation, [{}], chain, success_url_tuple, [])
+                return True
+
+            history = []

@@ -85,6 +85,8 @@ class Processor:
         self.nlp.add_pipe("constraintMatcher", last=True)
 
     def _cleanText(self, text):
+        if text is None:
+            return ""
         return " ".join([token.text for token in self.nlp.make_doc(text) if
                          token.text not in {"'", '"', "[", "]", "(", ")"} and not token.is_space])
 

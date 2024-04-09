@@ -159,7 +159,7 @@ class RestPath:
             path = path + "?" + "&".join(query)
         return path
 
-    def resolve_path_param(self, path_params: List[RestParam]) -> str:
+    def resolve_path_param(self, path_params: List[RestParam], chain) -> str:
         path = ""
 
         for e in self.elements:
@@ -174,7 +174,7 @@ class RestPath:
                     if p is None:
                         raise ValueError(f"Cannot resolve path parameter '{t.name}'")
 
-                    value = str(p.factor.printable_value)
+                    value = str(p.factor.printable_value(chain))
 
                     if not value.strip() or value == "__null__":
                         value = "1"
@@ -202,9 +202,9 @@ class RestPath:
 
             if isinstance(param.factor, ArrayFactor):
                 elements: Tuple[AbstractFactor] = param.factor.get_leaves()
-                return "&".join(f"{name}={encode(e.printable_value)}" for e in elements if e.is_active)
+                return "&".join(f"{name}={encode(e.printable_value())}" for e in elements if e.is_active)
             else:
-                value = encode(param.factor.printable_value)
+                value = encode(param.factor.printable_value())
                 return f"{name}={value}"
 
         return [get_query_string(q) for q in usable_query_params]
@@ -244,9 +244,8 @@ class RestOp:
         self.constraints: List[Constraint] = []
         self.analysed = False
 
-    @property
-    def resolved_url(self) -> str:
-        path = self.path.resolve_path_param(self.parameters)
+    def resolved_url(self, chain=None) -> str:
+        path = self.path.resolve_path_param(self.parameters, chain)
         return f"{self._host.strip('/')}/{path.strip('/')}"
 
     def get_leaf_factors(self) -> list[AbstractFactor]:

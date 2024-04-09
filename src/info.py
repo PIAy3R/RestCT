@@ -1,12 +1,15 @@
+import json
 from collections import defaultdict
 from typing import List, Dict, Tuple, Set
 
-from src.factor import Value, ValueType
+from src.factor import Value, ValueType, AbstractFactor
+from src.keywords import DataType
 from src.rest import RestOp
 
 
 class RuntimeInfoManager:
-    def __init__(self):
+    def __init__(self, config):
+        self._config = config
         self._num_of_requests = 0
         self.llm_call = 0
         self.call_time = 0
@@ -14,11 +17,13 @@ class RuntimeInfoManager:
         self.cost = 0
         self._response_chains: List[Dict[str, object]] = [dict()]
         self._unresolved_params: Set[Tuple[RestOp, str]] = set()
+        self._llm_constraint_group: Dict[RestOp, List[List[AbstractFactor]]] = dict()
 
         self._reused_essential_seq_dict: Dict[Tuple[RestOp], List[Dict[str, Value]]] = defaultdict(list)
         self._reused_all_p_seq_dict: dict = defaultdict(list)
         self._ok_value_dict: Dict[str, List[Value]] = defaultdict(list)
         self._success_sequence: set = set()
+        self._response_list = dict()
 
     def get_chains(self, max_chain_items):
         sortedList = sorted(self._response_chains, key=lambda c: len(c.keys()), reverse=True)
@@ -83,3 +88,41 @@ class RuntimeInfoManager:
 
     def save_success_seq(self, url_tuple):
         self._success_sequence.add(url_tuple)
+
+    def save_response(self, op, response_list, ca):
+        value_set = set()
+        for v_dict in ca:
+            for p, v in v_dict.items():
+                if v.type == DataType.String and v.val is not None and v.val != "":
+                    value_set.add(v.val)
+        if self._response_list.get(op.__repr__()) is None:
+            self._response_list[op.__repr__()] = set()
+        for sc, response in response_list:
+            if sc >= 400:
+                response = json.dumps(response)
+                response = response.strip('"').replace('\\"', '"').replace('\\\\', '\\')
+                for v in value_set:
+                    if v in response and len(v) > 1:
+                        response = response.replace(v, "*")
+                        break
+                self._response_list[op.__repr__()].add(response)
+
+    def save_response_to_file(self):
+        save_path = f"{self._config.data_path}/response.json"
+        save_list = dict()
+        for op, response_set in self._response_list.items():
+            save_list[op] = list(response_set)
+        with open(save_path, 'w') as f:
+            json.dump(save_list, f, indent=2)
+
+    def save_language_model_group(self, operation, grouped: dict):
+        if self._llm_constraint_group.get(operation) is None:
+            self._llm_constraint_group[operation] = []
+        for k, v in grouped.items():
+            if len(v) == 1:
+                continue
+            new_v_list = []
+            for p in operation.get_leaf_factors():
+                if p.get_global_name in v:
+                    new_v_list.append(p)
+            self._llm_constraint_group[operation].append(new_v_list)

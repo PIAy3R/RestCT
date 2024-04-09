@@ -16,7 +16,8 @@ from lib.Template import Template, TaskTemplate
 from src.Dto.operation import Operation
 from src.Dto.parameter import AbstractParam, ObjectParam, ArrayParam
 from src.keywords import URL, Loc
-from src.languagemodel.OutputFixer import ValueOutputFixer, ResponseFixer
+from src.languagemodel.llm import ValueOutputFixer, ResponseFixer
+from src.rest import RestOp
 
 
 def num_tokens_from_string(messages: List[Dict[str, str]], encoding_name: str = "gpt-3.5-turbo") -> int:
@@ -58,7 +59,7 @@ def get_info(param, definition, def_dict, body):
 
 
 class BasicLanguageModel:
-    def __init__(self, operation: Operation, manager, data_path, temperature: float = 0.7):
+    def __init__(self, operation: RestOp, manager, data_path, temperature: float = 0.7):
         self._temperature: float = temperature
 
         self._operation = operation
@@ -82,7 +83,7 @@ class BasicLanguageModel:
         logger.debug(f"call language model for operation: {self._operation}")
 
     @property
-    def operation(self) -> Operation:
+    def operation(self) -> RestOp:
         return self._operation
 
     @operation.setter
@@ -254,7 +255,7 @@ class ParamValueModel(BasicLanguageModel):
 
 
 class ResponseModel(BasicLanguageModel):
-    def __init__(self, operation: Operation, manager, data_path, response_list: list = None, temperature: float = 0.9):
+    def __init__(self, operation: RestOp, manager, data_path, response_list: list = None, temperature: float = 0.9):
         super().__init__(operation, manager, data_path, temperature)
 
         self._response_list: List[(int, object)] = response_list

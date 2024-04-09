@@ -154,13 +154,15 @@ class AbstractFactor(metaclass=abc.ABCMeta):
         domain_map[self.get_global_name] = self.domain
         return domain_map
 
-    def set_value(self, case):
+    def set_value(self, case, is_reuse=False):
         self.value = None
         for name, value in case.items():
             if name == self.get_global_name:
-                self.value = value
+                if not is_reuse:
+                    self.value = value
+                else:
+                    self.value = self.mutate_value(value)
 
-    @property
     def printable_value(self, response=None):
         if self.value is not None and self.value.generator is ValueType.Dynamic:
             if response is None or len(response) == 0:
@@ -199,6 +201,21 @@ class AbstractFactor(metaclass=abc.ABCMeta):
         excluding arrays and objects themselves.
         """
         return self,
+
+    @staticmethod
+    def mutate_value(value: Value):
+        if value.val is not None and value.val != '' and value.generator is not ValueType.Dynamic:
+            if value.type == DataType.String:
+                new_value = Value(value.val + "1", value.generator, value.type)
+            elif value.type == DataType.Integer:
+                new_value = Value(int(value.val) + 1, value.generator, value.type)
+            elif value.type == DataType.Number:
+                new_value = Value(float(value.val) + 1, value.generator, value.type)
+            else:
+                new_value = value
+        else:
+            new_value = value
+        return new_value
 
     def __repr__(self):
         return self.get_global_name
@@ -296,13 +313,46 @@ class StringFactor(AbstractFactor):
                     binary_str = ''.join(random.choice(['0', '1']) for _ in range(random_binary_length))
                     self.domain.append(Value(binary_str, ValueType.Random, DataType.String))
                 else:
-                    characters = string.ascii_letters + string.digits + string.punctuation
+                    characters1 = string.ascii_letters
+                    characters2 = string.ascii_letters + string.digits + string.punctuation
                     length = random.randint(self.minLength, self.maxLength)
-                    random_string = ''.join(random.choice(characters) for _ in range(length))
-                    self.domain.append(Value(random_string, ValueType.Random, DataType.String))
+                    random_string1 = ''.join(random.choice(characters1) for _ in range(length))
+                    random_string2 = ''.join(random.choice(characters2) for _ in range(length))
+                    self.domain.append(Value(random_string1, ValueType.Random, DataType.String))
+                    self.domain.append(Value(random_string2, ValueType.Random, DataType.String))
+            self.domain.append(Value('', ValueType.Default, DataType.String))
 
         if not self.required:
             self.domain.append(Value(None, ValueType.NULL, DataType.String))
+
+    def gen_path(self, op, chain):
+        dynamic_values = list()
+        response_value = list()
+        op_set = chain.keys()
+        high_weight, low_weight = AbstractFactor._analyse_url_relation(op, op_set, self.name)
+        for predecessor in high_weight:
+            response = chain.get(predecessor)
+            similarity_max = 0
+            path_depth_minimum = 10
+            right_path = None
+            right_value = None
+            for path, similarity, value in AbstractFactor.find_dynamic(self.name, response):
+                if similarity > similarity_max:
+                    right_path = path
+                    path_depth_minimum = len(path)
+                    similarity_max = similarity
+                    right_value = value
+                elif similarity == similarity_max:
+                    if len(path) < path_depth_minimum:
+                        right_path = path
+                        path_depth_minimum = len(path)
+                        right_value = value
+            if similarity_max > 0 and right_value not in response_value:
+                dynamic_values.append((predecessor, right_path))
+        if len(dynamic_values) > 0:
+            self.domain = [Value(v, ValueType.Dynamic, DataType.NULL) for v in dynamic_values]
+        else:
+            self.gen_domain()
 
 
 class IntegerFactor(AbstractFactor):
@@ -403,15 +453,15 @@ class ObjectFactor(AbstractFactor):
             p.add_domain_to_map(domain_map)
         return domain_map
 
-    def set_value(self, case):
+    def set_value(self, case, is_reuse=False):
         self.value = None
         for p in self.properties:
-            p.set_value(case)
-        property_not_none = [p for p in self.properties if p.printable_value is not None]
+            p.set_value(case, is_reuse)
+        property_not_none = [p for p in self.properties if p.printable_value() is not None]
         if len(property_not_none) > 0:
             self.value = {}
             for p in property_not_none:
-                self.value[p.name] = p.printable_value
+                self.value[p.name] = p.printable_value()
 
     def get_leaves(self) -> Tuple:
         leaves = []
@@ -419,7 +469,6 @@ class ObjectFactor(AbstractFactor):
             leaves.extend(p.get_leaves())
         return tuple(leaves)
 
-    @property
     def printable_value(self, response=None):
         if self.value is None:
             return None
@@ -446,17 +495,16 @@ class ArrayFactor(AbstractFactor):
             self.item.add_domain_to_map(domain_map)
         return domain_map
 
-    def set_value(self, case):
+    def set_value(self, case, is_reuse=False):
         self.value = None
-        self.item.set_value(case)
-        if self.item.printable_value is not None:
+        self.item.set_value(case, is_reuse)
+        if self.item.printable_value() is not None:
             self.value = []
-            self.value.append(self.item.printable_value)
+            self.value.append(self.item.printable_value())
 
     def get_leaves(self) -> Tuple:
         return self.item.get_leaves()
 
-    @property
     def printable_value(self, response=None):
         if self.value is None:
             return None

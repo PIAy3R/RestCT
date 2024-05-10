@@ -30,6 +30,7 @@ class Config:
 
         # acts jar file
         self.jar = ""
+        self.pict = ""
 
         # auth token
         self.header = dict()
@@ -50,7 +51,7 @@ class Config:
 
         # Language Model Settings
         self.use_llm = False
-        self.language_model = "gpt-3.5-turbo-1106"
+        self.language_model = "gpt-4-turbo-2024-04-09"
         self.language_model_key = ""
 
     def check(self, settings: Namespace):
@@ -98,6 +99,12 @@ class Config:
             self.jar = self.jar.as_posix()
         else:
             raise Exception("acts jar is not provided")
+
+        self.pict = Path(settings.pict)
+        if self.pict.exists() and self.pict.is_file():
+            self.pict = self.pict.as_posix()
+        else:
+            raise Exception("pict is not provided")
 
         try:
             auth_token = json.loads(settings.header)
@@ -164,6 +171,9 @@ def parse_args(root_path) -> Namespace:
     parser.add_argument('--jar',
                         help='acts jar file',
                         type=str, required=False, default=f"{root_path}/lib/acts_2.93.jar")
+    parser.add_argument('--pict',
+                        help='pict file',
+                        type=str, required=False, default=f"{root_path}/lib/pict")
     parser.add_argument('--header',
                         help='auth token: {keyName: token}',
                         type=str, required=False, default="{}")

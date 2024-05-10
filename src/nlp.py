@@ -10,7 +10,7 @@ import spacy
 from spacy.matcher import Matcher
 from spacy.tokens import Doc
 
-from src.factor import EnumFactor
+from src.factor import EnumFactor, AbstractFactor
 
 Doc.set_extension("constraints", default=None, force=True)
 
@@ -61,14 +61,14 @@ class EntityLabel(Enum):
 
 
 class Processor:
-    def __init__(self, paramEntities: List):
+    def __init__(self, paramEntities: List[AbstractFactor]):
         self.nlp = spacy.load("en_core_web_sm")
         self._paramEntities: List = paramEntities
-        self._descriptions = [param.factor.description for param in paramEntities]
-        assert len({param.factor.name for param in paramEntities}) == len(paramEntities)
-        self._paramNames = {param.factor.name: param for param in paramEntities}
-        self._paramValues = {param.factor.name: param.factor.enum_value for param in paramEntities if
-                             isinstance(param.factor, EnumFactor)}
+        self._descriptions = [factor.description for factor in paramEntities]
+        assert len({factor.name for factor in paramEntities}) == len(paramEntities)
+        self._paramNames = {factor.name: factor for factor in paramEntities}
+        self._paramValues = {factor.name: factor.enum_value for factor in paramEntities if
+                             isinstance(factor, EnumFactor)}
 
         self.setNLP()
 
@@ -110,11 +110,11 @@ class Processor:
         paramNames = set()
         for c in constraints:
             paramNames.update(c.paramNames)
-        for parameter in self._paramEntities:
-            if parameter.factor.name in paramNames:
-                parameter.factor.is_constraint = True
+        for factor in self._paramEntities:
+            if factor.name in paramNames:
+                factor.is_constraint = True
             else:
-                parameter.factor.is_constraint = False
+                factor.is_constraint = False
 
     def analyseError(self, errorResponses):
         unresolvedParams = list()
@@ -143,7 +143,7 @@ class Constraint:
         self.valueStr = values
         self.ents = ents  # in order
 
-    def toActs(self, valueDict: dict):
+    def toActs(self, operation, valueDict: dict):
         """
         :param valueDict: parameters' domains. key: paramName, value: domain
         :return: string in acts input format
@@ -156,9 +156,39 @@ class Constraint:
                 paramName, op, value = self.ents[ord(matcher.group(1)) - 65], matcher.group(2), self.ents[
                     ord(matcher.group(4)) - 65]
             try:
-                valueList = [v.val for v in valueDict.get(paramName)]
+                global_name = paramName
+                for f in operation.get_leaf_factors():
+                    if f.name == paramName:
+                        global_name = f.get_global_name
+                        break
+                valueList = [v.val for v in valueDict.get(global_name)]
                 valueIndex = valueList.index(value)
             except (ValueError, TypeError):
                 return None
             formattedStr = re.sub(matcher.group(), "{} {} {}".format(paramName, op, valueIndex), formattedStr)
+        return formattedStr
+
+    def to_pict(self, operation, valueDict: dict):
+        """
+        :param valueDict: parameters' domains. key: paramName, value: domain
+        :return: string in acts input format
+        """
+        formattedStr = self._template
+        for matcher in re.finditer(r"(\w)\1\s*(!?=)\s*[\'\"]?(None|(\w)\4)[\'\"]?", self._template):
+            if matcher.group(3) == "None":
+                paramName, op, value = self.ents[ord(matcher.group(1)) - 65], matcher.group(2), None
+            else:
+                paramName, op, value = self.ents[ord(matcher.group(1)) - 65], matcher.group(2), self.ents[
+                    ord(matcher.group(4)) - 65]
+            try:
+                global_name = paramName
+                for f in operation.get_leaf_factors():
+                    if f.name == paramName:
+                        global_name = f.get_global_name
+                        break
+                valueList = [v.val for v in valueDict.get(global_name)]
+                valueIndex = valueList.index(value)
+            except (ValueError, TypeError):
+                return None
+            formattedStr = re.sub(matcher.group(), "{} {} {}".format(f"[{paramName}]", op, valueIndex), formattedStr)
         return formattedStr

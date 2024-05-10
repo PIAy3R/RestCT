@@ -6,12 +6,13 @@ from loguru import logger
 
 from src.config import Config
 from src.executor import RestRequest
-from src.factor import Value, ValueType, AbstractFactor
-from src.generator import ACTS
+from src.factor import Value, ValueType, AbstractFactor, StringFactor, EnumFactor, BooleanFactor
+from src.generator import ACTS, PICT
+from src.idl import IDL
 from src.info import RuntimeInfoManager
 from src.keywords import DataType
 from src.keywords import Method
-from src.languagemodel.llm import ResponseModel
+from src.languagemodel.llm import ResponseModel, ValueModel, IDLModel
 from src.nlp import Processor, Constraint
 from src.rest import RestOp, RestParam, PathParam, QueryParam, BodyParam, HeaderParam
 
@@ -35,6 +36,7 @@ class CA:
         self.start_time = None
 
         self._acts = ACTS(self._data_path, config.jar)
+        self._pict = PICT(self._data_path, config.pict)
 
         self._stat = kwargs.get("stat")
 
@@ -75,23 +77,16 @@ class CA:
         self._reset_constraints(operation, operation.parameters)
 
         (have_success_e, have_bug_e, e_response_list), e_ca = self._handle_params(operation, sequence[:index],
-                                                                          success_url_tuple, chain, history, index,
-                                                                          True)
-        # e_ca = self._handle_essential_params(operation, sequence[:index], success_url_tuple, chain, history)
-        # logger.info(f"{index + 1}-th operation essential parameters covering array size: {len(e_ca)}, "
-        #             f"parameters: {len(e_ca[0]) if len(e_ca) > 0 else 0}, constraints: {len(operation.constraints)}")
-        # have_success_e, have_bug_e, e_response_list = self._execute(operation, e_ca, chain, success_url_tuple, history,
-        #                                                             True)
+                                                                                  success_url_tuple, chain, history,
+                                                                                  index,
+                                                                                  True)
+
         is_break_e = have_success_e or have_bug_e
 
-        # a_ca = self._handle_all_params(operation, sequence[:index], success_url_tuple, chain, history)
-        # logger.info(f"{index + 1}-th operation essential parameters covering array size: {len(a_ca)}, "
-        #             f"parameters: {len(a_ca[0]) if len(a_ca) > 0 else 0}, constraints: {len(operation.constraints)}")
-        # have_success_a, have_bug_a, a_response_list = self._execute(operation, a_ca, chain, success_url_tuple, history,
-        #                                                             False)
         (have_success_a, have_bug_a, a_response_list), a_ca = self._handle_params(operation, sequence[:index],
-                                                                          success_url_tuple, chain, history, index,
-                                                                          False)
+                                                                                  success_url_tuple, chain, history,
+                                                                                  index,
+                                                                                  False)
         is_break_a = have_success_a or have_bug_a
         self._manager.save_response(operation, e_response_list + a_response_list, e_ca + a_ca)
 
@@ -152,37 +147,27 @@ class CA:
 
     @staticmethod
     def _reset_constraints(op: RestOp, parameters: List[RestParam]):
-        constraint_processor = Processor(parameters)
+        param_list = op.get_leaf_factors()
+        constraint_processor = Processor(param_list)
         constraints: List[Constraint] = constraint_processor.parse()
         op.set_constraints(constraints)
-
-    # def _handle_essential_params(self, operation: RestOp, executed: List[RestOp], success_url_tuple, chain, history):
-    #     # reused_case = self._manager.get_reused_with_essential_p(tuple(exec_ops + [operation]))
-    #     # if len(reused_case) > 0:
-    #     #     # 执行过
-    #     #     logger.debug("use reuse_seq info: {}, parameters: {}", len(reused_case), len(reused_case[0].keys()))
-    #     #     return reused_case
-    #     logger.debug("handle essential parameters")
-    #     parameter_list = list(filter(lambda p: p.factor.is_essential, operation.parameters))
-    #     if len(parameter_list) == 0:
-    #         cover_array = [{}]
-    #     else:
-    #         cover_array = self._cover_params(operation, parameter_list, [], chain, self._e_strength, history)
-    #     return cover_array
-    #
-    # def _handle_all_params(self, operation: RestOp, executed: List[RestOp], success_url_tuple, chain, history):
-    #     logger.debug("handle all parameters")
-    #     parameter_list = operation.parameters
-    #     cover_array = self._cover_params(operation, parameter_list, [], chain, self._a_strength, history)
-    #     return cover_array
 
     def _handle_params(self, operation: RestOp, executed: List[RestOp], success_url_tuple, chain, history, index,
                        is_essential):
         if is_essential:
             logger.debug("handle essential parameters")
             parameter_list = list(filter(lambda p: p.factor.is_essential, operation.parameters))
+            for p in operation.parameters:
+                add = False
+                if isinstance(p, BodyParam):
+                    for f in p.factor.get_leaves():
+                        if f.is_essential:
+                            add = True
+                            break
+                if add:
+                    parameter_list.append(p)
         else:
-            logger.debug("handle essential parameters")
+            logger.debug("handle all parameters")
             parameter_list = operation.parameters
         if len(parameter_list) == 0:
             cover_array = [{}]
@@ -198,8 +183,8 @@ class CA:
                     is_reuse = True
                     cover_array = reused_case
                 else:
-                    cover_array = self._cover_params(operation, parameter_list, operation.constraints, chain,
-                                                     self._e_strength, history)
+                    cover_array = self._cover_params(operation, parameter_list, chain, self._e_strength, history,
+                                                     is_essential)
                     logger.info(
                         f"{index + 1}-th operation essential parameters covering array size: {len(cover_array)}, "
                         f"parameters: {len(cover_array[0]) if len(cover_array) > 0 else 0}, constraints: {len(operation.constraints)}")
@@ -214,8 +199,8 @@ class CA:
                     is_reuse = True
                     cover_array = reused_case
                 else:
-                    cover_array = self._cover_params(operation, parameter_list, operation.constraints, chain,
-                                                     self._a_strength, history)
+                    cover_array = self._cover_params(operation, parameter_list, chain, self._a_strength, history,
+                                                     is_essential)
                     logger.info(f"{index + 1}-th operation all parameters covering array size: {len(cover_array)}, "
                                 f"parameters: {len(cover_array[0]) if len(cover_array) > 0 else 0}, constraints: {len(operation.constraints)}")
                 return self._execute(operation, cover_array, chain, success_url_tuple, history, is_reuse,
@@ -223,21 +208,29 @@ class CA:
 
     def _cover_params(self, operation: RestOp,
                       parameters: List[RestParam],
-                      constraints,
                       chain,
                       strength,
-                      history_ca_of_current_op: List[dict]):
-
+                      history_ca_of_current_op: List[dict],
+                      is_essential):
         if history_ca_of_current_op is None:
             history_ca_of_current_op = []
         domain_map = defaultdict(list)
         for root_p in parameters:
             if isinstance(root_p, PathParam):
                 root_p.factor.gen_path(operation, chain)
+                if not self._manager.is_unresolved((operation, root_p.factor.get_global_name)):
+                    domain_map = root_p.factor.add_domain_to_map(domain_map)
             else:
-                root_p.factor.gen_domain()
-            if not self._manager.is_unresolved((operation, root_p.factor.get_global_name)):
-                domain_map = root_p.factor.add_domain_to_map(domain_map)
+                if is_essential:
+                    for f in root_p.factor.get_leaves():
+                        if f.is_essential:
+                            f.gen_domain()
+                            if not self._manager.is_unresolved((operation, f.get_global_name)):
+                                domain_map = f.add_domain_to_map(domain_map)
+                else:
+                    root_p.factor.gen_domain()
+                    if not self._manager.is_unresolved((operation, root_p.factor.get_global_name)):
+                        domain_map = root_p.factor.add_domain_to_map(domain_map)
 
         if history_ca_of_current_op is not None and len(history_ca_of_current_op) > 0:
             new_domain_map = {
@@ -261,13 +254,20 @@ class CA:
         for p, v in domain_map.items():
             logger.debug(f"            {p}: {len(v)} - {v}")
 
-        return self._call_acts(domain_map, constraints, strength, history_ca_of_current_op)
+        return self._call_pict(domain_map, operation, strength, history_ca_of_current_op)
+        # return self._call_acts(operation, domain_map, constraints, strength, history_ca_of_current_op)
 
-    def _call_acts(self, domain_map, constraints, strength, history_ca_of_current_op):
+    def _call_acts(self, operation, domain_map, constraints, strength, history_ca_of_current_op):
         try:
-            return self._acts.process(domain_map, constraints, strength, history_ca_of_current_op)
+            return self._acts.process(operation, domain_map, constraints, strength, history_ca_of_current_op)
         except Exception:
             logger.warning("call acts wrong")
+
+    def _call_pict(self, domain_map, operation, strength, history_ca_of_current_op):
+        try:
+            return self._pict.process(domain_map, operation, strength, history_ca_of_current_op)
+        except Exception:
+            logger.warning("call pict wrong")
 
     def _handle_response(self, url_tuple, operation, response_list, chain, ca, is_essential):
         is_success = False
@@ -316,14 +316,16 @@ class CAWithLLM(CA):
         history = []
         self._reset_constraints(operation, operation.parameters)
 
-        have_success_e, have_bug_e, e_response_list = self._handle_params(operation, sequence[:index],
-                                                                          success_url_tuple, chain, history, index,
-                                                                          True)
+        (have_success_e, have_bug_e, e_response_list), e_ca = self._handle_params(operation, sequence[:index],
+                                                                                  success_url_tuple, chain, history,
+                                                                                  index,
+                                                                                  True)
         is_break_e = have_success_e or have_bug_e
 
-        have_success_a, have_bug_a, a_response_list = self._handle_params(operation, sequence[:index],
-                                                                          success_url_tuple, chain, history, index,
-                                                                          False)
+        (have_success_a, have_bug_a, a_response_list), a_ca = self._handle_params(operation, sequence[:index],
+                                                                                  success_url_tuple, chain, history,
+                                                                                  index,
+                                                                                  False)
         is_break_a = have_success_a or have_bug_a
 
         message = None
@@ -336,6 +338,7 @@ class CAWithLLM(CA):
             status_tuple = (have_success_e, have_success_a, have_bug_e, have_bug_a)
             logger.info("Expected status code(2xx or 500) missing, use llm to help re-generate")
             is_break = self._re_handle(index, operation, chain, sequence, loop_num, status_tuple, message)
+            return is_break
 
         return is_break_e or is_break_a
 
@@ -361,14 +364,88 @@ class CAWithLLM(CA):
         message, formatted_output, is_success = response_model.execute()
         return message, is_success
 
+    def _set_llm_constraints(self, operation: RestOp):
+        self.add_llm_constraints(operation)
+        for f in self._manager.get_constraint_params(operation):
+            f.is_constraint = True
+
+    def add_llm_constraints(self, operation: RestOp):
+        for c_str in self._manager.get_idl(operation):
+            idl = IDL(c_str, operation)
+            idl.to_constraint()
+
+
     def _re_handle(self, index, operation, chain, sequence: list, loop_num: int, status_tuple: tuple, message) -> bool:
+        self._call_idl_model(operation)
         self._is_regen = True
         is_break = False
         if not (status_tuple[0] or status_tuple[1]):
             logger.info("no success request, use llm to help re-generate")
             success_url_tuple = tuple([op for op in sequence[:index] if op in chain.keys()] + [operation])
-            if len(operation.parameterList) == 0:
-                self._executes(operation, [{}], chain, success_url_tuple, [])
+            if len(operation.parameters) == 0:
+                self._execute(operation, [{}], chain, success_url_tuple, [])
                 return True
 
             history = []
+            self._reset_constraints(operation, operation.parameters)
+            self._set_llm_constraints(operation)
+
+            if self._manager.get_llm_examples(operation) is None or len(self._manager.get_llm_examples(operation)) == 0:
+                if not self._call_value_language_model(operation):
+                    logger.info("no param to ask")
+                    return False
+
+            (have_success_e, have_bug_e, e_response_list), e_ca = self._handle_params(operation, sequence[:index],
+                                                                                      success_url_tuple, chain, history,
+                                                                                      index,
+                                                                                      True)
+            is_break_e = have_success_e or have_bug_e
+
+            (have_success_a, have_bug_a, a_response_list), a_ca = self._handle_params(operation, sequence[:index],
+                                                                                      success_url_tuple, chain, history,
+                                                                                      index,
+                                                                                      False)
+            is_break_a = have_success_a or have_bug_a
+
+            is_break = is_break_e or is_break_a
+
+            if loop_num == 3 and self._manager.get_llm_examples(operation) is not None and not is_break:
+                logger.info(
+                    "previous example values provided by LLM of this operation did not work, clear the value")
+                self._manager.get_llm_examples(operation).clear()
+            return is_break
+
+        if not (status_tuple[2] or status_tuple[3]):
+            return True
+            # logger.info("no 500 status code, use llm to help re-generate")
+
+    def _call_value_language_model(self, operation: RestOp):
+        param_to_ask = []
+        problem_params = self._manager.get_constraint_params(operation)
+        for p in operation.parameters:
+            if isinstance(p, PathParam):
+                if isinstance(p.factor, StringFactor):
+                    param_to_ask.append(p)
+            if isinstance(p, QueryParam) or isinstance(p, BodyParam):
+                for l in p.factor.get_leaves():
+                    if l.is_essential:
+                        if not isinstance(l, EnumFactor) and not isinstance(l, BooleanFactor):
+                            param_to_ask.append(l)
+                    elif l in problem_params:
+                        param_to_ask.append(l)
+            else:
+                pass
+        if len(param_to_ask) == 0:
+            return False
+        else:
+            value_model = ValueModel(operation, self._manager, self._config, param_to_ask)
+            messages, formatted_output, is_success = value_model.execute()
+            return is_success
+
+    def _call_idl_model(self, operation: RestOp):
+        param_to_ask = self._manager.get_constraint_params(operation)
+        idl_model = IDLModel(operation, self._manager, self._config, param_to_ask)
+        idl_model.execute()
+
+    def _handle_constraint_response(self, message):
+        pass

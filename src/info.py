@@ -1,6 +1,6 @@
 import json
 from collections import defaultdict
-from typing import List, Dict, Tuple, Set
+from typing import List, Dict, Tuple, Set, Union
 
 from src.factor import Value, ValueType, AbstractFactor
 from src.keywords import DataType
@@ -18,6 +18,10 @@ class RuntimeInfoManager:
         self._response_chains: List[Dict[str, object]] = [dict()]
         self._unresolved_params: Set[Tuple[RestOp, str]] = set()
         self._llm_constraint_group: Dict[RestOp, List[List[AbstractFactor]]] = dict()
+        self._param_to_ask: Dict[RestOp, List[str]] = dict()
+        self._llm_example_value_dict: Dict[RestOp, Dict[AbstractFactor, Union[dict, list]]] = dict()
+        self._constraint_params: Dict[RestOp, Set[AbstractFactor]] = dict()
+        self._idl: Dict[RestOp, List[str]] = dict()
 
         self._reused_essential_seq_dict: Dict[Tuple[RestOp], List[Dict[str, Value]]] = defaultdict(list)
         self._reused_all_p_seq_dict: dict = defaultdict(list)
@@ -126,3 +130,35 @@ class RuntimeInfoManager:
                 if p.get_global_name in v:
                     new_v_list.append(p)
             self._llm_constraint_group[operation].append(new_v_list)
+
+    def get_llm_examples(self, operation=None):
+        if operation is None:
+            return self._llm_example_value_dict
+        else:
+            return self._llm_example_value_dict.get(operation)
+
+    def save_param(self, operation, param_list):
+        self._param_to_ask[operation] = param_list
+
+    def get_problem_params(self, operation):
+        return self._param_to_ask.get(operation, [])
+
+    def get_constraint_params(self, operation):
+        return self._constraint_params.get(operation, [])
+
+    def save_constraint_params(self, operation, param_list):
+        if self._constraint_params.get(operation) is None:
+            self._constraint_params[operation] = set()
+        for f in operation.get_leaf_factors():
+            if f.get_global_name in param_list:
+                self._constraint_params[operation].add(f)
+                f.is_constraint = True
+
+    def save_idl(self, operation, idl_list):
+        for idl_str in idl_list:
+            if self._idl.get(operation) is None:
+                self._idl[operation] = []
+            self._idl[operation].append(idl_str)
+
+    def get_idl(self, operation):
+        return self._idl.get(operation, [])

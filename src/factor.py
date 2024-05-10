@@ -151,7 +151,8 @@ class AbstractFactor(metaclass=abc.ABCMeta):
         return round((length_total - distance) / length_total, 2)
 
     def add_domain_to_map(self, domain_map: dict):
-        domain_map[self.get_global_name] = self.domain
+        if len(self.domain) > 0:
+            domain_map[self.get_global_name] = self.domain
         return domain_map
 
     def set_value(self, case, is_reuse=False):
@@ -173,7 +174,10 @@ class AbstractFactor(metaclass=abc.ABCMeta):
                 value = self._assemble_dynamic(path, response)
             self.value = Value(value, ValueType.Dynamic, DataType.NULL)
         if self.value is not None:
-            return self.value.val
+            if self.value.val == "blank":
+                return ""
+            else:
+                return self.value.val
         else:
             return None
 
@@ -223,7 +227,7 @@ class AbstractFactor(metaclass=abc.ABCMeta):
     @property
     def get_global_name(self):
         if self.parent is not None:
-            return f"{self.parent.get_global_name}@{self.name}"
+            return f"{self.parent.get_global_name}.{self.name}"
         else:
             return self.name
 
@@ -320,7 +324,7 @@ class StringFactor(AbstractFactor):
                     random_string2 = ''.join(random.choice(characters2) for _ in range(length))
                     self.domain.append(Value(random_string1, ValueType.Random, DataType.String))
                     self.domain.append(Value(random_string2, ValueType.Random, DataType.String))
-            self.domain.append(Value('', ValueType.Default, DataType.String))
+            self.domain.append(Value("blank", ValueType.Default, DataType.String))
 
         if not self.required:
             self.domain.append(Value(None, ValueType.NULL, DataType.String))

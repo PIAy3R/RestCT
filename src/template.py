@@ -12,13 +12,77 @@ specific value for parameters.
 
     SYS_ROLE_RESPONSE = """
 You are a helpful assistant, helping handle the issues related to RESTful APIs. 
-RESTful API is an API style that uses URLs to locate resources and access operation resources. 
-After accessing resources, the server of RESTful API usually returns a response, including status code and content. 
-The status code is used to inform the user whether the operation is successful and the corresponding situation. 
-The content usually has further instructions. When executed successfully, it may returns resource-related information. 
-When execution fails, it may contains error specific information. 
-Now you are an expert related to RESTful API and help analyze the content of the response the server send back.
-"""
+In RESTful API, there are constraint relationships between several parameters 
+defined as IDL(Inter-parameter Dependency Language). 
+All possible IDL realations are described as follows:
+
+        Model:
+            Dependency*;
+        Dependency:
+            RelationalDependency | ArithmeticDependency |
+            ConditionalDependency | PredefinedDependency;
+        RelationalDependency:
+            Param RelationalOperator Param;
+        ArithmeticDependency:
+            Operation RelationalOperator DOUBLE;
+        Operation:
+            Param OperationContinuation |
+            '(' Operation ')' OperationContinuation?;
+        OperationContinuation:
+            ArithmeticOperator (Param | Operation);
+        ConditionalDependency:
+            'IF' Predicate 'THEN' Predicate;
+        Predicate:
+            Clause ClauseContinuation?;
+        Clause:
+            (Term | RelationalDependency | ArithmeticDependency
+            | PredefinedDependency) | 'NOT'? '(' Predicate ')';
+        Term:
+            'NOT'? (Param | ParamValueRelation);
+        Param:
+            ID | '[' ID ']';
+        ParamValueRelation:
+            Param '==' STRING('|'STRING)* |
+            Param 'LIKE' PATTERN_STRING | Param '==' BOOLEAN |
+            Param RelationalOperator DOUBLE;
+        ClauseContinuation:
+            ('AND' | 'OR') Predicate;
+        PredefinedDependency:
+            'NOT'? ('Or' | 'OnlyOne' | 'AllOrNone' |
+            'ZeroOrOne') '(' Clause (',' Clause)+ ')';
+        RelationalOperator:
+            '<' | '>' | '<=' | '>=' | '==' | '!=';
+        ArithmeticOperator:
+            '+' | '-' | '*' | '/';
+
+
+Here are the explanation of basic relations of IDL:
+
+Case1: Or(param_1, param_2)
+One of the two parameters is required.
+
+Case2: AllOrNone(param_1, param_2,...,param_n)
+All of the parameters or none of them must be present in the API call
+
+Case3: OnlyOne(param_1, param_2,...,param_n)
+Exactly only one of the parameters must be present in the API call. If n=2, OnlyOne is same with OR
+
+Case4: ZeroOrOne(param_1, param_2,...,param_n)
+At most one of the parameters can be present in the API call.
+
+Case5 : param_1>= param_2
+There is an arithmetic relationship between parameters, the relational operators can be >,>=,<,<=,==,!=
+
+Case6: IF param_1 THEN param_2
+There is a conditional relationship between parameters, If param_1 is present in the API call, param_2 must be present.
+
+Case7: IF Case_m THEN Case_n
+There exists a complex relationship between parameters, the rule can be combined.
+
+
+ I will give you the name and description of the possibly constrained parameters in Info, 
+ extract constraints from the description, if any. Not all given parameters are constrained.
+ """
 
 
 class Explanation:
@@ -65,6 +129,22 @@ Constraint:```{}```
 """
 
     TEXT_RES_RESPONSE = """
+Info:```{}```
+
+Format your response as a JSON object.
+The key is string 'constraints', the value is a list of expressions.
+No duplicate constraints.
+Note: If there are only two parameters, then OnlyOne and OR are the same constraints, use OR.
+"""
+
+    TEXT_CONSTRAINT = """
+Parameter List:{}
+Info:{}
+
+Format your response as a JSON object.
+The key is a is a comma separated string contains all parameter names in the constraint, 
+and the value is the constraint relationship.
+Use the expressions in the cases to describe constraint relationship and replace with the actual parameter or expressions.
 """
 
 
@@ -72,7 +152,6 @@ class Task:
     SPECIAL_VALUE = """
 Your task:
 - According to the Parameter info, give 3 possible values for each parameter in Parameter list. 
-Format your response as a JSON object.
 The format is {parameter1:[value1,value2,...],parameter2:[value1,value2,...],...}.
 """
 
@@ -96,9 +175,9 @@ are not the same. If multiple reasons occur, please classify them all.
 
     GROUP = """
 Your task:
-- Group the parameters with constraint relationships, that is, the parameters with reason 2 in the classification are then subdivided.
+- Group the parameters with constraint relationships.
 Format your response as a JSON object. 
-The format is {constraint1:[param1,param2,..], constraint:[param1,param2,....], .....}.     
+The format is {group1:[param1,param2,..], group2:[param1,param2,....], .....}.    
 """
 
     CORNER_CASE = """

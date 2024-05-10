@@ -160,8 +160,8 @@ class SwaggerParser:
                 factor.set_example(schema.example)
             if schema.default is not None:
                 factor.set_default(schema.default)
-        # if schema.description is not None:
-        #     factor.set_description(schema.description)
+        if schema.description is not None:
+            factor.set_description(schema.description)
 
         return factor
 

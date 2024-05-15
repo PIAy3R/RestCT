@@ -11,7 +11,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 from src.config import Config
 from src.factor import *
 from src.languagemodel.fixer import *
-from src.template import SystemRole, Explanation, Task
+from src.template import SystemRole, INFO, Task
 
 
 def get_type(factor):
@@ -93,8 +93,9 @@ class BasicLanguageModel:
                 end_time = time.time()
                 logger.info(f"Time taken for response: {end_time - start_time}")
                 break
-            except:
-                print("Call failed, retrying...")
+            except Exception as e:
+                logger.error(f"Error in calling language model: {e}")
+                logger.error("Retrying...")
         return response.choices[0].message.content, messages
 
     def execute(self, message=None):
@@ -161,8 +162,7 @@ class ResponseModel(BasicLanguageModel):
             logger.info("No useful response to analyze")
             return ""
         param_list = [f.get_global_name for f in self._operation.get_leaf_factors()]
-        prompt = Explanation.EXPLANATION_RESPONSE + Explanation.TEXT_RESPONSE.format(self._operation, param_list,
-                                                                                     response_str_set) + Task.GROUP
+        prompt = INFO.EXTRACTION.format(self._operation, param_list, response_str_set) + Task.EXTRACTION
         return prompt
 
     def build_messages(self) -> List[Dict[str, str]]:
@@ -170,7 +170,7 @@ class ResponseModel(BasicLanguageModel):
         prompt = self.build_prompt()
         if prompt == "":
             return []
-        messages.append({"role": "system", "content": SystemRole.SYS_ROLE_RESPONSE})
+        messages.append({"role": "system", "content": SystemRole.SYS_ROLE_EXTRACTION})
         messages.append({"role": "user", "content": prompt})
         return messages
 
@@ -186,7 +186,7 @@ class ResponseModel(BasicLanguageModel):
 
 
 class ValueModel(BasicLanguageModel):
-    def __init__(self, operation: RestOp, manager, config: Config, param_to_ask, temperature: float = 0.9):
+    def __init__(self, operation: RestOp, manager, config: Config, param_to_ask, temperature: float = 0.5):
         super().__init__(operation, manager, config, temperature)
 
         self._param_to_ask: List[AbstractFactor] = param_to_ask
@@ -203,9 +203,8 @@ class ValueModel(BasicLanguageModel):
                     "required": p.required,
                 }
             )
-        prompt = Explanation.EXPLANATION_VALUE + Explanation.TEXT_VALUE.format(self._operation, info,
-                                                                               self._operation.constraints,
-                                                                               self._param_to_ask) + Task.SPECIAL_VALUE
+        prompt = INFO.VALUE.format(self._operation, info, self._manager.get_pict(self._operation),
+                                   self._param_to_ask) + Task.VALUE
         return prompt
 
     def build_messages(self) -> List[Dict[str, str]]:
@@ -248,12 +247,13 @@ class IDLModel(BasicLanguageModel):
     def build_messages(self):
         messages = []
         prompt = self.build_prompt()
-        messages.append({"role": "system", "content": SystemRole.SYS_ROLE_RESPONSE})
+        messages.append({"role": "system", "content": SystemRole.SYS_ROLE_IDL})
         messages.append({"role": "user", "content": prompt})
         return messages
 
     def build_prompt(self) -> str:
         info = []
+        leaves = [f.get_global_name for f in self._operation.get_leaf_factors()]
         for f in self._param_to_ask:
             info.append(
                 {
@@ -262,5 +262,47 @@ class IDLModel(BasicLanguageModel):
                     "description": f.description,
                 }
             )
-        prompt = Explanation.TEXT_RES_RESPONSE.format(info)
+        prompt = INFO.CONSTRAINT.format(leaves, info)
+        prompt += Task.IDL
+        return prompt
+
+
+class PICTModel(BasicLanguageModel):
+    def __init__(self, operation: RestOp, manager, config: Config, param_to_ask, temperature: float = 0.2):
+        super().__init__(operation, manager, config, temperature)
+
+        self._param_to_ask = param_to_ask
+        self._fixer = PICTFixer(manager, operation, param_to_ask)
+
+    def execute(self, message=None):
+        logger.debug(f"Call language model to extract pict for operation {self._operation}")
+        logger.debug(f"Param to ask: {self._param_to_ask}")
+        messages = self.build_messages()
+        response, messages = self.call(messages)
+        formatted_output, is_success = self._fixer.handle(response)
+        logger.info(f"Language model answer: {formatted_output}")
+        if is_success:
+            messages.append({"role": "user", "content": response})
+        return messages, formatted_output, is_success
+
+    def build_messages(self):
+        messages = []
+        prompt = self.build_prompt()
+        messages.append({"role": "system", "content": SystemRole.SYS_ROLE_PICT})
+        messages.append({"role": "user", "content": prompt})
+        return messages
+
+    def build_prompt(self) -> str:
+        info = []
+        leaves = [f.get_global_name for f in self._operation.get_leaf_factors()]
+        for f in self._param_to_ask:
+            info.append(
+                {
+                    "name": f.get_global_name,
+                    "type": get_type(f),
+                    "description": f.description,
+                }
+            )
+        prompt = INFO.CONSTRAINT.format(leaves, info)
+        prompt += Task.PICT
         return prompt

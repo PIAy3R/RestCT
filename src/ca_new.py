@@ -6,13 +6,11 @@ from loguru import logger
 
 from src.config import Config
 from src.executor import RestRequest
-from src.factor import Value, ValueType, AbstractFactor, StringFactor, EnumFactor, BooleanFactor
+from src.factor import Value, ValueType, StringFactor, EnumFactor, BooleanFactor
 from src.generator import ACTS, PICT
-from src.idl import IDL
-from src.info import RuntimeInfoManager
 from src.keywords import DataType
 from src.keywords import Method
-from src.languagemodel.llm import ResponseModel, ValueModel, IDLModel
+from src.languagemodel.llm import ResponseModel, ValueModel, IDLModel, PICTModel
 from src.nlp import Processor, Constraint
 from src.rest import RestOp, RestParam, PathParam, QueryParam, BodyParam, HeaderParam
 
@@ -29,7 +27,7 @@ class CA:
         self._a_strength = config.a_strength  # cover strength for all parameters
         self._e_strength = config.e_strength  # cover strength for essential parameters
 
-        self._manager = RuntimeInfoManager(config)
+        self._manager = kwargs.get("manager")
         self._executor = RestRequest(config.query, config.header, self._manager)
 
         self._data_path = config.data_path
@@ -240,9 +238,9 @@ class CA:
             for p in domain_map.keys():
                 if p not in history_ca_of_current_op[0].keys():
                     new_domain_map[p] = domain_map.get(p)
-                else:
-                    for i in range(len(history_ca_of_current_op)):
-                        history_ca_of_current_op[i][p] = AbstractFactor.mutate_value(history_ca_of_current_op[i].get(p))
+                # else:
+                #     for i in range(len(history_ca_of_current_op)):
+                #         history_ca_of_current_op[i][p] = AbstractFactor.mutate_value(history_ca_of_current_op[i].get(p))
 
             for c in operation.constraints:
                 for p in c.paramNames:
@@ -265,7 +263,7 @@ class CA:
 
     def _call_pict(self, domain_map, operation, strength, history_ca_of_current_op):
         try:
-            return self._pict.process(domain_map, operation, strength, history_ca_of_current_op)
+            return self._pict.process(domain_map, operation, strength, history_ca_of_current_op, self._manager)
         except Exception:
             logger.warning("call pict wrong")
 
@@ -308,6 +306,7 @@ class CAWithLLM(CA):
 
     def _handle_one_operation(self, index, operation: RestOp, chain: dict, sequence, loop_num) -> bool:
         success_url_tuple = tuple([op for op in sequence[:index] if op in chain.keys()] + [operation])
+        operation.is_re_handle = False
         if len(operation.parameters) == 0:
             logger.debug("operation has no parameter, execute and return")
             self._execute(operation, [{}], chain, success_url_tuple, [])
@@ -330,9 +329,10 @@ class CAWithLLM(CA):
 
         message = None
         if not operation.analysed:
-            message, is_success_llm = self._analyse_constraint(operation, e_response_list + a_response_list)
-            if is_success_llm:
-                operation.set_analysed()
+            message, is_success_response = self._analyse_response(operation, e_response_list + a_response_list)
+            if is_success_response:
+                operation.set_analyzed()
+            is_success_constraint = self._call_constraint_model(operation)
 
         if not (have_success_e and have_success_a and have_bug_e and have_bug_a):
             status_tuple = (have_success_e, have_success_a, have_bug_e, have_bug_a)
@@ -342,7 +342,7 @@ class CAWithLLM(CA):
 
         return is_break_e or is_break_a
 
-    def _analyse_constraint(self, operation, response_list):
+    def _analyse_response(self, operation, response_list):
         sc_set = set([sc for (sc, r) in response_list])
         message = None
         is_success = False
@@ -352,31 +352,14 @@ class CAWithLLM(CA):
             if not operation.analysed:
                 if len(operation.get_leaf_factors()) <= 1:
                     logger.info(f"only {len(operation.get_leaf_factors())} parameter, skip constraint analysis")
-                    operation.set_analysed()
+                    operation.set_analyzed()
                 else:
                     message, is_success = self._call_response_language_model(operation, response_list)
         return message, is_success
 
-    def _call_response_language_model(self, operation: RestOp, response_list: List[Tuple[int, object]]):
-        if len(response_list) == 0:
-            return
-        response_model = ResponseModel(operation, self._manager, self._config, response_list=response_list)
-        message, formatted_output, is_success = response_model.execute()
-        return message, is_success
-
-    def _set_llm_constraints(self, operation: RestOp):
-        self.add_llm_constraints(operation)
-        for f in self._manager.get_constraint_params(operation):
-            f.is_constraint = True
-
-    def add_llm_constraints(self, operation: RestOp):
-        for c_str in self._manager.get_idl(operation):
-            idl = IDL(c_str, operation)
-            idl.to_constraint()
-
 
     def _re_handle(self, index, operation, chain, sequence: list, loop_num: int, status_tuple: tuple, message) -> bool:
-        self._call_idl_model(operation)
+        operation.is_re_handle = True
         self._is_regen = True
         is_break = False
         if not (status_tuple[0] or status_tuple[1]):
@@ -388,9 +371,12 @@ class CAWithLLM(CA):
 
             history = []
             self._reset_constraints(operation, operation.parameters)
-            self._set_llm_constraints(operation)
+            self.set_llm_constraints(operation)
 
-            if self._manager.get_llm_examples(operation) is None or len(self._manager.get_llm_examples(operation)) == 0:
+            llm_examples = []
+            for f in operation.get_leaf_factors():
+                llm_examples += f.llm_examples
+            if len(llm_examples) == 0:
                 if not self._call_value_language_model(operation):
                     logger.info("no param to ask")
                     return False
@@ -409,15 +395,26 @@ class CAWithLLM(CA):
 
             is_break = is_break_e or is_break_a
 
-            if loop_num == 3 and self._manager.get_llm_examples(operation) is not None and not is_break:
+            if loop_num == 3 and not is_break:
                 logger.info(
-                    "previous example values provided by LLM of this operation did not work, clear the value")
-                self._manager.get_llm_examples(operation).clear()
-            return is_break
+                    f"previous result of the operation {operation} provided by LLM is not as expected. Clean the LLM examples")
+                for f in operation.get_leaf_factors():
+                    f.clear_llm_example()
+                if len(self._manager.get_constraint_params(operation)) > 0:
+                    operation.set_unanalyzed()
+                self._manager.clear_llm_result(operation)
+                return is_break
 
         if not (status_tuple[2] or status_tuple[3]):
             return True
             # logger.info("no 500 status code, use llm to help re-generate")
+
+    def _call_response_language_model(self, operation: RestOp, response_list: List[Tuple[int, object]]):
+        if len(response_list) == 0:
+            return
+        response_model = ResponseModel(operation, self._manager, self._config, response_list=response_list)
+        message, formatted_output, is_success = response_model.execute()
+        return message, is_success
 
     def _call_value_language_model(self, operation: RestOp):
         param_to_ask = []
@@ -425,7 +422,7 @@ class CAWithLLM(CA):
         for p in operation.parameters:
             if isinstance(p, PathParam):
                 if isinstance(p.factor, StringFactor):
-                    param_to_ask.append(p)
+                    param_to_ask.append(p.factor)
             if isinstance(p, QueryParam) or isinstance(p, BodyParam):
                 for l in p.factor.get_leaves():
                     if l.is_essential:
@@ -442,10 +439,16 @@ class CAWithLLM(CA):
             messages, formatted_output, is_success = value_model.execute()
             return is_success
 
-    def _call_idl_model(self, operation: RestOp):
+    def _call_constraint_model(self, operation: RestOp):
         param_to_ask = self._manager.get_constraint_params(operation)
+        if len(param_to_ask) == 0:
+            return [], False
         idl_model = IDLModel(operation, self._manager, self._config, param_to_ask)
-        idl_model.execute()
+        pict_model = PICTModel(operation, self._manager, self._config, param_to_ask)
+        idl_message, idl_output, idl_is_success = idl_model.execute()
+        pict_message, pict_output, pict_is_success = pict_model.execute()
+        return idl_is_success and pict_is_success
 
-    def _handle_constraint_response(self, message):
-        pass
+    def set_llm_constraints(self, operation: RestOp):
+        for f in self._manager.get_constraint_params(operation):
+            f.is_constraint = True

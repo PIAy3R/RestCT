@@ -51,7 +51,7 @@ class Config:
 
         # Language Model Settings
         self.use_llm = False
-        self.language_model = "gpt-4-turbo-2024-04-09"
+        self.language_model = "gpt-4o-2024-05-13"
         self.language_model_key = ""
 
     def check(self, settings: Namespace):

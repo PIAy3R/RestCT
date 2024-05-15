@@ -46,6 +46,7 @@ class AbstractFactor(metaclass=abc.ABCMeta):
         self.parent: Optional[AbstractFactor] = None
 
         self._examples: list = []
+        self._llm_examples: list = []
         self._default: Optional[Any] = None
         self.format = None
         self.is_constraint = False
@@ -263,6 +264,24 @@ class AbstractFactor(metaclass=abc.ABCMeta):
                 if e not in self._examples:
                     self._examples.append(e)
 
+    def set_llm_example(self, example):
+        parsed_example = self._spilt_example(example)
+        if parsed_example is not None:
+            for e in parsed_example:
+                if e not in self._llm_examples:
+                    self._llm_examples.append(e)
+
+    def clear_llm_example(self):
+        self._llm_examples.clear()
+
+    @property
+    def all_examples(self):
+        return self._examples + self._llm_examples
+
+    @property
+    def llm_examples(self):
+        return self._llm_examples
+
     @staticmethod
     def _spilt_example(example) -> Union[list, None]:
         if example is None:
@@ -290,8 +309,8 @@ class StringFactor(AbstractFactor):
         self.domain.clear()
         if self._default is not None:
             self.domain.append(Value(self._default, ValueType.Default, DataType.String))
-        if len(self._examples) > 0:
-            for example in self._examples:
+        if len(self.all_examples) > 0:
+            for example in self.all_examples:
                 self.domain.append(Value(example, ValueType.Example, DataType.String))
         if len(self.domain) < self.value_nums:
             while len(self.domain) < self.value_nums:
@@ -370,8 +389,8 @@ class IntegerFactor(AbstractFactor):
         self.domain.clear()
         if self._default is not None:
             self.domain.append(Value(self._default, ValueType.Default, DataType.Integer))
-        if len(self._examples) > 0:
-            for example in self._examples:
+        if len(self.all_examples) > 0:
+            for example in self.all_examples:
                 self.domain.append(Value(example, ValueType.Example, DataType.Integer))
         if len(self.domain) < self.value_nums:
             while len(self.domain) < self.value_nums:
@@ -402,8 +421,8 @@ class NumberFactor(AbstractFactor):
         self.domain.clear()
         if self._default is not None:
             self.domain.append(Value(self._default, ValueType.Default, DataType.Number))
-        if len(self._examples) > 0:
-            for example in self._examples:
+        if len(self.all_examples) > 0:
+            for example in self.all_examples:
                 self.domain.append(Value(example, ValueType.Example, DataType.Number))
         if len(self.domain) < self.value_nums:
             while len(self.domain) < self.value_nums:

@@ -125,27 +125,32 @@ class PICT:
         index = domain_map.index(global_name)
         return "P" + str(index)
 
-    def process(self, domain_map, op, strength: int, history_ca_of_current_op: List[dict]):
+    def process(self, domain_map, op, strength: int, history_ca_of_current_op: List[dict], manager):
         _name_mappings: dict[str, str] = {f"P{idx}": f for idx, f in enumerate(domain_map.keys())}
         _value_mappings = {f: {e_idx: _e for e_idx, _e in enumerate(domain_map[f])} for f_idx, f in
                            enumerate(domain_map.keys())}
         strength = min(strength, len(domain_map.keys()))
-        input_file = self._write_input(op, _name_mappings, _value_mappings, domain_map)
+        input_file = self._write_input(op, _name_mappings, _value_mappings, domain_map, manager)
         output_file, stdout, stderr = self._call_pict(input_file, strength)
         results = self._parse_output(_name_mappings, _value_mappings, output_file, history_ca_of_current_op)
         return results
 
-    def _write_input(self, operation, name_mappings, value_mappings, domain_map):
+    def _write_input(self, operation, name_mappings, value_mappings, domain_map, manager):
         input_file = self._workplace / "pict.txt"
         content = ""
         for transformed_name, f in name_mappings.items():
             content += f"{transformed_name}: {', '.join([str(idx) for idx in value_mappings.get(f).keys()])}\n"
         content += "\n"
-        if len(operation.constraints) > 0:
-            for c in operation.constraints:
-                c_str = self._transform_constraints(operation, domain_map, c)
-                for cs in c_str:
-                    content += cs + ";\n"
+        if not name_mappings.get("P0") == "history_ca_of_current_op":
+            if not operation.is_re_handle:
+                if len(operation.constraints) > 0:
+                    for c in operation.constraints:
+                        c_str = self._transform_constraints(operation, domain_map, c)
+                        for cs in c_str:
+                            content += cs + ";\n"
+            else:
+                c = self._write_llm_constraints(operation, manager, domain_map)
+                content += c
         with input_file.open("w") as fp:
             fp.write(content)
         return input_file
@@ -193,6 +198,9 @@ class PICT:
                     global_name = name_mappings[param_names[i]]
                     value = value_mappings[global_name][int(v)]
                     d[global_name] = value
+                if "history_ca_of_current_op" in d.keys():
+                    history_index = d.pop("history_ca_of_current_op")
+                    d.update(history[history_index.val])
                 results.append(d)
         return results
 
@@ -219,3 +227,46 @@ class PICT:
             c_str = f"IF {replaced[0]} THEN {replaced[1]}"
             transformed.append(c_str)
         return tuple(transformed)
+
+    def _write_llm_constraints(self, operation, manager, domain_map):
+        constraints = manager.get_pict(operation)
+        if len(constraints) == 0:
+            return ""
+        else:
+            content = ""
+            for c in constraints:
+                param_names = []
+                for p in operation.get_leaf_factors():
+                    if p.get_global_name in c:
+                        param_names.append(p.get_global_name)
+                for param_name in param_names:
+                    paramId = self.get_id(operation, param_name, list(domain_map.keys()))
+                    c = c.replace(param_name, f"[{paramId}]")
+                pattern = r'"([^"]+)"|\'([^\']+)\''
+                quoted_words = re.findall(pattern, c)
+                words = [word[0] if word[0] else word[1] for word in quoted_words]
+                if len(words) == 0:
+                    for param_name in param_names:
+                        value_list = [str(v.val) for v in domain_map[param_name]]
+                        for v_str in value_list:
+                            if v_str in c:
+                                c = c.replace(v_str, str(value_list.index(v_str)))
+                    content += c + "\n\n"
+                else:
+                    to_add = True
+                    for word in words:
+                        value_all = []
+                        for param_name in param_names:
+                            value_list = [str(v.val) for v in domain_map[param_name]]
+                            value_all += value_list
+                            for v_str in value_list:
+                                if v_str in c:
+                                    c = c.replace(v_str, str(value_list.index(v_str)))
+                        if word not in value_all:
+                            to_add = False
+                            break
+                    if to_add:
+                        c = c.replace("'", "")
+                        c = c.replace("\"", "")
+                        content += c + "\n\n"
+            return content

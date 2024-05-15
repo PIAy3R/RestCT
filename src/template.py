@@ -1,62 +1,64 @@
-class Tasks:
-    # COMBINATION = "combination"
-    SPECIAL_VALUE = "value"
-    CONSTRAINT = "constraint"
-
-
 class SystemRole:
     SYS_ROLE_VALUE = """
-You are a helpful assistant, helping check the constraint relationship in RESTful APIs and give some combination and 
-specific value for parameters.
+You are a helpful assistant, helping check the constraint relationship in RESTful APIs.
+
+Now I will explain the information to be provided.
+1. Sentence Request is the method and base url of a RESTful API request, and its description of the function.
+2. Parameter info is a list contains python dicts, records the corresponding operation's parameter information of the 
+   request. Each dict corresponds to a parameter, recording the information.
+3. Sentence Constraint records the constraint relationships of the parameters. 
+   If empty, there is no constraint.
+4. The Parameter list is a list where the parameters are a part of the parameters in the Parameter Info, and you need 
+   to provide example values for these parameters.
 """
 
-    SYS_ROLE_RESPONSE = """
-You are a helpful assistant, helping handle the issues related to RESTful APIs. 
-In RESTful API, there are constraint relationships between several parameters 
-defined as IDL(Inter-parameter Dependency Language). 
-All possible IDL realations are described as follows:
+    SYS_ROLE_IDL = """
+You are a helpful assistant, helping handle the issues related to RESTful APIs.
+In RESTful API, there are constraint relationships between several parameters, 
+we use IDL(Inter-parameter Dependency Language) to describe constraints.
+The IDL syntax is as follows:
 
-        Model:
-            Dependency*;
-        Dependency:
-            RelationalDependency | ArithmeticDependency |
-            ConditionalDependency | PredefinedDependency;
-        RelationalDependency:
-            Param RelationalOperator Param;
-        ArithmeticDependency:
-            Operation RelationalOperator DOUBLE;
-        Operation:
-            Param OperationContinuation |
-            '(' Operation ')' OperationContinuation?;
-        OperationContinuation:
-            ArithmeticOperator (Param | Operation);
-        ConditionalDependency:
-            'IF' Predicate 'THEN' Predicate;
-        Predicate:
-            Clause ClauseContinuation?;
-        Clause:
-            (Term | RelationalDependency | ArithmeticDependency
-            | PredefinedDependency) | 'NOT'? '(' Predicate ')';
-        Term:
-            'NOT'? (Param | ParamValueRelation);
-        Param:
-            ID | '[' ID ']';
-        ParamValueRelation:
-            Param '==' STRING('|'STRING)* |
-            Param 'LIKE' PATTERN_STRING | Param '==' BOOLEAN |
-            Param RelationalOperator DOUBLE;
-        ClauseContinuation:
-            ('AND' | 'OR') Predicate;
-        PredefinedDependency:
-            'NOT'? ('Or' | 'OnlyOne' | 'AllOrNone' |
-            'ZeroOrOne') '(' Clause (',' Clause)+ ')';
-        RelationalOperator:
-            '<' | '>' | '<=' | '>=' | '==' | '!=';
-        ArithmeticOperator:
-            '+' | '-' | '*' | '/';
+Model:
+    Dependency*;
+Dependency:
+    RelationalDependency | ArithmeticDependency |
+    ConditionalDependency | PredefinedDependency;
+RelationalDependency:
+    Param RelationalOperator Param;
+ArithmeticDependency:
+    Operation RelationalOperator DOUBLE;
+Operation:
+    Param OperationContinuation |
+    '(' Operation ')' OperationContinuation?;
+OperationContinuation:
+    ArithmeticOperator (Param | Operation);
+ConditionalDependency:
+    'IF' Predicate 'THEN' Predicate;
+Predicate:
+    Clause ClauseContinuation?;
+Clause:
+    (Term | RelationalDependency | ArithmeticDependency
+    | PredefinedDependency) | 'NOT'? '(' Predicate ')';
+Term:
+    'NOT'? (Param | ParamValueRelation);
+Param:
+    ID | '[' ID ']';
+ParamValueRelation:
+    Param '==' STRING('|'STRING)* |
+    Param 'LIKE' PATTERN_STRING | Param '==' BOOLEAN |
+    Param RelationalOperator DOUBLE;
+ClauseContinuation:
+    ('AND' | 'OR') Predicate;
+PredefinedDependency:
+    'NOT'? ('Or' | 'OnlyOne' | 'AllOrNone' |
+    'ZeroOrOne') '(' Clause (',' Clause)+ ')';
+RelationalOperator:
+    '<' | '>' | '<=' | '>=' | '==' | '!=';
+ArithmeticOperator:
+    '+' | '-' | '*' | '/';
 
 
-Here are the explanation of basic relations of IDL:
+Here are the explanation of some basic relations of IDL:
 
 Case1: Or(param_1, param_2)
 One of the two parameters is required.
@@ -80,142 +82,177 @@ Case7: IF Case_m THEN Case_n
 There exists a complex relationship between parameters, the rule can be combined.
 
 
- I will give you the name and description of the possibly constrained parameters in Info, 
- extract constraints from the description, if any. Not all given parameters are constrained.
+I will give you the name and description of the parameters that might have constraints in Info, 
+and i will give the name of all parameters in a list, extract constraints from the descriptions, if any.
+
+Note:
+1. Not all parameters are in Info are constrained, it’s just that we suspect there may be constraints.
+   Check carefully to see if there are any constraints.
+
  """
 
+    SYS_ROLE_PICT = """
+You are a helpful assistant, helping handle the issues related to RESTful APIs. 
+In RESTful API, there are constraint relationships between several parameters, 
+we use pict syntax to describe constraints:
 
-class Explanation:
-    EXPLANATION_VALUE = """
-Sentence Request is the method and base url of a RESTful API request, and its description of the function.
-Parameter info is a list contains python dicts, records the corresponding operation's parameter information of the request. A dict corresponds to a parameter, recording the information of the parameter.
-Sentence Constraint records the constraint relationships that may not documented in the Parameter info. If empty, there is no constraint.
-The Parameter list is a list where the parameters are a part of the parameters in the Parameter Info, and you need to provide example values for these parameters.
+Constraints   :: =
+  Constraint
+| Constraint Constraints
+
+Constraint    :: =
+  IF Predicate THEN Predicate ELSE Predicate;
+| Predicate;
+
+Predicate     :: =
+  Clause
+| Clause LogicalOperator Predicate
+
+Clause        :: =
+  Term
+| ( Predicate )
+| NOT Predicate
+
+Term          :: =
+  ParameterName Relation Value
+| ParameterName LIKE PatternString
+| ParameterName IN { ValueSet }
+| ParameterName Relation ParameterName
+
+ValueSet       :: =
+  Value
+| Value, ValueSet
+
+LogicalOperator ::=
+  AND 
+| OR
+
+Relation      :: = 
+  = 
+| <> 
+| >
+| >=
+| <
+| <=
+
+ParameterName ::= [String]
+
+Value         :: =
+  "String"
+| Number
+
+String        :: = whatever is typically regarded as a string of characters
+
+Number        :: = whatever is typically regarded as a number
+
+PatternString ::= string with embedded special characters (wildcards):
+                  * a series of characters of any length (can be zero)
+                  ? any one character
+                  
+
+I will give you the name and description of the parameters that might have constraints in Info, 
+and i will give the name of all parameters in a list, extract constraints from the descriptions, if any.
+
+Note:
+1. If a parameter does not need to appear, the value of it is None. 
+   If the parameter needs to appear, the value is not None. 
+   In conclusion, we use None to indicate whether a parameter is required
+2. Ignore possible example values appear in the descriptions. 
+3. Not all parameters are in Info are constrained, it’s just that we suspect there may be constraints.
+   Check carefully to see if there are any constraints.
 """
 
-    EXPLANATION_RESPONSE = """
+    SYS_ROLE_EXTRACTION = """
+You are a helpful assistant, helping handle the issues related to RESTful APIs. 
+
+RESTful API is an API style that uses URLs to locate resources and access operation resources. 
+
+After accessing resources, the server of RESTful API usually returns a response, including status code and content.
+ 
+The status code is used to inform the user whether the operation is successful and the corresponding situation. 
+
+The content usually has further instructions. When executed successfully, it may returns resource-related information. 
+When execution fails, it may contains error specific information. 
+
+Now you are an expert related to RESTful API and help analyze the content of the response the server send back.
+
 The main content to be analyzed consists of four parts.
-1.Sentence Request is the method and base url of a RESTful API request.
-2.The Parameter list is a list contains the parameters of the request. Some of these parameters may appear in the response content
-3.Content is a set that contains all unique responses, and all responses are server responses of different test cases 
-corresponding to the Sentence Request.
-4.Error Cause Classification is a description, because when the test case corresponding to the requests fails to 
-execute, the response of the server may contain the cause of the error. Error Cause Classification briefly classifies 
-these errors.
+1. Request is the method and base url of a RESTful API request.
+2. Parameter is a list contains the parameters of the request. 
+   Some of these parameters may appear in the response content.
+3. Content is a set that contains all unique responses, and all responses are server responses of different test cases
+   corresponding to the Request.
 """
 
-    TEXT_VALUE = """
+
+class INFO:
+    EXTRACTION = """
+Request:```{}```
+Parameter List:```{}```
+Content:```{}```
+"""
+
+    CONSTRAINT = """
+Parameter List: {}
+Info: {}    
+"""
+
+    VALUE = """
 Request:```{}```
 Parameter info:```{}```
 Constraint:```{}```
 Parameter list:```{}```
 """
 
-    TEXT_RESPONSE = """
-Request:```{}```
-Parameter List:```{}```
-Content:```{}```
-Error Cause Classification:
-1. The parameter is assigned the wrong value, which may be a format error or a semantic error.
-2. The constraints that need to be satisfied are broken between parameters of the Request.
-"""
-
-    TEXT_RES_VALUE = """
-Now you are given the information about the parameters in Parameter info.It is a list contains python dicts, each dict 
-corresponds to a parameter, recording the information of the parameter.
-Parameter info:```{}```
-Ask Parameter list:```{}```
-Constraint:```{}```
-"""
-
-    TEXT_RES_RESPONSE = """
-Info:```{}```
-
-Format your response as a JSON object.
-The key is string 'constraints', the value is a list of expressions.
-No duplicate constraints.
-Note: If there are only two parameters, then OnlyOne and OR are the same constraints, use OR.
-"""
-
-    TEXT_CONSTRAINT = """
-Parameter List:{}
-Info:{}
-
-Format your response as a JSON object.
-The key is a is a comma separated string contains all parameter names in the constraint, 
-and the value is the constraint relationship.
-Use the expressions in the cases to describe constraint relationship and replace with the actual parameter or expressions.
-"""
-
 
 class Task:
-    SPECIAL_VALUE = """
+    EXTRACTION = """
+Your task:
+- Analyse the information in the Content, and extract the parameters that may have constraints.
+  Format your response as a JSON object.
+  The format is {params: [param1, param2, ...]}.
+  If there are no parameters that may have constraints, return an empty list.
+  The format is {params: []}.
+"""
+
+    IDL = """
+Your task:
+- Give the IDL constraint of the constraint parameters.
+  Format your response as a JSON object.
+  The format is {constraints: [expression1, expression2, ...]}.
+"""
+
+    PICT = """
+Your task:
+- Give the PICT expression of the constraint parameters.
+  Format your response as a JSON object.
+  The format is {constraints: [expression1, expression2, ...]}.
+"""
+
+    VALUE = """
 Your task:
 - According to the Parameter info, give 3 possible values for each parameter in Parameter list. 
-The format is {parameter1:[value1,value2,...],parameter2:[value1,value2,...],...}.
+  Note getting example values from description, the example value of one parameter may appear 
+  in other parameters' descriptions.
+  Format your response as a JSON object.
+  The format is {parameter1:[value1,value2,...],parameter2:[value1,value2,...],...}.
 """
-
-    EXTRACT_PARAM = """
-Your task:
-- According to the information provided in Content, causes of errors are described in Error Cause Classification, 
-analyze which parameters in the Parameter list have problems that 
-cause the test case to fail to execute. Note that the parameter names in the response and the parameter names in the 
-Parameter List may not be exactly the same, and there will be format changes. Format your response as a JSON object. 
-The format is {params:[p1,p2,....]}.
-If there is no parameter extracted, please return an empty list. The format is {params:[]}
-"""
-
-    CLASSIFY = """
-Your task:
-- Classify the error reason of each parameter. Format your response as a JSON object. 
-The format is {p1:r, p2:r, .....}. Reason is expressed using numerical labels, now there are only two reasons.
-Due to the provision of multiple test cases, the reasons for errors caused by the same parameter in different test cases 
-are not the same. If multiple reasons occur, please classify them all.
-"""
-
-    GROUP = """
-Your task:
-- Group the parameters with constraint relationships.
-Format your response as a JSON object. 
-The format is {group1:[param1,param2,..], group2:[param1,param2,....], .....}.    
-"""
-
-    CORNER_CASE = """
-Your task:
-- According to the Parameter info, infer and give one most possible error value for each parameter in Parameter list 
-which can trigger the bugs. Format your response as a JSON object.
-The format is {parameter1:[value1,value2,...],parameter2:[value1,value2,...],...}.
-"""
-
-    RES_VALUE = """
-Your task:
-- According to the constraints above and the information in Parameter info, give 3 possible values for each parameter 
-in Ask Parameter list. 
-Format your response as a JSON object.
-The format is {parameter1:[value1,value2,...],parameter2:[value1,value2,...],...}. 
-Pay attention to the constraints between parameters, especially when some parameters take a value, another parameter 
-cannot take a value, or when some parameters take a value, the other parameter must take a certain value, etc.
-Pay attention to the constraint relationship when giving the value. If there is a constraint relationship between p1 
-and p2, the value of the corresponding position must comply with the constraint relationship.
-"""
-
-    ALL = """
-Your task:
-1. According to the information provided in Content, causes of errors are described in Error Cause Classification, 
-analyze which parameters in the Parameter list have problems that  cause the test case to fail to execute. 
-Note that the parameter names in the response and the parameter names in the Parameter List may not be exactly the 
-same, and there will be format changes.
-Format your response as a JSON object. The format is {params:[p1,p2,....]}. 
-If there is no parameter extracted, please return an empty list. The format is {params:[]}'}
-NOTE: The name in your response must be the name in the Parameter List.
-
-2. Group the parameters with constraint relationships.Format your response as a JSON object. 
-The format is {constraint1:[param1,param2,..], constraint:[param1,param2,....], .....}.
-If a parameter has constraints on multiple parameters, list these constraints separately.
-
-
-Finish the 2 tasks step by step because the results of the previous step may be useful for the next step. 
-Don't return the results of your thinking, just return the json result.
-If there is no result for a task, None is returned and all subsequent tasks return None.
-The format is {Task1:result, Task2:result}
-"""
+#
+#     CORNER_CASE = """
+# Your task:
+# - According to the Parameter info, infer and give one most possible error value for each parameter in Parameter list
+# which can trigger the bugs. Format your response as a JSON object.
+# The format is {parameter1:[value1,value2,...],parameter2:[value1,value2,...],...}.
+# """
+#
+#     RES_VALUE = """
+# Your task:
+# - According to the constraints above and the information in Parameter info, give 3 possible values for each parameter
+# in Ask Parameter list.
+# Format your response as a JSON object.
+# The format is {parameter1:[value1,value2,...],parameter2:[value1,value2,...],...}.
+# Pay attention to the constraints between parameters, especially when some parameters take a value, another parameter
+# cannot take a value, or when some parameters take a value, the other parameter must take a certain value, etc.
+# Pay attention to the constraint relationship when giving the value. If there is a constraint relationship between p1
+# and p2, the value of the corresponding position must comply with the constraint relationship.
+# """

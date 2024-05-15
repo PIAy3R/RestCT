@@ -1,6 +1,7 @@
+import csv
 import json
 from collections import defaultdict
-from typing import List, Dict, Tuple, Set, Union
+from typing import List, Dict, Tuple, Set
 
 from src.factor import Value, ValueType, AbstractFactor
 from src.keywords import DataType
@@ -19,9 +20,9 @@ class RuntimeInfoManager:
         self._unresolved_params: Set[Tuple[RestOp, str]] = set()
         self._llm_constraint_group: Dict[RestOp, List[List[AbstractFactor]]] = dict()
         self._param_to_ask: Dict[RestOp, List[str]] = dict()
-        self._llm_example_value_dict: Dict[RestOp, Dict[AbstractFactor, Union[dict, list]]] = dict()
         self._constraint_params: Dict[RestOp, Set[AbstractFactor]] = dict()
         self._idl: Dict[RestOp, List[str]] = dict()
+        self._pict: Dict[RestOp, List[str]] = dict()
 
         self._reused_essential_seq_dict: Dict[Tuple[RestOp], List[Dict[str, Value]]] = defaultdict(list)
         self._reused_all_p_seq_dict: dict = defaultdict(list)
@@ -131,12 +132,6 @@ class RuntimeInfoManager:
                     new_v_list.append(p)
             self._llm_constraint_group[operation].append(new_v_list)
 
-    def get_llm_examples(self, operation=None):
-        if operation is None:
-            return self._llm_example_value_dict
-        else:
-            return self._llm_example_value_dict.get(operation)
-
     def save_param(self, operation, param_list):
         self._param_to_ask[operation] = param_list
 
@@ -162,3 +157,34 @@ class RuntimeInfoManager:
 
     def get_idl(self, operation):
         return self._idl.get(operation, [])
+
+    def save_pict(self, operation, idl_list):
+        for idl_str in idl_list:
+            if self._pict.get(operation) is None:
+                self._pict[operation] = []
+            self._pict[operation].append(idl_str)
+
+    def get_pict(self, operation):
+        return self._pict.get(operation, [])
+
+    def clear_llm_result(self, operation):
+        self._constraint_params[operation].clear()
+        self._idl[operation].clear()
+        self._pict[operation].clear()
+
+    def save_constraint(self):
+        idl_save_path = f"{self._config.data_path}/idl.csv"
+        with open(idl_save_path, 'w', newline='') as f:
+            writer = csv.writer(f)
+            for op, constraints in self._idl.items():
+                if len(constraints) > 0:
+                    for c in constraints:
+                        writer.writerow([op.__repr__(), c])
+
+        pict_save_path = f"{self._config.data_path}/pict.csv"
+        with open(pict_save_path, 'w', newline='') as f:
+            writer = csv.writer(f)
+            for op, constraints in self._pict.items():
+                if len(constraints) > 0:
+                    for c in constraints:
+                        writer.writerow([op.__repr__(), c])

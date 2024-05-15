@@ -243,6 +243,7 @@ class RestOp:
 
         self.constraints: List[Constraint] = []
         self.analysed = False
+        self.is_re_handle = False
 
     def resolved_url(self, chain=None) -> str:
         path = self.path.resolve_path_param(self.parameters, chain)
@@ -258,8 +259,11 @@ class RestOp:
     def set_constraints(self, constraints: List[Constraint]):
         self.constraints = constraints
 
-    def set_analysed(self):
+    def set_analyzed(self):
         self.analysed = True
+
+    def set_unanalyzed(self):
+        self.analysed = False
 
     @property
     def id(self):

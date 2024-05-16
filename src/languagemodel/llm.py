@@ -33,7 +33,7 @@ def count_tokens(messages: List[Dict[str, str]], model: str) -> int:
     token_num = 0
     for message in messages:
         string_to_count = message.get("content")
-        encoding = tiktoken.encoding_for_model(model)
+        encoding = tiktoken.encoding_for_model("gpt-4-turbo")
         num_tokens = len(encoding.encode(string_to_count))
         token_num += num_tokens
     logger.info(f"token nums: {token_num}")
@@ -47,9 +47,8 @@ class BasicLanguageModel:
         self._temperature: float = temperature
         self._config = config
         self._data_path = Path(config.data_path)
-        self._constraint: list = operation.constraints
         self._llm_save_path = Path(config.data_path) / "prompt_response.csv"
-        self._max_query_len: int = 3900
+        # self._max_query_len: int = 3900
 
         self._model = config.language_model
         api_key = config.language_model_key
@@ -74,9 +73,9 @@ class BasicLanguageModel:
         if len(messages) == 0:
             return None, None
         num_tokens = count_tokens(messages, self._model)
-        if num_tokens > self._max_query_len:
-            logger.warning("Query length exceeds the maximum limit, please reduce the number of tokens")
-            return "", messages
+        # if num_tokens > self._max_query_len:
+        #     logger.warning("Query length exceeds the maximum limit, please reduce the number of tokens")
+        #     return "", messages
         while True:
             try:
                 start_time = time.time()
@@ -161,6 +160,7 @@ class ResponseModel(BasicLanguageModel):
         if len(response_str_set) == 0:
             logger.info("No useful response to analyze")
             return ""
+        self._manager.save_response_to_file()
         param_list = [f.get_global_name for f in self._operation.get_leaf_factors()]
         prompt = INFO.EXTRACTION.format(self._operation, param_list, response_str_set) + Task.EXTRACTION
         return prompt
@@ -178,7 +178,7 @@ class ResponseModel(BasicLanguageModel):
         logger.debug(f"Call language model to parse response for operation {self._operation}")
         messages = self.build_messages()
         response, messages = self.call(messages)
-        formatted_output, is_success = self._fixer.handle_res(response, self._data_path)
+        formatted_output, is_success = self._fixer.handle_res(response)
         logger.info(f"Language model answer: {formatted_output}")
         if is_success:
             messages.append({"role": "user", "content": response})
@@ -306,3 +306,70 @@ class PICTModel(BasicLanguageModel):
         prompt = INFO.CONSTRAINT.format(leaves, info)
         prompt += Task.PICT
         return prompt
+
+
+class SequenceModel:
+    def __init__(self, operations: List[RestOp], manager, config: Config, temperature: float = 0.5):
+        self._operations = operations
+        self._manager = manager
+        self._config = config
+        self._temperature = temperature
+
+        self._fixer = SequenceFixer(manager, operations)
+
+        self._model = config.language_model
+        api_key = config.language_model_key
+
+        self._client = OpenAI(api_key=api_key)
+
+    def build_messages(self):
+        messages = []
+        prompt = self.build_prompt()
+        messages.append({"role": "system", "content": SystemRole.SYS_ROLE_SEQUENCE})
+        messages.append({"role": "user", "content": prompt})
+        return messages
+
+    def build_prompt(self) -> str:
+        info = []
+        for operation in self._operations:
+            info.append(
+                {
+                    "name": operation.__repr__(),
+                    "description": operation.description,
+                }
+            )
+        prompt = INFO.SEQUENCE.format(info) + Task.SEQUENCE
+        return prompt
+
+    def execute(self):
+        logger.debug(f"Call language model to build sequence")
+        messages = self.build_messages()
+        response, messages = self.call(messages)
+        formatted_output, is_success = self._fixer.handle(response)
+        logger.info(f"Language model sequence: {formatted_output}")
+        return formatted_output, True
+
+    def call(self, messages) -> [str, List[Dict[str, str]]]:
+        if len(messages) == 0:
+            return None, None
+        count_tokens(messages, self._model)
+        while True:
+            try:
+                start_time = time.time()
+                response = self._client.chat.completions.create(
+                    model=self._model,
+                    messages=messages,
+                    temperature=self._temperature,
+                    top_p=0.99,
+                    frequency_penalty=0,
+                    presence_penalty=0,
+                    max_tokens=4096,
+                    response_format={"type": "json_object"}
+                )
+                end_time = time.time()
+                logger.info(f"Time taken for response: {end_time - start_time}")
+                break
+            except Exception as e:
+                logger.error(f"Error in calling language model: {e}")
+                logger.error("Retrying...")
+        return response.choices[0].message.content, messages

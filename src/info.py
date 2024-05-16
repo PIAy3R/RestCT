@@ -18,8 +18,8 @@ class RuntimeInfoManager:
         self.cost = 0
         self._response_chains: List[Dict[str, object]] = [dict()]
         self._unresolved_params: Set[Tuple[RestOp, str]] = set()
-        self._llm_constraint_group: Dict[RestOp, List[List[AbstractFactor]]] = dict()
-        self._param_to_ask: Dict[RestOp, List[str]] = dict()
+
+        self._param_to_ask: Dict[RestOp, Set[AbstractFactor]] = dict()
         self._constraint_params: Dict[RestOp, Set[AbstractFactor]] = dict()
         self._idl: Dict[RestOp, List[str]] = dict()
         self._pict: Dict[RestOp, List[str]] = dict()
@@ -28,7 +28,9 @@ class RuntimeInfoManager:
         self._reused_all_p_seq_dict: dict = defaultdict(list)
         self._ok_value_dict: Dict[str, List[Value]] = defaultdict(list)
         self._success_sequence: set = set()
+
         self._response_list = dict()
+        self._example_value_dict: Dict[str, Dict[str, List[str, int]]] = dict()
 
     def get_chains(self, max_chain_items):
         sortedList = sorted(self._response_chains, key=lambda c: len(c.keys()), reverse=True)
@@ -120,20 +122,12 @@ class RuntimeInfoManager:
         with open(save_path, 'w') as f:
             json.dump(save_list, f, indent=2)
 
-    def save_language_model_group(self, operation, grouped: dict):
-        if self._llm_constraint_group.get(operation) is None:
-            self._llm_constraint_group[operation] = []
-        for k, v in grouped.items():
-            if len(v) == 1:
-                continue
-            new_v_list = []
-            for p in operation.get_leaf_factors():
-                if p.get_global_name in v:
-                    new_v_list.append(p)
-            self._llm_constraint_group[operation].append(new_v_list)
-
-    def save_param(self, operation, param_list):
-        self._param_to_ask[operation] = param_list
+    def save_problem_param(self, operation, param_list):
+        if self._param_to_ask.get(operation) is None:
+            self._param_to_ask[operation] = set()
+        for f in operation.get_leaf_factors():
+            if f.get_global_name in param_list:
+                self._param_to_ask[operation].add(f)
 
     def get_problem_params(self, operation):
         return self._param_to_ask.get(operation, [])
@@ -141,13 +135,13 @@ class RuntimeInfoManager:
     def get_constraint_params(self, operation):
         return self._constraint_params.get(operation, [])
 
-    def save_constraint_params(self, operation, param_list):
+    def save_constraint_params(self, operation, c_str_list):
         if self._constraint_params.get(operation) is None:
             self._constraint_params[operation] = set()
         for f in operation.get_leaf_factors():
-            if f.get_global_name in param_list:
-                self._constraint_params[operation].add(f)
-                f.is_constraint = True
+            for c in c_str_list:
+                if f.get_global_name in c:
+                    self._constraint_params[operation].add(f)
 
     def save_idl(self, operation, idl_list):
         for idl_str in idl_list:
@@ -168,6 +162,7 @@ class RuntimeInfoManager:
         return self._pict.get(operation, [])
 
     def clear_llm_result(self, operation):
+        self._param_to_ask[operation].clear()
         self._constraint_params[operation].clear()
         self._idl[operation].clear()
         self._pict[operation].clear()
@@ -188,3 +183,23 @@ class RuntimeInfoManager:
                 if len(constraints) > 0:
                     for c in constraints:
                         writer.writerow([op.__repr__(), c])
+
+    def save_example_value(self, operation, response_list, ca):
+        if self._example_value_dict.get(operation.__repr__()) is None:
+            self._example_value_dict[operation.__repr__()] = dict()
+
+        for index, (sc, response) in enumerate(response_list):
+            if int(sc) < 400:
+                case = ca[index]
+                for p, v in case.items():
+                    for f in operation.get_leaf_factors():
+                        if f.get_global_name == p and v.val in f.llm_examples:
+                            if self._example_value_dict[operation.__repr__()].get(p) is None:
+                                self._example_value_dict[operation.__repr__()][p] = list()
+                            if v.val not in self._example_value_dict[operation.__repr__()][p]:
+                                self._example_value_dict[operation.__repr__()][p].append(v.val)
+
+    def save_value_to_file(self):
+        save_path = f"{self._config.data_path}/example_value.json"
+        with open(save_path, 'w') as f:
+            json.dump(self._example_value_dict, f, indent=2)

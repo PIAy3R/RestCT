@@ -242,6 +242,7 @@ class RestOp:
         self.responses: List[RestResponse] = []
 
         self.constraints: List[Constraint] = []
+        self.llm_constraints: List[str] = []
         self.analysed = False
         self.is_re_handle = False
 

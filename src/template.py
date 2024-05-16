@@ -1,6 +1,6 @@
 class SystemRole:
     SYS_ROLE_VALUE = """
-You are a helpful assistant, helping check the constraint relationship in RESTful APIs.
+You are a helpful assistant, helping handle the issues related to RESTful APIs.
 
 Now I will explain the information to be provided.
 1. Sentence Request is the method and base url of a RESTful API request, and its description of the function.
@@ -184,6 +184,21 @@ The main content to be analyzed consists of four parts.
    corresponding to the Request.
 """
 
+    SYS_ROLE_SEQUENCE = """
+You are an expert in RESTful API testing and help me solve problems in testing.
+In RESTful API, an operation usually consists of a http verb and an url.
+HTTP verbs include post, put get, delete, patch, etc. 
+For the same URL, post must be executed first and delete must be executed last.
+Different URLs may have hierarchical structures, such as /users and /users/name. 
+Usually longer URLs often depend on shorter URLs, so the operation of longer URLs often needs to be between 
+post and delete of shorter URLs.
+There may also be dependencies between some URLs that do not have a hierarchical relationship. 
+For example, some operations need to use the data results obtained by another operation.
+
+I will give you a list of REST operations, including the operation name and description of it, 
+and you need to sort them in the correct order of execution.
+"""
+
 
 class INFO:
     EXTRACTION = """
@@ -204,6 +219,10 @@ Constraint:```{}```
 Parameter list:```{}```
 """
 
+    SEQUENCE = """
+Operation List: {}
+"""
+
 
 class Task:
     EXTRACTION = """
@@ -213,6 +232,7 @@ Your task:
   The format is {params: [param1, param2, ...]}.
   If there are no parameters that may have constraints, return an empty list.
   The format is {params: []}.
+  Use the parameter name in the Parameter list.
 """
 
     IDL = """
@@ -237,22 +257,11 @@ Your task:
   Format your response as a JSON object.
   The format is {parameter1:[value1,value2,...],parameter2:[value1,value2,...],...}.
 """
-#
-#     CORNER_CASE = """
-# Your task:
-# - According to the Parameter info, infer and give one most possible error value for each parameter in Parameter list
-# which can trigger the bugs. Format your response as a JSON object.
-# The format is {parameter1:[value1,value2,...],parameter2:[value1,value2,...],...}.
-# """
-#
-#     RES_VALUE = """
-# Your task:
-# - According to the constraints above and the information in Parameter info, give 3 possible values for each parameter
-# in Ask Parameter list.
-# Format your response as a JSON object.
-# The format is {parameter1:[value1,value2,...],parameter2:[value1,value2,...],...}.
-# Pay attention to the constraints between parameters, especially when some parameters take a value, another parameter
-# cannot take a value, or when some parameters take a value, the other parameter must take a certain value, etc.
-# Pay attention to the constraint relationship when giving the value. If there is a constraint relationship between p1
-# and p2, the value of the corresponding position must comply with the constraint relationship.
-# """
+
+    SEQUENCE = """
+Your task:
+- Based on the rules and the given operations, give one sequence of operations that can execute correctly.
+  Note that just use the operations given in Operation List.
+  Format your response as a JSON object.
+  The format is {sequence: [operation1, operation2, ...]}.
+"""

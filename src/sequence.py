@@ -5,6 +5,7 @@ from typing import List, Set
 from loguru import logger
 
 from src.keywords import Method
+from src.languagemodel.llm import SequenceModel
 from src.rest import RestOp
 
 
@@ -152,3 +153,17 @@ class SCA:
 
     def is_all_covered(self):
         return len(self._uncovered) == 0
+
+
+class Sequence:
+    def __init__(self, operations: List[RestOp], config, manager):
+        self._operations = operations
+        self._config = config
+        self._manager = manager
+
+        self._seq_model = SequenceModel(self._operations, self._manager, self._config)
+
+    def build_sequence(self):
+        sequence, is_success = self._seq_model.execute()
+        if is_success:
+            return sequence

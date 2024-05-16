@@ -185,7 +185,8 @@ class CA:
                                                      is_essential)
                     logger.info(
                         f"{index + 1}-th operation essential parameters covering array size: {len(cover_array)}, "
-                        f"parameters: {len(cover_array[0]) if len(cover_array) > 0 else 0}, constraints: {len(operation.constraints)}")
+                        f"parameters: {len(cover_array[0]) if len(cover_array) > 0 else 0}, "
+                        f"constraints: {len(operation.constraints) if not operation.is_re_handle else len(operation.llm_constraints)}")
                 return self._execute(operation, cover_array, chain, success_url_tuple, history, is_reuse,
                                      True), cover_array
             else:
@@ -199,8 +200,10 @@ class CA:
                 else:
                     cover_array = self._cover_params(operation, parameter_list, chain, self._a_strength, history,
                                                      is_essential)
-                    logger.info(f"{index + 1}-th operation all parameters covering array size: {len(cover_array)}, "
-                                f"parameters: {len(cover_array[0]) if len(cover_array) > 0 else 0}, constraints: {len(operation.constraints)}")
+                    logger.info(
+                        f"{index + 1}-th operation essential parameters covering array size: {len(cover_array)}, "
+                        f"parameters: {len(cover_array[0]) if len(cover_array) > 0 else 0}, "
+                        f"constraints: {len(operation.constraints) if not operation.is_re_handle else len(operation.llm_constraints)}")
                 return self._execute(operation, cover_array, chain, success_url_tuple, history, is_reuse,
                                      False), cover_array
 
@@ -305,6 +308,7 @@ class CAWithLLM(CA):
         self._is_regenerate = False
 
     def _handle_one_operation(self, index, operation: RestOp, chain: dict, sequence, loop_num) -> bool:
+        self._is_regenerate = False
         success_url_tuple = tuple([op for op in sequence[:index] if op in chain.keys()] + [operation])
         operation.is_re_handle = False
         if len(operation.parameters) == 0:
@@ -325,6 +329,7 @@ class CAWithLLM(CA):
                                                                                   success_url_tuple, chain, history,
                                                                                   index,
                                                                                   False)
+        self._manager.save_response(operation, e_response_list + a_response_list, e_ca + a_ca)
         is_break_a = have_success_a or have_bug_a
 
         message = None
@@ -332,7 +337,7 @@ class CAWithLLM(CA):
             message, is_success_response = self._analyse_response(operation, e_response_list + a_response_list)
             if is_success_response:
                 operation.set_analyzed()
-            is_success_constraint = self._call_constraint_model(operation)
+            self._call_constraint_model(operation)
 
         if not (have_success_e and have_success_a and have_bug_e and have_bug_a):
             status_tuple = (have_success_e, have_success_a, have_bug_e, have_bug_a)
@@ -357,11 +362,9 @@ class CAWithLLM(CA):
                     message, is_success = self._call_response_language_model(operation, response_list)
         return message, is_success
 
-
     def _re_handle(self, index, operation, chain, sequence: list, loop_num: int, status_tuple: tuple, message) -> bool:
         operation.is_re_handle = True
-        self._is_regen = True
-        is_break = False
+        self._is_regenerate = True
         if not (status_tuple[0] or status_tuple[1]):
             logger.info("no success request, use llm to help re-generate")
             success_url_tuple = tuple([op for op in sequence[:index] if op in chain.keys()] + [operation])
@@ -370,7 +373,7 @@ class CAWithLLM(CA):
                 return True
 
             history = []
-            self._reset_constraints(operation, operation.parameters)
+            # self._reset_constraints(operation, operation.parameters)
             self.set_llm_constraints(operation)
 
             llm_examples = []
@@ -393,16 +396,25 @@ class CAWithLLM(CA):
                                                                                       False)
             is_break_a = have_success_a or have_bug_a
 
+            self._manager.save_response(operation, e_response_list + a_response_list, e_ca + a_ca)
+            self._manager.save_example_value(operation, e_response_list + a_response_list, e_ca + a_ca)
+
             is_break = is_break_e or is_break_a
 
-            if loop_num == 3 and not is_break:
-                logger.info(
-                    f"previous result of the operation {operation} provided by LLM is not as expected. Clean the LLM examples")
-                for f in operation.get_leaf_factors():
-                    f.clear_llm_example()
-                if len(self._manager.get_constraint_params(operation)) > 0:
-                    operation.set_unanalyzed()
-                self._manager.clear_llm_result(operation)
+            if loop_num == 3:
+                if not is_break:
+                    logger.info(f"loop 3 times for {operation}, no success request, clear the LLM results")
+                    is_break = True
+                    if len(self._manager.get_constraint_params(operation)) > 0:
+                        operation.set_unanalyzed()
+                    self._manager.clear_llm_result(operation)
+                if not is_break_e:
+                    for f in operation.get_leaf_factors():
+                        if f.is_essential:
+                            f.clear_llm_example()
+                if not is_break_a:
+                    for f in operation.get_leaf_factors():
+                        f.clear_llm_example()
                 return is_break
 
         if not (status_tuple[2] or status_tuple[3]):
@@ -425,11 +437,13 @@ class CAWithLLM(CA):
                     param_to_ask.append(p.factor)
             if isinstance(p, QueryParam) or isinstance(p, BodyParam):
                 for l in p.factor.get_leaves():
-                    if l.is_essential:
-                        if not isinstance(l, EnumFactor) and not isinstance(l, BooleanFactor):
-                            param_to_ask.append(l)
-                    elif l in problem_params:
+                    if not isinstance(l, EnumFactor) and not isinstance(l, BooleanFactor):
                         param_to_ask.append(l)
+                    # if l.is_essential:
+                    #     if not isinstance(l, EnumFactor) and not isinstance(l, BooleanFactor):
+                    #         param_to_ask.append(l)
+                    # elif l in problem_params:
+                    #     param_to_ask.append(l)
             else:
                 pass
         if len(param_to_ask) == 0:
@@ -440,15 +454,20 @@ class CAWithLLM(CA):
             return is_success
 
     def _call_constraint_model(self, operation: RestOp):
-        param_to_ask = self._manager.get_constraint_params(operation)
-        if len(param_to_ask) == 0:
+        param_to_ask = self._manager.get_problem_params(operation)
+        if len(param_to_ask) <= 1:
             return [], False
         idl_model = IDLModel(operation, self._manager, self._config, param_to_ask)
-        pict_model = PICTModel(operation, self._manager, self._config, param_to_ask)
         idl_message, idl_output, idl_is_success = idl_model.execute()
-        pict_message, pict_output, pict_is_success = pict_model.execute()
+        if len(idl_output['constraints']) > 0:
+            pict_param_to_ask = self._manager.get_constraint_params(operation)
+            pict_model = PICTModel(operation, self._manager, self._config, pict_param_to_ask)
+            pict_message, pict_output, pict_is_success = pict_model.execute()
+        else:
+            pict_is_success = True
         return idl_is_success and pict_is_success
 
     def set_llm_constraints(self, operation: RestOp):
         for f in self._manager.get_constraint_params(operation):
             f.is_constraint = True
+        operation.llm_constraints = self._manager.get_pict(operation)

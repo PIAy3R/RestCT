@@ -203,3 +203,6 @@ class RuntimeInfoManager:
         save_path = f"{self._config.data_path}/example_value.json"
         with open(save_path, 'w') as f:
             json.dump(self._example_value_dict, f, indent=2)
+
+    def save_path_binding(self, path, binding):
+        self._path_binding[path] = binding

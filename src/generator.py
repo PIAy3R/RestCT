@@ -239,7 +239,7 @@ class PICT:
                 for p in operation.get_leaf_factors():
                     if p.get_global_name in c:
                         param_names.append(p.get_global_name)
-                for param_name in param_names:
+                for param_name in sorted(param_names, reverse=True, key=lambda s: len(s)):
                     paramId = self.get_id(operation, param_name, list(domain_map.keys()))
                     c = c.replace(param_name, f"[{paramId}]")
                 pattern = r'"([^"]+)"|\'([^\']+)\''

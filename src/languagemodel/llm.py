@@ -177,6 +177,8 @@ class ResponseModel(BasicLanguageModel):
     def execute(self, message=None):
         logger.debug(f"Call language model to parse response for operation {self._operation}")
         messages = self.build_messages()
+        if len(messages) == 0:
+            return [], "", True
         response, messages = self.call(messages)
         formatted_output, is_success = self._fixer.handle_res(response)
         logger.info(f"Language model answer: {formatted_output}")
@@ -373,3 +375,46 @@ class SequenceModel:
                 logger.error(f"Error in calling language model: {e}")
                 logger.error("Retrying...")
         return response.choices[0].message.content, messages
+
+
+class PathbindingModel(BasicLanguageModel):
+    def __init__(self, operation: RestOp, manager, config: Config, param_to_ask, chain, temperature: float = 0.2):
+        super().__init__(operation, manager, config, temperature)
+
+        self._param_to_ask = param_to_ask
+        self._chain = chain
+        self._fixer = PathbindingFixer(manager, operation, param_to_ask)
+
+    def execute(self, message=None):
+        logger.debug(
+            f"Call language model to bind path parameter to the value of previous for the operation {self._operation}")
+        logger.debug(f"Param to ask: {self._param_to_ask}")
+        messages = self.build_messages()
+        response, messages = self.call(messages)
+        formatted_output, is_success = self._fixer.handle(response)
+        logger.info(f"Language model answer: {formatted_output}")
+        if is_success:
+            messages.append({"role": "user", "content": response})
+        return messages, formatted_output, is_success
+
+    def build_messages(self):
+        messages = []
+        prompt = self.build_prompt()
+        messages.append({"role": "system", "content": SystemRole.SYS_ROLE_PATHBINDING})
+        messages.append({"role": "user", "content": prompt})
+        return messages
+
+    def build_prompt(self) -> str:
+        info = []
+        leaves = [f.get_global_name for f in self._operation.get_leaf_factors()]
+        for f in self._param_to_ask:
+            info.append(
+                {
+                    "name": f.get_global_name,
+                    "type": get_type(f),
+                    "description": f.description,
+                }
+            )
+        prompt = INFO.BINDING.format(self._operation, info, )
+        prompt += Task.BINDING
+        return prompt

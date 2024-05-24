@@ -99,9 +99,12 @@ class AbstractFactor(metaclass=abc.ABCMeta):
             if similarity_max > 0 and right_value not in response_value:
                 dynamic_values.append((predecessor, right_path))
         if len(dynamic_values) > 0:
-            self.domain = [Value(v, ValueType.Dynamic, DataType.NULL) for v in dynamic_values]
+            if len(dynamic_values) < self.value_nums:
+                self.gen_domain()
+            for v in dynamic_values:
+                self.domain.append(Value(v, ValueType.Dynamic, DataType.NULL))
         else:
-            self.domain = [Value(1, ValueType.Default, DataType.Integer)]
+            self.gen_domain()
 
     @staticmethod
     def _analyse_url_relation(op, op_set, param_name):
@@ -406,6 +409,15 @@ class IntegerFactor(AbstractFactor):
                 else:
                     random_int = random.randint(-10000, 10000)
                     self.domain.append(Value(random_int, ValueType.Random, DataType.Integer))
+        value_list = [v.val for v in self.domain]
+        if 0 not in value_list:
+            self.domain.append(Value(0, ValueType.Default, DataType.Integer))
+        if 1 not in value_list:
+            self.domain.append(Value(1, ValueType.Default, DataType.Integer))
+        if -1 not in value_list:
+            self.domain.append(Value(-1, ValueType.Default, DataType.Integer))
+        if 2 not in value_list:
+            self.domain.append(Value(2, ValueType.Default, DataType.Integer))
         if not self.required:
             self.domain.append(Value(None, ValueType.NULL, DataType.Integer))
 
@@ -438,6 +450,15 @@ class NumberFactor(AbstractFactor):
                 else:
                     random_int = random.uniform(-1000, 1000)
                     self.domain.append(Value(random_int, ValueType.Random, DataType.Number))
+        value_list = [int(v.val) for v in self.domain]
+        if 0 not in value_list:
+            self.domain.append(Value(0.0, ValueType.Default, DataType.Integer))
+        if 1 not in value_list:
+            self.domain.append(Value(1.0, ValueType.Default, DataType.Integer))
+        if -1 not in value_list:
+            self.domain.append(Value(-1.0, ValueType.Default, DataType.Integer))
+        if 2 not in value_list:
+            self.domain.append(Value(2.0, ValueType.Default, DataType.Integer))
         if not self.required:
             self.domain.append(Value(None, ValueType.NULL, DataType.Number))
 

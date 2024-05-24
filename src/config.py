@@ -125,6 +125,9 @@ class Config:
         else:
             self.exp_name = settings.exp_name
 
+        if settings.server is not None and settings.server != "":
+            self.server = settings.server
+
         data_path = Path(f"{self.output_folder}/{self.exp_name}")
         self.data_path = data_path.as_posix()
         if not data_path.exists():
@@ -186,7 +189,7 @@ def parse_args(root_path) -> Namespace:
     parser.add_argument('--interval',
                         help='snapshot interval',
                         type=float, required=False, default=.10)
-    parser.add_argument('--forwardingURL',
+    parser.add_argument('--server',
                         help='set if the forwarding proxy is running',
                         type=str, required=False, default="")
     parser.add_argument('--UseLLM',

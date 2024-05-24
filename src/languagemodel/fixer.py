@@ -84,3 +84,17 @@ class SequenceFixer(OutputFixer):
                     op_sequence.append(op)
                     break
         return op_sequence, True
+
+
+class PathbindingFixer(OutputFixer):
+    def __init__(self, manager, operation: RestOp, parameter_list=None):
+        super().__init__(manager)
+
+        self._operation = operation
+        self._parameter_list = parameter_list
+
+    def handle(self, output_to_process):
+        json_output = json.loads(output_to_process)
+        path_binding = json_output["path_binding"]
+        self._manager.save_path_binding(self._operation, path_binding)
+        return path_binding, True

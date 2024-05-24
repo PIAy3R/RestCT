@@ -199,6 +199,24 @@ I will give you a list of REST operations, including the operation name and desc
 and you need to sort them in the correct order of execution.
 """
 
+    SYS_ROLE_PATHBINDING = """"
+You are a helpful assistant, helping handle the issues related to RESTful APIs. 
+
+In RESTful API, an operation usually consists of a http verb and an url.
+HTTP verbs include post, put get, delete, patch, etc. 
+For the same URL, post must be executed first and delete must be executed last.
+Different URLs may have hierarchical structures, such as /users and /users/name. 
+Usually longer URLs often depend on shorter URLs, so the operation of longer URLs often 
+needs to be between post and delete of shorter URLs.
+
+In Restful API, there may be dependencies between different operations. 
+Especially the path parameter of an operation, its parameter value may come from the server feedback after the previous 
+operation was successful.
+
+I will give you the parameter information of the path parameter of the RESTful API operation that you need to handle, 
+along with the name of the previous successful operation(arranged in order of execution).    
+"""
+
 
 class INFO:
     EXTRACTION = """
@@ -221,6 +239,12 @@ Parameter list:```{}```
 
     SEQUENCE = """
 Operation List: {}
+"""
+
+    BINDING = """
+operation: {}
+Parameter info: {}
+Previous operation: {}
 """
 
 
@@ -264,4 +288,14 @@ Your task:
   Note that just use the operations given in Operation List.
   Format your response as a JSON object.
   The format is {sequence: [operation1, operation2, ...]}.
+"""
+
+    BINDING = """
+Your task: 
+According to the name of previous operation and the information of the path parameter, 
+infer the results of which operations the values of these parameters may depend on.
+Answer at most three likely operations.
+Format you answer as a JSON object.
+The format is {param1:[operation1, operation2, operation3], param2:[operation1, operation2, operation3], ...}.
+Possibly higher operations are placed first.
 """

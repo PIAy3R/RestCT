@@ -65,9 +65,9 @@ class Processor:
         self.nlp = spacy.load("en_core_web_sm")
         self._paramEntities: List = paramEntities
         self._descriptions = [factor.description for factor in paramEntities]
-        assert len({factor.name for factor in paramEntities}) == len(paramEntities)
-        self._paramNames = {factor.name: factor for factor in paramEntities}
-        self._paramValues = {factor.name: factor.enum_value for factor in paramEntities if
+        assert len({factor.get_global_name for factor in paramEntities}) == len(paramEntities)
+        self._paramNames = {factor.get_global_name: factor for factor in paramEntities}
+        self._paramValues = {factor.get_global_name: factor.enum_value for factor in paramEntities if
                              isinstance(factor, EnumFactor)}
 
         self.setNLP()
@@ -111,7 +111,7 @@ class Processor:
         for c in constraints:
             paramNames.update(c.paramNames)
         for factor in self._paramEntities:
-            if factor.name in paramNames:
+            if factor.get_global_name in paramNames:
                 factor.is_constraint = True
             else:
                 factor.is_constraint = False

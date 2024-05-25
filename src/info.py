@@ -23,6 +23,7 @@ class RuntimeInfoManager:
         self._constraint_params: Dict[RestOp, Set[AbstractFactor]] = dict()
         self._idl: Dict[RestOp, List[str]] = dict()
         self._pict: Dict[RestOp, List[str]] = dict()
+        self._path_binding: Dict[RestOp, Dict[AbstractFactor, List[RestOp]]] = dict()
 
         self._reused_essential_seq_dict: Dict[Tuple[RestOp], List[Dict[str, Value]]] = defaultdict(list)
         self._reused_all_p_seq_dict: dict = defaultdict(list)

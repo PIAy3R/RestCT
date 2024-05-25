@@ -4,7 +4,7 @@ from pathlib import Path
 
 from loguru import logger
 
-from src.ca_new import CA, CAWithLLM
+from src.ca import CA, CAWithLLM
 from src.info import RuntimeInfoManager
 from src.sequence import Sequence
 from src.statistics import Statistics

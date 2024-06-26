@@ -3,7 +3,7 @@ import time
 
 class CustomLogger:
     def __init__(self):
-        self.file_path = "/scripts/proxy_out/gpt3/gitlab/gitlab-repository_proxy.txt"
+        self.file_path = "/Users/naariah/Documents/Python_Codes/RestCT/scripts/proxy_out/gpt3/emb/features-service_proxy.txt"
 
     def write_to_file(self, content):
         with open(self.file_path, "a") as f:

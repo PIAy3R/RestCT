@@ -147,7 +147,11 @@ class PICT:
                     for c in operation.constraints:
                         c_str = self._transform_constraints(operation, domain_map, c)
                         for cs in c_str:
-                            content += cs + ";\n"
+                            content += cs
+                            if cs[-1] != ";":
+                                content += ";\n"
+                            else:
+                                content += "\n"
             else:
                 c = self._write_llm_constraints(operation, manager, domain_map)
                 content += c

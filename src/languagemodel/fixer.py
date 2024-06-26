@@ -86,7 +86,28 @@ class SequenceFixer(OutputFixer):
         return op_sequence, True
 
 
-class PathbindingFixer(OutputFixer):
+class PathFixer(OutputFixer):
+    def __init__(self, manager, operation: RestOp, operations, parameter_list=None):
+        super().__init__(manager)
+
+        self._operation = operation
+        self._operations = operations
+        self._parameter_list = parameter_list
+
+    def handle_param(self, output_to_process):
+        try:
+            json_output = json.loads(output_to_process)
+            self._manager.bind_param(self._operation, json_output, self._parameter_list, self._operations)
+            return json_output, True
+        except:
+            return None, False
+
+    def handle_operation(self, response):
+        json_output = json.loads(response)
+        self._manager.save_path_binding(self._operation, json_output, self._parameter_list, self._operations)
+
+
+class ErrorValueFixer(OutputFixer):
     def __init__(self, manager, operation: RestOp, parameter_list=None):
         super().__init__(manager)
 
@@ -94,7 +115,4 @@ class PathbindingFixer(OutputFixer):
         self._parameter_list = parameter_list
 
     def handle(self, output_to_process):
-        json_output = json.loads(output_to_process)
-        path_binding = json_output["path_binding"]
-        self._manager.save_path_binding(self._operation, path_binding)
-        return path_binding, True
+        pass

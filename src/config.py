@@ -53,6 +53,7 @@ class Config:
         self.use_llm = False
         self.language_model = "gpt-4o-2024-05-13"
         self.language_model_key = ""
+        self.base_url = None
 
     def check(self, settings: Namespace):
         curFile = Path(__file__)
@@ -125,6 +126,12 @@ class Config:
         else:
             self.exp_name = settings.exp_name
 
+        if settings.model is not None and settings.model != "":
+            self.language_model = settings.model
+
+        if settings.base_url is not None and settings.base_url != "":
+            self.base_url = settings.base_url
+
         if settings.server is not None and settings.server != "":
             self.server = settings.server
 
@@ -196,7 +203,13 @@ def parse_args(root_path) -> Namespace:
                         help='whether to use language model',
                         type=str, required=True, default="False")
     parser.add_argument('--LanguageModelKey',
-                        help='api key of languae model',
+                        help='api key of language model',
+                        type=str, required=False, default="")
+    parser.add_argument('--model',
+                        help='language model',
+                        type=str, required=False, default="")
+    parser.add_argument('--base_url',
+                        help='base url of the llm',
                         type=str, required=False, default="")
 
     args = parser.parse_args()

@@ -53,7 +53,10 @@ class BasicLanguageModel:
         self._model = config.language_model
         api_key = config.language_model_key
 
-        self._client = OpenAI(api_key=api_key)
+        if config.base_url is not None:
+            self._client = OpenAI(api_key=api_key, base_url=config.base_url)
+        else:
+            self._client = OpenAI(api_key=api_key)
 
     @property
     def temperature(self) -> float:
@@ -76,7 +79,8 @@ class BasicLanguageModel:
         # if num_tokens > self._max_query_len:
         #     logger.warning("Query length exceeds the maximum limit, please reduce the number of tokens")
         #     return "", messages
-        while True:
+        count = 0
+        while count < 3:
             try:
                 start_time = time.time()
                 response = self._client.chat.completions.create(
@@ -91,11 +95,12 @@ class BasicLanguageModel:
                 )
                 end_time = time.time()
                 logger.info(f"Time taken for response: {end_time - start_time}")
-                break
+                return response.choices[0].message.content, messages
             except Exception as e:
                 logger.error(f"Error in calling language model: {e}")
                 logger.error("Retrying...")
-        return response.choices[0].message.content, messages
+                count += 1
+        return "", messages
 
     def execute(self, message=None):
         pass
@@ -188,7 +193,7 @@ class ResponseModel(BasicLanguageModel):
 
 
 class ValueModel(BasicLanguageModel):
-    def __init__(self, operation: RestOp, manager, config: Config, param_to_ask, temperature: float = 0.5):
+    def __init__(self, operation: RestOp, manager, config: Config, param_to_ask, temperature: float = 0.3):
         super().__init__(operation, manager, config, temperature)
 
         self._param_to_ask: List[AbstractFactor] = param_to_ask
@@ -229,7 +234,7 @@ class ValueModel(BasicLanguageModel):
 
 
 class IDLModel(BasicLanguageModel):
-    def __init__(self, operation: RestOp, manager, config: Config, param_to_ask, temperature: float = 0.2):
+    def __init__(self, operation: RestOp, manager, config: Config, param_to_ask, temperature: float = 0.1):
         super().__init__(operation, manager, config, temperature)
 
         self._param_to_ask = param_to_ask
@@ -270,7 +275,7 @@ class IDLModel(BasicLanguageModel):
 
 
 class PICTModel(BasicLanguageModel):
-    def __init__(self, operation: RestOp, manager, config: Config, param_to_ask, temperature: float = 0.2):
+    def __init__(self, operation: RestOp, manager, config: Config, param_to_ask, temperature: float = 0.1):
         super().__init__(operation, manager, config, temperature)
 
         self._param_to_ask = param_to_ask
@@ -322,12 +327,24 @@ class SequenceModel:
         self._model = config.language_model
         api_key = config.language_model_key
 
-        self._client = OpenAI(api_key=api_key)
+        if config.base_url is not None:
+            self._client = OpenAI(api_key=api_key, base_url=config.base_url)
+        else:
+            self._client = OpenAI(api_key=api_key)
 
     def build_messages(self):
         messages = []
         prompt = self.build_prompt()
+        prompt = prompt + Task.SEQUENCE
         messages.append({"role": "system", "content": SystemRole.SYS_ROLE_SEQUENCE})
+        messages.append({"role": "user", "content": prompt})
+        return messages
+
+    def build_error_messages(self):
+        messages = []
+        prompt = self.build_prompt()
+        prompt = prompt + Task.SEQ_ERROR
+        messages.append({"role": "system", "content": SystemRole.SYS_ROLE_SEQ_ERROR})
         messages.append({"role": "user", "content": prompt})
         return messages
 
@@ -340,12 +357,21 @@ class SequenceModel:
                     "description": operation.description,
                 }
             )
-        prompt = INFO.SEQUENCE.format(info) + Task.SEQUENCE
+        prompt = INFO.SEQUENCE.format(info)
         return prompt
 
     def execute(self):
         logger.debug(f"Call language model to build sequence")
         messages = self.build_messages()
+        response, messages = self.call(messages)
+        formatted_output, is_success = self._fixer.handle(response)
+        logger.info(f"Language model sequence: {formatted_output}")
+        return formatted_output, True
+
+    def execute_error(self, operations: List[RestOp]):
+        self._operations = operations
+        logger.debug(f"Call language model to build error sequence")
+        messages = self.build_error_messages()
         response, messages = self.call(messages)
         formatted_output, is_success = self._fixer.handle(response)
         logger.info(f"Language model sequence: {formatted_output}")
@@ -377,36 +403,49 @@ class SequenceModel:
         return response.choices[0].message.content, messages
 
 
-class PathbindingModel(BasicLanguageModel):
-    def __init__(self, operation: RestOp, manager, config: Config, param_to_ask, chain, temperature: float = 0.2):
+class PathModel(BasicLanguageModel):
+    def __init__(self, operation: RestOp, manager, config: Config, param_to_ask, operations, temperature: float = 0.2):
         super().__init__(operation, manager, config, temperature)
 
         self._param_to_ask = param_to_ask
-        self._chain = chain
-        self._fixer = PathbindingFixer(manager, operation, param_to_ask)
+        self._operations = operations
+        self._fixer = PathFixer(manager, operation, operations, param_to_ask)
 
     def execute(self, message=None):
         logger.debug(
-            f"Call language model to bind path parameter to the value of previous for the operation {self._operation}")
+            f"Call language model to bind path parameter to the parameter of response of previous operation for the operation {self._operation}")
         logger.debug(f"Param to ask: {self._param_to_ask}")
+        logger.info(f"Step 1: Confirm the operations")
         messages = self.build_messages()
         response, messages = self.call(messages)
-        formatted_output, is_success = self._fixer.handle(response)
-        logger.info(f"Language model answer: {formatted_output}")
+        self._fixer.handle_operation(response)
+        logger.info(f"Step 2: Confirm the parameter")
+        messages = self.build_messages(messages)
+        if len(messages) == 0:
+            return [], "", False
+        response, messages = self.call(messages)
+        formatted_output, is_success = self._fixer.handle_param(response)
         if is_success:
+            logger.info(f"Language model answer: {formatted_output}")
             messages.append({"role": "user", "content": response})
         return messages, formatted_output, is_success
 
-    def build_messages(self):
-        messages = []
-        prompt = self.build_prompt()
-        messages.append({"role": "system", "content": SystemRole.SYS_ROLE_PATHBINDING})
-        messages.append({"role": "user", "content": prompt})
+    def build_messages(self, messages=None):
+        if messages is None:
+            messages = []
+            prompt = self.build_prompt()
+            messages.append({"role": "system", "content": SystemRole.SYS_ROLE_PATHBINDING})
+            messages.append({"role": "user", "content": prompt})
+        else:
+            prompt = self.build_response_prompt()
+            if prompt == "":
+                return []
+            messages.append({"role": "user", "content": prompt})
         return messages
 
     def build_prompt(self) -> str:
         info = []
-        leaves = [f.get_global_name for f in self._operation.get_leaf_factors()]
+        operations = self._manager.get_success_responses().keys()
         for f in self._param_to_ask:
             info.append(
                 {
@@ -415,6 +454,37 @@ class PathbindingModel(BasicLanguageModel):
                     "description": f.description,
                 }
             )
-        prompt = INFO.BINDING.format(self._operation, info, )
+        prompt = INFO.BINDING.format(self._operation, info, operations)
         prompt += Task.BINDING
         return prompt
+
+    def build_response_prompt(self):
+        info = dict()
+        factor_operations_dict = self._manager.get_path_binding(self._operation)
+        try:
+            for f in self._param_to_ask:
+                related_operations = factor_operations_dict.get(f)
+                operation = related_operations[0]
+                response = self._manager.get_success_responses(operation)[0]
+                info[operation.__repr__()] = response
+            prompt = INFO.FIND_PARAMS.format(info) + Task.FIND_PARAMS
+            return prompt
+        except:
+            return ""
+
+
+class ErrorValueModel(BasicLanguageModel):
+    def __init__(self, operation: RestOp, manager, config: Config, temperature: float = 0.3):
+        super().__init__(operation, manager, config, temperature)
+
+        self._fixer = ErrorValueFixer(manager, operation, param_to_ask)
+
+    def execute(self, message=None):
+        logger.debug(f"Call language model to try to find bugs for operation {self._operation}")
+        messages = self.build_messages()
+        response, messages = self.call(messages)
+        formatted_output, is_success = self._fixer.handle(response)
+        logger.info(f"Language model answer: {formatted_output}")
+        if is_success:
+            messages.append({"role": "user", "content": response})
+        return messages, formatted_output, is_success

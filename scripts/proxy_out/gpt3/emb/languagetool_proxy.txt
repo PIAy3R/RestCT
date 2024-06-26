@@ -1,0 +1,522 @@
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: 
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:18
+Status Code: 400
+Response Data: Error: Missing 'text' or 'data' parameter
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: text=G%26is28WPlY%27Ja%3F%5E%60620%2BQ%23n%7Dg4%40%5CMEa%5E%5Bq%21%7D%23~HQkK%5EGOG%7Bsd%7C%21L%3EF&data=iTvxaHJXtWiETEquqqHPwfOZjECxOhZejHPMnEMEfvewVMIYaWweFVabobko&language=&altLanguages=BZPrphIZIZiSctggAFDjbXijSlkivltpAkBQMlCNuiavnQOnCUjVOyXCuDknVYFjyglEhBKXZmkAYmwgrzYNkDcVUtzabGUiVw&motherTongue=eKjjfLnalmipgdTdSIlJrGZbKppYrqmeziGNCCNJmkoUZ&preferredVariants=CvppbJbnYvzsLijiCizMHsyvGenNoEwSTAn&enabledRules=&enabledCategories=H73U3panLYM%3DTstRy22R%29Es%2BCMR-bi%27%60%7C%60%24N6&disabledCategories=O%28%5CQc52~4U%29NP%5Bqu1%7D%261%5BwkbMbNuJzq%3CG%22H%3A77_%3Cz%21jd%26%5D0%3F%2Buz%5Db%293%3DgM%23mh7JOnRuB%3Aql6Q%2CT
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:18
+Status Code: 400
+Response Data: Error: Set only 'text' or 'data' parameter, not both
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: data=&language=JQbkXDIihmZiGSeZm&motherTongue=uTHS%27%24K%40%2FJ2E%3BW%60grN8%28%25X%5Dc_%3FSVa%5EksIH%7C5SYwL3p5%23%3E&preferredVariants=&enabledRules=%21%60%60rA1la%60X_V%21TA&disabledRules=&enabledCategories=&disabledCategories=EqwBudSOTdLyfKMpDoBBXBciufnJMueAsCcjjJKLqWuycazmOAHshkAoXWOYOyFdInshhFffQHY&enabledOnly=True
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:18
+Status Code: 400
+Response Data: Error: 'data' key in JSON requires 'text' or 'annotation' key
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: text=kpDRBsunHtrHizHIleMAKCRxDAPDnftxxxZXJhgIyqhPxYPySkebeS&language=U%3Ced%27by6UE%2Cs_%21C5D&altLanguages=BZPrphIZIZiSctggAFDjbXijSlkivltpAkBQMlCNuiavnQOnCUjVOyXCuDknVYFjyglEhBKXZmkAYmwgrzYNkDcVUtzabGUiVw&preferredVariants=m%25Jw0P%7C%5C6dMs%5E%7Dx%60tgs%22AH%3Byy-xL%60%21Pl7%23%28&enabledRules=VtsNIMmOtszRBny&disabledRules=FQzeSisXXeAihpRp&enabledCategories=JdrVCfUnXVusnLzjrALyNDuNzeaYbioiyURaP&enabledOnly=False
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:18
+Status Code: 400
+Response Data: Error: You specified 'preferredVariants' but you didn't specify 'language=auto'
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: text=&data=iTvxaHJXtWiETEquqqHPwfOZjECxOhZejHPMnEMEfvewVMIYaWweFVabobko&altLanguages=Zh4cpSbQs4GM%3DzTi%2376c6sn%3D%2Aa.d%3Af%3F%2BPHts%5E-d%2Cn1L%7Csr%5Cc%7CC%28%22hF%5B%297gE%28r-y%2Fzk%2Ca9%7B6_PzMgb4%3Al%26G8%3EyFOE%3CP9%5Df.L%5BW%3D&motherTongue=&disabledRules=5c%3FV%25%3FPB%3BQ7%3ElCQN&enabledCategories=&disabledCategories=&enabledOnly=False
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:18
+Status Code: 400
+Response Data: Error: Set only 'text' or 'data' parameter, not both
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: data=iTvxaHJXtWiETEquqqHPwfOZjECxOhZejHPMnEMEfvewVMIYaWweFVabobko&language=JQbkXDIihmZiGSeZm&altLanguages=&motherTongue=eKjjfLnalmipgdTdSIlJrGZbKppYrqmeziGNCCNJmkoUZ&preferredVariants=CvppbJbnYvzsLijiCizMHsyvGenNoEwSTAn&disabledRules=FQzeSisXXeAihpRp&enabledOnly=True
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:18
+Status Code: 500
+Response Data: Error: Internal Error: Unrecognized token 'iTvxaHJXtWiETEquqqHPwfOZjECxOhZejHPMnEMEfvewVMIYaWweFVabobko': was expecting (JSON String, Number, Array, Object or token 'null', 'true' or 'false')
+ at [Source: (String)"iTvxaHJXtWiETEquqqHPwfOZjECxOhZejHPMnEMEfvewVMIYaWweFVabobko"; line: 1, column: 61]
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: text=kpDRBsunHtrHizHIleMAKCRxDAPDnftxxxZXJhgIyqhPxYPySkebeS&data=q%5EekaADcmJxLy%2C%60N%22fPfg%5DD52oP%25%22b%5DaF%5C8r%7Djh%5CF%3F%2F%7C%5Dv%24X6%23v%26kRJ%7DUhZq&language=&motherTongue=eKjjfLnalmipgdTdSIlJrGZbKppYrqmeziGNCCNJmkoUZ&preferredVariants=&enabledRules=VtsNIMmOtszRBny&disabledRules=&disabledCategories=&enabledOnly=False
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:18
+Status Code: 400
+Response Data: Error: Set only 'text' or 'data' parameter, not both
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: text=G%26is28WPlY%27Ja%3F%5E%60620%2BQ%23n%7Dg4%40%5CMEa%5E%5Bq%21%7D%23~HQkK%5EGOG%7Bsd%7C%21L%3EF&data=q%5EekaADcmJxLy%2C%60N%22fPfg%5DD52oP%25%22b%5DaF%5C8r%7Djh%5CF%3F%2F%7C%5Dv%24X6%23v%26kRJ%7DUhZq&altLanguages=&motherTongue=&preferredVariants=&enabledRules=%21%60%60rA1la%60X_V%21TA&enabledCategories=JdrVCfUnXVusnLzjrALyNDuNzeaYbioiyURaP
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:18
+Status Code: 400
+Response Data: Error: Set only 'text' or 'data' parameter, not both
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: text=G%26is28WPlY%27Ja%3F%5E%60620%2BQ%23n%7Dg4%40%5CMEa%5E%5Bq%21%7D%23~HQkK%5EGOG%7Bsd%7C%21L%3EF&data=iTvxaHJXtWiETEquqqHPwfOZjECxOhZejHPMnEMEfvewVMIYaWweFVabobko&language=U%3Ced%27by6UE%2Cs_%21C5D&altLanguages=Zh4cpSbQs4GM%3DzTi%2376c6sn%3D%2Aa.d%3Af%3F%2BPHts%5E-d%2Cn1L%7Csr%5Cc%7CC%28%22hF%5B%297gE%28r-y%2Fzk%2Ca9%7B6_PzMgb4%3Al%26G8%3EyFOE%3CP9%5Df.L%5BW%3D&motherTongue=uTHS%27%24K%40%2FJ2E%3BW%60grN8%28%25X%5Dc_%3FSVa%5EksIH%7C5SYwL3p5%23%3E&preferredVariants=m%25Jw0P%7C%5C6dMs%5E%7Dx%60tgs%22AH%3Byy-xL%60%21Pl7%23%28&enabledRules=VtsNIMmOtszRBny&disabledRules=5c%3FV%25%3FPB%3BQ7%3ElCQN&enabledCategories=H73U3panLYM%3DTstRy22R%29Es%2BCMR-bi%27%60%7C%60%24N6&disabledCategories=EqwBudSOTdLyfKMpDoBBXBciufnJMueAsCcjjJKLqWuycazmOAHshkAoXWOYOyFdInshhFffQHY&enabledOnly=True
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:18
+Status Code: 400
+Response Data: Error: Set only 'text' or 'data' parameter, not both
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: text=&language=JQbkXDIihmZiGSeZm&altLanguages=Zh4cpSbQs4GM%3DzTi%2376c6sn%3D%2Aa.d%3Af%3F%2BPHts%5E-d%2Cn1L%7Csr%5Cc%7CC%28%22hF%5B%297gE%28r-y%2Fzk%2Ca9%7B6_PzMgb4%3Al%26G8%3EyFOE%3CP9%5Df.L%5BW%3D&preferredVariants=&disabledRules=&enabledCategories=H73U3panLYM%3DTstRy22R%29Es%2BCMR-bi%27%60%7C%60%24N6&disabledCategories=O%28%5CQc52~4U%29NP%5Bqu1%7D%261%5BwkbMbNuJzq%3CG%22H%3A77_%3Cz%21jd%26%5D0%3F%2Buz%5Db%293%3DgM%23mh7JOnRuB%3Aql6Q%2CT
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:18
+Status Code: 400
+Response Data: Error: You specified 'preferredVariants' but you didn't specify 'language=auto'
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: text=kpDRBsunHtrHizHIleMAKCRxDAPDnftxxxZXJhgIyqhPxYPySkebeS&data=&altLanguages=BZPrphIZIZiSctggAFDjbXijSlkivltpAkBQMlCNuiavnQOnCUjVOyXCuDknVYFjyglEhBKXZmkAYmwgrzYNkDcVUtzabGUiVw&enabledRules=%21%60%60rA1la%60X_V%21TA&disabledRules=5c%3FV%25%3FPB%3BQ7%3ElCQN&disabledCategories=O%28%5CQc52~4U%29NP%5Bqu1%7D%261%5BwkbMbNuJzq%3CG%22H%3A77_%3Cz%21jd%26%5D0%3F%2Buz%5Db%293%3DgM%23mh7JOnRuB%3Aql6Q%2CT&enabledOnly=True
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:18
+Status Code: 400
+Response Data: Error: Set only 'text' or 'data' parameter, not both
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: language=&motherTongue=&preferredVariants=m%25Jw0P%7C%5C6dMs%5E%7Dx%60tgs%22AH%3Byy-xL%60%21Pl7%23%28&enabledRules=&disabledRules=FQzeSisXXeAihpRp&enabledCategories=&disabledCategories=EqwBudSOTdLyfKMpDoBBXBciufnJMueAsCcjjJKLqWuycazmOAHshkAoXWOYOyFdInshhFffQHY
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:18
+Status Code: 400
+Response Data: Error: Missing 'text' or 'data' parameter
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: text=&data=&language=&altLanguages=&motherTongue=uTHS%27%24K%40%2FJ2E%3BW%60grN8%28%25X%5Dc_%3FSVa%5EksIH%7C5SYwL3p5%23%3E&enabledCategories=JdrVCfUnXVusnLzjrALyNDuNzeaYbioiyURaP&disabledCategories=&enabledOnly=True
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:18
+Status Code: 400
+Response Data: Error: Set only 'text' or 'data' parameter, not both
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: data=q%5EekaADcmJxLy%2C%60N%22fPfg%5DD52oP%25%22b%5DaF%5C8r%7Djh%5CF%3F%2F%7C%5Dv%24X6%23v%26kRJ%7DUhZq&language=U%3Ced%27by6UE%2Cs_%21C5D&altLanguages=&preferredVariants=&enabledRules=&disabledRules=5c%3FV%25%3FPB%3BQ7%3ElCQN&enabledCategories=H73U3panLYM%3DTstRy22R%29Es%2BCMR-bi%27%60%7C%60%24N6&disabledCategories=
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:18
+Status Code: 500
+Response Data: Error: Internal Error: Unrecognized token 'q': was expecting (JSON String, Number, Array, Object or token 'null', 'true' or 'false')
+ at [Source: (String)"q^ekaADcmJxLy,`N"fPfg]D52oP%"b]aF\8r}jh\F?/|]v$X6#v&kRJ}UhZq"; line: 1, column: 2]
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: text=kpDRBsunHtrHizHIleMAKCRxDAPDnftxxxZXJhgIyqhPxYPySkebeS&data=q%5EekaADcmJxLy%2C%60N%22fPfg%5DD52oP%25%22b%5DaF%5C8r%7Djh%5CF%3F%2F%7C%5Dv%24X6%23v%26kRJ%7DUhZq&language=JQbkXDIihmZiGSeZm&altLanguages=&preferredVariants=CvppbJbnYvzsLijiCizMHsyvGenNoEwSTAn&enabledRules=VtsNIMmOtszRBny&enabledCategories=&disabledCategories=EqwBudSOTdLyfKMpDoBBXBciufnJMueAsCcjjJKLqWuycazmOAHshkAoXWOYOyFdInshhFffQHY&enabledOnly=False
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:18
+Status Code: 400
+Response Data: Error: Set only 'text' or 'data' parameter, not both
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: data=&altLanguages=Zh4cpSbQs4GM%3DzTi%2376c6sn%3D%2Aa.d%3Af%3F%2BPHts%5E-d%2Cn1L%7Csr%5Cc%7CC%28%22hF%5B%297gE%28r-y%2Fzk%2Ca9%7B6_PzMgb4%3Al%26G8%3EyFOE%3CP9%5Df.L%5BW%3D&motherTongue=uTHS%27%24K%40%2FJ2E%3BW%60grN8%28%25X%5Dc_%3FSVa%5EksIH%7C5SYwL3p5%23%3E&preferredVariants=&enabledRules=%21%60%60rA1la%60X_V%21TA&disabledRules=FQzeSisXXeAihpRp&enabledCategories=H73U3panLYM%3DTstRy22R%29Es%2BCMR-bi%27%60%7C%60%24N6&disabledCategories=O%28%5CQc52~4U%29NP%5Bqu1%7D%261%5BwkbMbNuJzq%3CG%22H%3A77_%3Cz%21jd%26%5D0%3F%2Buz%5Db%293%3DgM%23mh7JOnRuB%3Aql6Q%2CT&enabledOnly=False
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:18
+Status Code: 400
+Response Data: Error: 'data' key in JSON requires 'text' or 'annotation' key
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: text=kpDRBsunHtrHizHIleMAKCRxDAPDnftxxxZXJhgIyqhPxYPySkebeS&data=&language=U%3Ced%27by6UE%2Cs_%21C5D&altLanguages=Zh4cpSbQs4GM%3DzTi%2376c6sn%3D%2Aa.d%3Af%3F%2BPHts%5E-d%2Cn1L%7Csr%5Cc%7CC%28%22hF%5B%297gE%28r-y%2Fzk%2Ca9%7B6_PzMgb4%3Al%26G8%3EyFOE%3CP9%5Df.L%5BW%3D&motherTongue=uTHS%27%24K%40%2FJ2E%3BW%60grN8%28%25X%5Dc_%3FSVa%5EksIH%7C5SYwL3p5%23%3E&enabledRules=&disabledRules=
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:18
+Status Code: 400
+Response Data: Error: Set only 'text' or 'data' parameter, not both
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: text=G%26is28WPlY%27Ja%3F%5E%60620%2BQ%23n%7Dg4%40%5CMEa%5E%5Bq%21%7D%23~HQkK%5EGOG%7Bsd%7C%21L%3EF&data=&language=JQbkXDIihmZiGSeZm&altLanguages=&motherTongue=&preferredVariants=m%25Jw0P%7C%5C6dMs%5E%7Dx%60tgs%22AH%3Byy-xL%60%21Pl7%23%28&enabledRules=VtsNIMmOtszRBny&disabledRules=&enabledCategories=JdrVCfUnXVusnLzjrALyNDuNzeaYbioiyURaP&disabledCategories=O%28%5CQc52~4U%29NP%5Bqu1%7D%261%5BwkbMbNuJzq%3CG%22H%3A77_%3Cz%21jd%26%5D0%3F%2Buz%5Db%293%3DgM%23mh7JOnRuB%3Aql6Q%2CT&enabledOnly=False
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:18
+Status Code: 400
+Response Data: Error: Set only 'text' or 'data' parameter, not both
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: text=&data=iTvxaHJXtWiETEquqqHPwfOZjECxOhZejHPMnEMEfvewVMIYaWweFVabobko&motherTongue=eKjjfLnalmipgdTdSIlJrGZbKppYrqmeziGNCCNJmkoUZ&preferredVariants=&enabledRules=&disabledRules=5c%3FV%25%3FPB%3BQ7%3ElCQN&enabledCategories=JdrVCfUnXVusnLzjrALyNDuNzeaYbioiyURaP&disabledCategories=EqwBudSOTdLyfKMpDoBBXBciufnJMueAsCcjjJKLqWuycazmOAHshkAoXWOYOyFdInshhFffQHY&enabledOnly=True
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:18
+Status Code: 400
+Response Data: Error: Set only 'text' or 'data' parameter, not both
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: text=G%26is28WPlY%27Ja%3F%5E%60620%2BQ%23n%7Dg4%40%5CMEa%5E%5Bq%21%7D%23~HQkK%5EGOG%7Bsd%7C%21L%3EF&data=iTvxaHJXtWiETEquqqHPwfOZjECxOhZejHPMnEMEfvewVMIYaWweFVabobko&language=U%3Ced%27by6UE%2Cs_%21C5D&preferredVariants=m%25Jw0P%7C%5C6dMs%5E%7Dx%60tgs%22AH%3Byy-xL%60%21Pl7%23%28&enabledRules=%21%60%60rA1la%60X_V%21TA&disabledCategories=&enabledOnly=False
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:18
+Status Code: 400
+Response Data: Error: Set only 'text' or 'data' parameter, not both
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: text=G%26is28WPlY%27Ja%3F%5E%60620%2BQ%23n%7Dg4%40%5CMEa%5E%5Bq%21%7D%23~HQkK%5EGOG%7Bsd%7C%21L%3EF&data=q%5EekaADcmJxLy%2C%60N%22fPfg%5DD52oP%25%22b%5DaF%5C8r%7Djh%5CF%3F%2F%7C%5Dv%24X6%23v%26kRJ%7DUhZq&language=U%3Ced%27by6UE%2Cs_%21C5D&altLanguages=BZPrphIZIZiSctggAFDjbXijSlkivltpAkBQMlCNuiavnQOnCUjVOyXCuDknVYFjyglEhBKXZmkAYmwgrzYNkDcVUtzabGUiVw&motherTongue=eKjjfLnalmipgdTdSIlJrGZbKppYrqmeziGNCCNJmkoUZ&disabledRules=FQzeSisXXeAihpRp&enabledCategories=&disabledCategories=O%28%5CQc52~4U%29NP%5Bqu1%7D%261%5BwkbMbNuJzq%3CG%22H%3A77_%3Cz%21jd%26%5D0%3F%2Buz%5Db%293%3DgM%23mh7JOnRuB%3Aql6Q%2CT&enabledOnly=True
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:18
+Status Code: 400
+Response Data: Error: Set only 'text' or 'data' parameter, not both
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: text=&language=&motherTongue=&preferredVariants=CvppbJbnYvzsLijiCizMHsyvGenNoEwSTAn&enabledRules=%21%60%60rA1la%60X_V%21TA&disabledRules=5c%3FV%25%3FPB%3BQ7%3ElCQN&enabledCategories=H73U3panLYM%3DTstRy22R%29Es%2BCMR-bi%27%60%7C%60%24N6&enabledOnly=True
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:18
+Status Code: 400
+Response Data: Error: Missing 'language' parameter, e.g. 'language=en-US' for American English or 'language=fr' for French
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: altLanguages=BZPrphIZIZiSctggAFDjbXijSlkivltpAkBQMlCNuiavnQOnCUjVOyXCuDknVYFjyglEhBKXZmkAYmwgrzYNkDcVUtzabGUiVw&motherTongue=uTHS%27%24K%40%2FJ2E%3BW%60grN8%28%25X%5Dc_%3FSVa%5EksIH%7C5SYwL3p5%23%3E&preferredVariants=CvppbJbnYvzsLijiCizMHsyvGenNoEwSTAn&enabledRules=VtsNIMmOtszRBny&disabledRules=&enabledCategories=JdrVCfUnXVusnLzjrALyNDuNzeaYbioiyURaP&disabledCategories=&enabledOnly=False
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:18
+Status Code: 400
+Response Data: Error: Missing 'text' or 'data' parameter
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: text=G%26is28WPlY%27Ja%3F%5E%60620%2BQ%23n%7Dg4%40%5CMEa%5E%5Bq%21%7D%23~HQkK%5EGOG%7Bsd%7C%21L%3EF&language=JQbkXDIihmZiGSeZm&altLanguages=BZPrphIZIZiSctggAFDjbXijSlkivltpAkBQMlCNuiavnQOnCUjVOyXCuDknVYFjyglEhBKXZmkAYmwgrzYNkDcVUtzabGUiVw&motherTongue=&disabledCategories=EqwBudSOTdLyfKMpDoBBXBciufnJMueAsCcjjJKLqWuycazmOAHshkAoXWOYOyFdInshhFffQHY
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:18
+Status Code: 400
+Response Data: Error: 'JQbkXDIihmZiGSeZm' is not a language code known to LanguageTool. Supported language codes are: ar, ast-ES, be-BY, br-FR, ca-ES, ca-ES-valencia, da-DK, de, de-AT, de-CH, de-DE, de-DE-x-simple-language, el-GR, en, en-AU, en-CA, en-GB, en-NZ, en-US, en-ZA, eo, es, fa, fr, ga-IE, gl-ES, it, ja-JP, km-KH, nl, pl-PL, pt, pt-AO, pt-BR, pt-MZ, pt-PT, ro-RO, ru-RU, sk-SK, sl-SI, sv, ta-IN, tl-PH, uk-UA, zh-CN. The list of languages is read from META-INF/org/languagetool/language-module.properties in the Java classpath. See https://dev.languagetool.org/java-api for details.
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: text=&language=JQbkXDIihmZiGSeZm&altLanguages=Zh4cpSbQs4GM%3DzTi%2376c6sn%3D%2Aa.d%3Af%3F%2BPHts%5E-d%2Cn1L%7Csr%5Cc%7CC%28%22hF%5B%297gE%28r-y%2Fzk%2Ca9%7B6_PzMgb4%3Al%26G8%3EyFOE%3CP9%5Df.L%5BW%3D&motherTongue=eKjjfLnalmipgdTdSIlJrGZbKppYrqmeziGNCCNJmkoUZ&preferredVariants=m%25Jw0P%7C%5C6dMs%5E%7Dx%60tgs%22AH%3Byy-xL%60%21Pl7%23%28&enabledRules=&disabledRules=FQzeSisXXeAihpRp&enabledCategories=H73U3panLYM%3DTstRy22R%29Es%2BCMR-bi%27%60%7C%60%24N6&disabledCategories=&enabledOnly=False
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:18
+Status Code: 400
+Response Data: Error: You specified 'preferredVariants' but you didn't specify 'language=auto'
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: text=&data=iTvxaHJXtWiETEquqqHPwfOZjECxOhZejHPMnEMEfvewVMIYaWweFVabobko&language=U%3Ced%27by6UE%2Cs_%21C5D&altLanguages=BZPrphIZIZiSctggAFDjbXijSlkivltpAkBQMlCNuiavnQOnCUjVOyXCuDknVYFjyglEhBKXZmkAYmwgrzYNkDcVUtzabGUiVw&motherTongue=&preferredVariants=&enabledRules=VtsNIMmOtszRBny&disabledRules=&enabledCategories=
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:18
+Status Code: 400
+Response Data: Error: Set only 'text' or 'data' parameter, not both
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: text=kpDRBsunHtrHizHIleMAKCRxDAPDnftxxxZXJhgIyqhPxYPySkebeS&data=q%5EekaADcmJxLy%2C%60N%22fPfg%5DD52oP%25%22b%5DaF%5C8r%7Djh%5CF%3F%2F%7C%5Dv%24X6%23v%26kRJ%7DUhZq&language=&altLanguages=Zh4cpSbQs4GM%3DzTi%2376c6sn%3D%2Aa.d%3Af%3F%2BPHts%5E-d%2Cn1L%7Csr%5Cc%7CC%28%22hF%5B%297gE%28r-y%2Fzk%2Ca9%7B6_PzMgb4%3Al%26G8%3EyFOE%3CP9%5Df.L%5BW%3D&motherTongue=uTHS%27%24K%40%2FJ2E%3BW%60grN8%28%25X%5Dc_%3FSVa%5EksIH%7C5SYwL3p5%23%3E&preferredVariants=m%25Jw0P%7C%5C6dMs%5E%7Dx%60tgs%22AH%3Byy-xL%60%21Pl7%23%28&enabledCategories=H73U3panLYM%3DTstRy22R%29Es%2BCMR-bi%27%60%7C%60%24N6&disabledCategories=O%28%5CQc52~4U%29NP%5Bqu1%7D%261%5BwkbMbNuJzq%3CG%22H%3A77_%3Cz%21jd%26%5D0%3F%2Buz%5Db%293%3DgM%23mh7JOnRuB%3Aql6Q%2CT&enabledOnly=True
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:18
+Status Code: 400
+Response Data: Error: Set only 'text' or 'data' parameter, not both
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: data=&language=U%3Ced%27by6UE%2Cs_%21C5D&altLanguages=Zh4cpSbQs4GM%3DzTi%2376c6sn%3D%2Aa.d%3Af%3F%2BPHts%5E-d%2Cn1L%7Csr%5Cc%7CC%28%22hF%5B%297gE%28r-y%2Fzk%2Ca9%7B6_PzMgb4%3Al%26G8%3EyFOE%3CP9%5Df.L%5BW%3D&motherTongue=eKjjfLnalmipgdTdSIlJrGZbKppYrqmeziGNCCNJmkoUZ&preferredVariants=CvppbJbnYvzsLijiCizMHsyvGenNoEwSTAn&enabledRules=%21%60%60rA1la%60X_V%21TA&enabledCategories=JdrVCfUnXVusnLzjrALyNDuNzeaYbioiyURaP&disabledCategories=O%28%5CQc52~4U%29NP%5Bqu1%7D%261%5BwkbMbNuJzq%3CG%22H%3A77_%3Cz%21jd%26%5D0%3F%2Buz%5Db%293%3DgM%23mh7JOnRuB%3Aql6Q%2CT&enabledOnly=False
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:18
+Status Code: 400
+Response Data: Error: 'data' key in JSON requires 'text' or 'annotation' key
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: text=&data=q%5EekaADcmJxLy%2C%60N%22fPfg%5DD52oP%25%22b%5DaF%5C8r%7Djh%5CF%3F%2F%7C%5Dv%24X6%23v%26kRJ%7DUhZq&language=&disabledRules=5c%3FV%25%3FPB%3BQ7%3ElCQN&disabledCategories=O%28%5CQc52~4U%29NP%5Bqu1%7D%261%5BwkbMbNuJzq%3CG%22H%3A77_%3Cz%21jd%26%5D0%3F%2Buz%5Db%293%3DgM%23mh7JOnRuB%3Aql6Q%2CT&enabledOnly=True
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:18
+Status Code: 400
+Response Data: Error: Set only 'text' or 'data' parameter, not both
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: text=kpDRBsunHtrHizHIleMAKCRxDAPDnftxxxZXJhgIyqhPxYPySkebeS&data=iTvxaHJXtWiETEquqqHPwfOZjECxOhZejHPMnEMEfvewVMIYaWweFVabobko&language=JQbkXDIihmZiGSeZm&altLanguages=BZPrphIZIZiSctggAFDjbXijSlkivltpAkBQMlCNuiavnQOnCUjVOyXCuDknVYFjyglEhBKXZmkAYmwgrzYNkDcVUtzabGUiVw&motherTongue=&enabledRules=VtsNIMmOtszRBny&disabledRules=5c%3FV%25%3FPB%3BQ7%3ElCQN&enabledCategories=H73U3panLYM%3DTstRy22R%29Es%2BCMR-bi%27%60%7C%60%24N6&disabledCategories=O%28%5CQc52~4U%29NP%5Bqu1%7D%261%5BwkbMbNuJzq%3CG%22H%3A77_%3Cz%21jd%26%5D0%3F%2Buz%5Db%293%3DgM%23mh7JOnRuB%3Aql6Q%2CT
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:18
+Status Code: 400
+Response Data: Error: Set only 'text' or 'data' parameter, not both
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: language=U%3Ced%27by6UE%2Cs_%21C5D&altLanguages=&motherTongue=uTHS%27%24K%40%2FJ2E%3BW%60grN8%28%25X%5Dc_%3FSVa%5EksIH%7C5SYwL3p5%23%3E&enabledRules=%21%60%60rA1la%60X_V%21TA&disabledRules=&disabledCategories=EqwBudSOTdLyfKMpDoBBXBciufnJMueAsCcjjJKLqWuycazmOAHshkAoXWOYOyFdInshhFffQHY&enabledOnly=True
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:18
+Status Code: 400
+Response Data: Error: Missing 'text' or 'data' parameter
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: text=kpDRBsunHtrHizHIleMAKCRxDAPDnftxxxZXJhgIyqhPxYPySkebeS&data=iTvxaHJXtWiETEquqqHPwfOZjECxOhZejHPMnEMEfvewVMIYaWweFVabobko&altLanguages=BZPrphIZIZiSctggAFDjbXijSlkivltpAkBQMlCNuiavnQOnCUjVOyXCuDknVYFjyglEhBKXZmkAYmwgrzYNkDcVUtzabGUiVw&motherTongue=uTHS%27%24K%40%2FJ2E%3BW%60grN8%28%25X%5Dc_%3FSVa%5EksIH%7C5SYwL3p5%23%3E&preferredVariants=m%25Jw0P%7C%5C6dMs%5E%7Dx%60tgs%22AH%3Byy-xL%60%21Pl7%23%28&enabledRules=%21%60%60rA1la%60X_V%21TA&disabledCategories=O%28%5CQc52~4U%29NP%5Bqu1%7D%261%5BwkbMbNuJzq%3CG%22H%3A77_%3Cz%21jd%26%5D0%3F%2Buz%5Db%293%3DgM%23mh7JOnRuB%3Aql6Q%2CT&enabledOnly=False
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:18
+Status Code: 400
+Response Data: Error: Set only 'text' or 'data' parameter, not both
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: 
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:29
+Status Code: 400
+Response Data: Error: Missing 'text' or 'data' parameter
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: text=Lorem+ipsum+dolor+sit+amet%2C+consectetur+adipiscing+elit.&altLanguages=fr&motherTongue=en-US&enabledRules=1001&enabledCategories=spelling&disabledCategories=capitalization&enabledOnly=True
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:29
+Status Code: 400
+Response Data: Error: Missing 'language' parameter, e.g. 'language=en-US' for American English or 'language=fr' for French
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: language=de-DE&altLanguages=pt-BR&preferredVariants=de-AT&enabledRules=2003&disabledRules=6006&enabledCategories=style&disabledCategories=redundancy
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:29
+Status Code: 400
+Response Data: Error: Missing 'text' or 'data' parameter
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: data=%7B%22markup%22%3A+%22%26lt%3Bp%26gt%3B%22%2C+%22interpretAs%22%3A+%22%5Cn%5Cn%22%7D&language=en-US&motherTongue=de-DE&preferredVariants=fr-CA&enabledCategories=grammar&enabledOnly=False
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:29
+Status Code: 400
+Response Data: Error: 'data' key in JSON requires 'text' or 'annotation' key
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: text=This+is+a+sample+text+for+spell+checking.&data=%7B%22annotation%22%3A%5B%0A+%7B%22text%22%3A+%22A+%22%7D%2C%0A+%7B%22markup%22%3A+%22%26lt%3Bb%3E%22%7D%2C%0A+%7B%22text%22%3A+%22test%22%7D%2C%0A+%7B%22markup%22%3A+%22%26lt%3B%2Fb%3E%22%7D%0A%5D%7D&language=auto&altLanguages=es&motherTongue=fr&preferredVariants=en-GB&disabledRules=6006&disabledCategories=punctuation&enabledOnly=True
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:29
+Status Code: 400
+Response Data: Error: Set only 'text' or 'data' parameter, not both
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: text=The+quick+brown+fox+jumps+over+the+lazy+dog.&data=%7B%22annotation%22%3A%5B%0A+%7B%22text%22%3A+%22The+%22%7D%2C%0A+%7B%22markup%22%3A+%22%26lt%3Bi%3E%22%7D%2C%0A+%7B%22text%22%3A+%22cat%22%7D%2C%0A+%7B%22markup%22%3A+%22%26lt%3B%2Fi%3E%22%7D%2C%0A+%7B%22text%22%3A+%22+in+the+hat%22%7D%0A%5D%7D&preferredVariants=de-AT&enabledRules=3005&disabledRules=5004&enabledCategories=spelling&disabledCategories=punctuation&enabledOnly=False
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:29
+Status Code: 400
+Response Data: Error: Set only 'text' or 'data' parameter, not both
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: text=Lorem+ipsum+dolor+sit+amet%2C+consectetur+adipiscing+elit.&data=%7B%22annotation%22%3A%5B%0A+%7B%22text%22%3A+%22The+%22%7D%2C%0A+%7B%22markup%22%3A+%22%26lt%3Bi%3E%22%7D%2C%0A+%7B%22text%22%3A+%22cat%22%7D%2C%0A+%7B%22markup%22%3A+%22%26lt%3B%2Fi%3E%22%7D%2C%0A+%7B%22text%22%3A+%22+in+the+hat%22%7D%0A%5D%7D&language=en-US&altLanguages=pt-BR&motherTongue=en-US&preferredVariants=fr-CA&enabledRules=1001&disabledRules=4002&disabledCategories=punctuation
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:29
+Status Code: 400
+Response Data: Error: Set only 'text' or 'data' parameter, not both
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: text=Lorem+ipsum+dolor+sit+amet%2C+consectetur+adipiscing+elit.&data=%7B%22annotation%22%3A%5B%0A+%7B%22text%22%3A+%22A+%22%7D%2C%0A+%7B%22markup%22%3A+%22%26lt%3Bb%3E%22%7D%2C%0A+%7B%22text%22%3A+%22test%22%7D%2C%0A+%7B%22markup%22%3A+%22%26lt%3B%2Fb%3E%22%7D%0A%5D%7D&language=auto&altLanguages=es&motherTongue=de-DE&enabledRules=3005&disabledRules=4002&enabledCategories=style&disabledCategories=redundancy&enabledOnly=False
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:29
+Status Code: 400
+Response Data: Error: Set only 'text' or 'data' parameter, not both
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: text=This+is+a+sample+text+for+spell+checking.&data=%7B%22markup%22%3A+%22%26lt%3Bp%26gt%3B%22%2C+%22interpretAs%22%3A+%22%5Cn%5Cn%22%7D&language=de-DE&altLanguages=fr&motherTongue=fr&preferredVariants=en-GB&enabledRules=2003&disabledRules=5004&enabledCategories=spelling
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:29
+Status Code: 400
+Response Data: Error: Set only 'text' or 'data' parameter, not both
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: text=The+quick+brown+fox+jumps+over+the+lazy+dog.&data=%7B%22markup%22%3A+%22%26lt%3Bp%26gt%3B%22%2C+%22interpretAs%22%3A+%22%5Cn%5Cn%22%7D&language=auto&motherTongue=en-US&preferredVariants=de-AT&enabledRules=2003&disabledRules=4002&enabledCategories=style&disabledCategories=punctuation&enabledOnly=True
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:29
+Status Code: 400
+Response Data: Error: Set only 'text' or 'data' parameter, not both
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: text=The+quick+brown+fox+jumps+over+the+lazy+dog.&data=%7B%22annotation%22%3A%5B%0A+%7B%22text%22%3A+%22The+%22%7D%2C%0A+%7B%22markup%22%3A+%22%26lt%3Bi%3E%22%7D%2C%0A+%7B%22text%22%3A+%22cat%22%7D%2C%0A+%7B%22markup%22%3A+%22%26lt%3B%2Fi%3E%22%7D%2C%0A+%7B%22text%22%3A+%22+in+the+hat%22%7D%0A%5D%7D&altLanguages=pt-BR&motherTongue=de-DE&disabledRules=6006&enabledCategories=grammar&disabledCategories=capitalization
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:29
+Status Code: 400
+Response Data: Error: Set only 'text' or 'data' parameter, not both
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: text=The+quick+brown+fox+jumps+over+the+lazy+dog.&language=en-US&altLanguages=es&enabledRules=1001&disabledRules=5004&enabledOnly=True
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:29
+Status Code: 200
+Response Data: {"software":{"name":"LanguageTool","version":"5.2-SNAPSHOT","buildDate":null,"apiVersion":1,"premium":false,"premiumHint":"You might be missing errors only the Premium version can find. Contact us at support<at>languagetoolplus.com.","status":""},"warnings":{"incompleteResults":false},"language":{"name":"English (US)","code":"en-US","detectedLanguage":{"name":"English (US)","code":"en-US","confidence":0.9999981}},"matches":[]}
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: text=Lorem+ipsum+dolor+sit+amet%2C+consectetur+adipiscing+elit.&language=de-DE&motherTongue=fr&preferredVariants=en-GB&enabledRules=2003&disabledRules=4002&enabledCategories=grammar&disabledCategories=capitalization&enabledOnly=False
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:29
+Status Code: 400
+Response Data: Error: You specified 'preferredVariants' but you didn't specify 'language=auto'
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: text=This+is+a+sample+text+for+spell+checking.&data=%7B%22annotation%22%3A%5B%0A+%7B%22text%22%3A+%22A+%22%7D%2C%0A+%7B%22markup%22%3A+%22%26lt%3Bb%3E%22%7D%2C%0A+%7B%22text%22%3A+%22test%22%7D%2C%0A+%7B%22markup%22%3A+%22%26lt%3B%2Fb%3E%22%7D%0A%5D%7D&language=en-US&altLanguages=fr&motherTongue=fr&preferredVariants=de-AT&enabledRules=3005&enabledCategories=grammar&disabledCategories=redundancy&enabledOnly=True
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:29
+Status Code: 400
+Response Data: Error: Set only 'text' or 'data' parameter, not both
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: data=%7B%22annotation%22%3A%5B%0A+%7B%22text%22%3A+%22The+%22%7D%2C%0A+%7B%22markup%22%3A+%22%26lt%3Bi%3E%22%7D%2C%0A+%7B%22text%22%3A+%22cat%22%7D%2C%0A+%7B%22markup%22%3A+%22%26lt%3B%2Fi%3E%22%7D%2C%0A+%7B%22text%22%3A+%22+in+the+hat%22%7D%0A%5D%7D&language=de-DE&altLanguages=fr&motherTongue=de-DE&enabledRules=2003&disabledCategories=punctuation&enabledOnly=True
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:29
+Status Code: 500
+Response Data: Error: Internal Error: java.lang.NoClassDefFoundError: Could not initialize class org.bridj.Pointer, detected: en-US
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: data=%7B%22markup%22%3A+%22%26lt%3Bp%26gt%3B%22%2C+%22interpretAs%22%3A+%22%5Cn%5Cn%22%7D&altLanguages=es&motherTongue=en-US&preferredVariants=fr-CA&enabledRules=3005&disabledRules=6006&disabledCategories=capitalization&enabledOnly=False
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:29
+Status Code: 400
+Response Data: Error: 'data' key in JSON requires 'text' or 'annotation' key
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: data=%7B%22annotation%22%3A%5B%0A+%7B%22text%22%3A+%22A+%22%7D%2C%0A+%7B%22markup%22%3A+%22%26lt%3Bb%3E%22%7D%2C%0A+%7B%22text%22%3A+%22test%22%7D%2C%0A+%7B%22markup%22%3A+%22%26lt%3B%2Fb%3E%22%7D%0A%5D%7D&language=auto&altLanguages=pt-BR&motherTongue=en-US&preferredVariants=en-GB&disabledRules=5004&enabledCategories=spelling&disabledCategories=redundancy
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:29
+Status Code: 200
+Response Data: {"software":{"name":"LanguageTool","version":"5.2-SNAPSHOT","buildDate":null,"apiVersion":1,"premium":false,"premiumHint":"You might be missing errors only the Premium version can find. Contact us at support<at>languagetoolplus.com.","status":""},"warnings":{"incompleteResults":false},"language":{"name":"English (GB)","code":"en-GB","detectedLanguage":{"name":"English (GB)","code":"en-GB","confidence":0.762947}},"matches":[]}
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: text=This+is+a+sample+text+for+spell+checking.&data=%7B%22annotation%22%3A%5B%0A+%7B%22text%22%3A+%22A+%22%7D%2C%0A+%7B%22markup%22%3A+%22%26lt%3Bb%3E%22%7D%2C%0A+%7B%22text%22%3A+%22test%22%7D%2C%0A+%7B%22markup%22%3A+%22%26lt%3B%2Fb%3E%22%7D%0A%5D%7D&preferredVariants=en-GB&enabledRules=1001&enabledCategories=style
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:29
+Status Code: 400
+Response Data: Error: Set only 'text' or 'data' parameter, not both
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: text=The+quick+brown+fox+jumps+over+the+lazy+dog.&data=%7B%22annotation%22%3A%5B%0A+%7B%22text%22%3A+%22The+%22%7D%2C%0A+%7B%22markup%22%3A+%22%26lt%3Bi%3E%22%7D%2C%0A+%7B%22text%22%3A+%22cat%22%7D%2C%0A+%7B%22markup%22%3A+%22%26lt%3B%2Fi%3E%22%7D%2C%0A+%7B%22text%22%3A+%22+in+the+hat%22%7D%0A%5D%7D&altLanguages=fr&motherTongue=fr&preferredVariants=fr-CA&enabledRules=2003&disabledRules=4002&disabledCategories=redundancy&enabledOnly=False
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:29
+Status Code: 400
+Response Data: Error: Set only 'text' or 'data' parameter, not both
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: text=Lorem+ipsum+dolor+sit+amet%2C+consectetur+adipiscing+elit.&data=%7B%22annotation%22%3A%5B%0A+%7B%22text%22%3A+%22The+%22%7D%2C%0A+%7B%22markup%22%3A+%22%26lt%3Bi%3E%22%7D%2C%0A+%7B%22text%22%3A+%22cat%22%7D%2C%0A+%7B%22markup%22%3A+%22%26lt%3B%2Fi%3E%22%7D%2C%0A+%7B%22text%22%3A+%22+in+the+hat%22%7D%0A%5D%7D&language=auto&altLanguages=fr&preferredVariants=de-AT&enabledRules=1001&disabledRules=6006&enabledCategories=grammar&enabledOnly=False
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:29
+Status Code: 400
+Response Data: Error: Set only 'text' or 'data' parameter, not both
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: text=Lorem+ipsum+dolor+sit+amet%2C+consectetur+adipiscing+elit.&data=%7B%22markup%22%3A+%22%26lt%3Bp%26gt%3B%22%2C+%22interpretAs%22%3A+%22%5Cn%5Cn%22%7D&language=de-DE&altLanguages=fr&preferredVariants=fr-CA&disabledRules=5004&enabledCategories=style&disabledCategories=redundancy
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:29
+Status Code: 400
+Response Data: Error: Set only 'text' or 'data' parameter, not both
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: text=This+is+a+sample+text+for+spell+checking.&data=%7B%22annotation%22%3A%5B%0A+%7B%22text%22%3A+%22The+%22%7D%2C%0A+%7B%22markup%22%3A+%22%26lt%3Bi%3E%22%7D%2C%0A+%7B%22text%22%3A+%22cat%22%7D%2C%0A+%7B%22markup%22%3A+%22%26lt%3B%2Fi%3E%22%7D%2C%0A+%7B%22text%22%3A+%22+in+the+hat%22%7D%0A%5D%7D&language=en-US&altLanguages=pt-BR&motherTongue=de-DE&preferredVariants=en-GB&enabledRules=3005&disabledRules=5004&enabledCategories=style&disabledCategories=capitalization&enabledOnly=False
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:29
+Status Code: 400
+Response Data: Error: Set only 'text' or 'data' parameter, not both
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: data=%7B%22markup%22%3A+%22%26lt%3Bp%26gt%3B%22%2C+%22interpretAs%22%3A+%22%5Cn%5Cn%22%7D&language=de-DE&altLanguages=pt-BR&motherTongue=de-DE&preferredVariants=fr-CA&enabledRules=1001&disabledRules=4002&enabledCategories=spelling&disabledCategories=redundancy&enabledOnly=True
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:30
+Status Code: 400
+Response Data: Error: 'data' key in JSON requires 'text' or 'annotation' key
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: text=The+quick+brown+fox+jumps+over+the+lazy+dog.&data=%7B%22annotation%22%3A%5B%0A+%7B%22text%22%3A+%22A+%22%7D%2C%0A+%7B%22markup%22%3A+%22%26lt%3Bb%3E%22%7D%2C%0A+%7B%22text%22%3A+%22test%22%7D%2C%0A+%7B%22markup%22%3A+%22%26lt%3B%2Fb%3E%22%7D%0A%5D%7D&language=de-DE&altLanguages=es&motherTongue=en-US&preferredVariants=en-GB&enabledRules=3005&enabledCategories=grammar
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:30
+Status Code: 400
+Response Data: Error: Set only 'text' or 'data' parameter, not both
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: text=This+is+a+sample+text+for+spell+checking.&language=auto&altLanguages=pt-BR&motherTongue=de-DE&preferredVariants=fr-CA&disabledRules=4002&enabledCategories=grammar&disabledCategories=punctuation&enabledOnly=True
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:30
+Status Code: 200
+Response Data: {"software":{"name":"LanguageTool","version":"5.2-SNAPSHOT","buildDate":null,"apiVersion":1,"premium":false,"premiumHint":"You might be missing errors only the Premium version can find. Contact us at support<at>languagetoolplus.com.","status":""},"warnings":{"incompleteResults":false},"language":{"name":"English","code":"en","detectedLanguage":{"name":"English","code":"en","confidence":0.99999636}},"matches":[]}
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: text=The+quick+brown+fox+jumps+over+the+lazy+dog.&data=%7B%22annotation%22%3A%5B%0A+%7B%22text%22%3A+%22A+%22%7D%2C%0A+%7B%22markup%22%3A+%22%26lt%3Bb%3E%22%7D%2C%0A+%7B%22text%22%3A+%22test%22%7D%2C%0A+%7B%22markup%22%3A+%22%26lt%3B%2Fb%3E%22%7D%0A%5D%7D&language=en-US&altLanguages=es&motherTongue=de-DE&preferredVariants=de-AT&enabledRules=2003&disabledRules=6006&enabledCategories=spelling&disabledCategories=capitalization
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:30
+Status Code: 400
+Response Data: Error: Set only 'text' or 'data' parameter, not both
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: data=%7B%22annotation%22%3A%5B%0A+%7B%22text%22%3A+%22A+%22%7D%2C%0A+%7B%22markup%22%3A+%22%26lt%3Bb%3E%22%7D%2C%0A+%7B%22text%22%3A+%22test%22%7D%2C%0A+%7B%22markup%22%3A+%22%26lt%3B%2Fb%3E%22%7D%0A%5D%7D&language=de-DE&altLanguages=pt-BR&motherTongue=fr&preferredVariants=fr-CA&enabledRules=1001&disabledRules=4002&enabledCategories=grammar&enabledOnly=True
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:30
+Status Code: 400
+Response Data: Error: You specified 'preferredVariants' but you didn't specify 'language=auto'
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: text=This+is+a+sample+text+for+spell+checking.&motherTongue=en-US&preferredVariants=de-AT&disabledRules=6006&disabledCategories=redundancy&enabledOnly=False
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:30
+Status Code: 400
+Response Data: Error: Missing 'language' parameter, e.g. 'language=en-US' for American English or 'language=fr' for French
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: text=This+is+a+sample+text+for+spell+checking.&data=%7B%22annotation%22%3A%5B%0A+%7B%22text%22%3A+%22The+%22%7D%2C%0A+%7B%22markup%22%3A+%22%26lt%3Bi%3E%22%7D%2C%0A+%7B%22text%22%3A+%22cat%22%7D%2C%0A+%7B%22markup%22%3A+%22%26lt%3B%2Fi%3E%22%7D%2C%0A+%7B%22text%22%3A+%22+in+the+hat%22%7D%0A%5D%7D&language=auto&altLanguages=es&motherTongue=fr&disabledRules=4002&enabledCategories=style&disabledCategories=capitalization&enabledOnly=True
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:30
+Status Code: 400
+Response Data: Error: Set only 'text' or 'data' parameter, not both
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: text=This+is+a+sample+text+for+spell+checking.&data=%7B%22markup%22%3A+%22%26lt%3Bp%26gt%3B%22%2C+%22interpretAs%22%3A+%22%5Cn%5Cn%22%7D&language=de-DE&enabledRules=3005&disabledRules=5004&enabledCategories=grammar&disabledCategories=capitalization
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:30
+Status Code: 400
+Response Data: Error: Set only 'text' or 'data' parameter, not both
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: text=Lorem+ipsum+dolor+sit+amet%2C+consectetur+adipiscing+elit.&language=auto&altLanguages=pt-BR&motherTongue=en-US&preferredVariants=de-AT&enabledRules=3005&enabledCategories=style&disabledCategories=punctuation&enabledOnly=False
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:30
+Status Code: 200
+Response Data: {"software":{"name":"LanguageTool","version":"5.2-SNAPSHOT","buildDate":null,"apiVersion":1,"premium":false,"premiumHint":"You might be missing errors only the Premium version can find. Contact us at support<at>languagetoolplus.com.","status":""},"warnings":{"incompleteResults":false},"language":{"name":"Catalan","code":"ca-ES","detectedLanguage":{"name":"Catalan","code":"ca-ES","confidence":0.99999475}},"matches":[{"message":"Possible error ortogràfic.","shortMessage":"Error ortogràfic","replacements":[{"value":"L'orem","type":"Curated"},{"value":"Fórem"},{"value":"Durem"},{"value":"Plorem"},{"value":"Lora"},{"value":"Olorem"},{"value":"Ploram"},{"value":"Boram"},{"value":"Borem"},{"value":"Cloram"},{"value":"Clorem"},{"value":"Curam"},{"value":"Curem"},{"value":"Duram"},{"value":"Furam"},{"value":"Furem"},{"value":"Juram"},{"value":"Jurem"},{"value":"Lores"},{"value":"Lucram"},{"value":"Lucrem"},{"value":"Luxam"},{"value":"Luxem"},{"value":"Muram"},{"value":"Murem"},{"value":"Oloram"},{"value":"Oram"},{"value":"Orem"},{"value":"Suram"},{"value":"Surem"},{"value":"Vorem"},{"value":"L orem"},{"value":"Lo rem"}],"offset":0,"length":5,"context":{"text":"Lorem ipsum dolor sit amet, consectetur adipi...","offset":0,"length":5},"sentence":"Lorem ipsum dolor sit amet, consectetur adipiscing elit.","type":{"typeName":"Other"},"rule":{"id":"MORFOLOGIK_RULE_CA_ES","description":"Possible error ortogràfic","issueType":"misspelling","category":{"id":"TYPOS","name":"Errors ortogràfics"}},"ignoreForIncompleteSentence":false,"contextForSureMatch":0},{"message":"Possible error ortogràfic.","shortMessage":"Error ortogràfic","replacements":[{"value":"Ipsos"}],"offset":6,"length":5,"context":{"text":"Lorem ipsum dolor sit amet, consectetur adipiscing ...","offset":6,"length":5},"sentence":"Lorem ipsum dolor sit amet, consectetur adipiscing elit.","type":{"typeName":"Other"},"rule":{"id":"MORFOLOGIK_RULE_CA_ES","description":"Possible error ortogràfic","issueType":"misspelling","category":{"id":"TYPOS","name":"Errors ortogràfics"}},"ignoreForIncompleteSentence":false,"contextForSureMatch":0},{"message":"Reviseu: dos substantius junts. Potser hi falta algun element (una coma, una conjunció, una preposició).","shortMessage":"Reviseu: dos substantius junts.","replacements":[],"offset":12,"length":9,"context":{"text":"Lorem ipsum dolor sit amet, consectetur adipiscing elit.","offset":12,"length":9},"sentence":"Lorem ipsum dolor sit amet, consectetur adipiscing elit.","type":{"typeName":"Other"},"rule":{"id":"SUBSTANTIUS_JUNTS","subId":"1","sourceFile":"grammar.xml","description":"Dos noms comuns junts","issueType":"grammar","category":{"id":"SYNTAX","name":"Sintaxi"}},"ignoreForIncompleteSentence":true,"contextForSureMatch":4},{"message":"Possible error ortogràfic.","shortMessage":"Error ortogràfic","replacements":[{"value":"a met"},{"value":"amat"},{"value":"Amet"},{"value":"emet"},{"value":"Amat"},{"value":"anat"},{"value":"edat"},{"value":"amant"},{"value":"admet"},{"value":"mat"},{"value":"àpat"},{"value":"abat"},{"value":"armat"},{"value":"emès"},{"value":"ramat"},{"value":"remat"},{"value":"remet"},{"value":"amè"},{"value":"empat"},{"value":"met"},{"value":"amar"},{"value":"amés"},{"value":"ama"},{"value":"amén"},{"value":"alat"},{"value":"amen"},{"value":"ames"},{"value":"anet"},{"value":"avet"},{"value":"mamat"},{"value":"Amer"},{"value":"embat"},{"value":"emeti"},{"value":"amem"},{"value":"ema"},{"value":"emes"},{"value":"emets"},{"value":"gemat"},{"value":"omet"},{"value":"amats"},{"value":"emeto"},{"value":"Abat"},{"value":"Ahmet"},{"value":"Aiet"},{"value":"Aimat"},{"value":"Amai"},{"value":"Amats"},{"value":"Amit"},{"value":"Anet"},{"value":"Asmet"},{"value":"Jamet"},{"value":"Mamet"},{"value":"Omet"},{"value":"acat"},{"value":"amag"},{"value":"amam"},{"value":"amau"},{"value":"amaç"},{"value":"ame"},{"value":"amel"},{"value":"ament"},{"value":"amer"},{"value":"ameu"},{"value":"amit"},{"value":"amot"},{"value":"amé"},{"value":"aret"},{"value":"aset"},{"value":"asmat"},{"value":"camat"},{"value":"demet"},{"value":"elet"},{"value":"elmet"},{"value":"eman"},{"value":"eme"},{"value":"emeta"},{"value":"emeté"},{"value":"emetí"},{"value":"emmat"},{"value":"emés"},{"value":"ermat"},{"value":"esmat"},{"value":"femat"},{"value":"gamat"},{"value":"hamet"},{"value":"pamet"},{"value":"semat"},{"value":"xamat"},{"value":"àmec"},{"value":"àmel"},{"value":"ànet"},{"value":"am et"},{"value":"Amex"}],"offset":22,"length":4,"context":{"text":"Lorem ipsum dolor sit amet, consectetur adipiscing elit.","offset":22,"length":4},"sentence":"Lorem ipsum dolor sit amet, consectetur adipiscing elit.","type":{"typeName":"Other"},"rule":{"id":"MORFOLOGIK_RULE_CA_ES","description":"Possible error ortogràfic","issueType":"misspelling","category":{"id":"TYPOS","name":"Errors ortogràfics"}},"ignoreForIncompleteSentence":false,"contextForSureMatch":0},{"message":"Possible error ortogràfic.","shortMessage":"Error ortogràfic","replacements":[{"value":"connectador"},{"value":"consecratori"}],"offset":28,"length":11,"context":{"text":"Lorem ipsum dolor sit amet, consectetur adipiscing elit.","offset":28,"length":11},"sentence":"Lorem ipsum dolor sit amet, consectetur adipiscing elit.","type":{"typeName":"Other"},"rule":{"id":"MORFOLOGIK_RULE_CA_ES","description":"Possible error ortogràfic","issueType":"misspelling","category":{"id":"TYPOS","name":"Errors ortogràfics"}},"ignoreForIncompleteSentence":false,"contextForSureMatch":0},{"message":"Possible error ortogràfic.","shortMessage":"Error ortogràfic","replacements":[{"value":"adaptassin"},{"value":"adaptessin"},{"value":"adduïssin"},{"value":"adiassin"},{"value":"adiessin"},{"value":"adiguessin"},{"value":"adinyassin"},{"value":"adinyessin"},{"value":"adoptassin"},{"value":"adoptessin"},{"value":"afiliassin"},{"value":"afiliessin"},{"value":"ajupissin"},{"value":"atapissin"},{"value":"atipassin"},{"value":"atipessin"},{"value":"atiplassin"},{"value":"atiplessin"},{"value":"aviciassin"},{"value":"aviciessin"},{"value":"editassin"},{"value":"editessin"},{"value":"eduïssin"},{"value":"efigiassin"},{"value":"efigiessin"},{"value":"eixissin"},{"value":"elidissin"},{"value":"erigissin"},{"value":"exigissin"},{"value":"exiliassin"},{"value":"exiliessin"},{"value":"eximissin"},{"value":"redimissin"},{"value":"adelitassin"},{"value":"adelitessin"},{"value":"agilitassin"},{"value":"agilitessin"},{"value":"edificassin"}],"offset":40,"length":10,"context":{"text":"...Lorem ipsum dolor sit amet, consectetur adipiscing elit.","offset":43,"length":10},"sentence":"Lorem ipsum dolor sit amet, consectetur adipiscing elit.","type":{"typeName":"Other"},"rule":{"id":"MORFOLOGIK_RULE_CA_ES","description":"Possible error ortogràfic","issueType":"misspelling","category":{"id":"TYPOS","name":"Errors ortogràfics"}},"ignoreForIncompleteSentence":false,"contextForSureMatch":0}]}
+========REQUEST========
+Method: POST
+URL: http://localhost:33000/v2/check
+Request Data: text=The+quick+brown+fox+jumps+over+the+lazy+dog.&data=%7B%22markup%22%3A+%22%26lt%3Bp%26gt%3B%22%2C+%22interpretAs%22%3A+%22%5Cn%5Cn%22%7D&preferredVariants=fr-CA&enabledRules=2003&disabledRules=4002&enabledCategories=grammar&disabledCategories=redundancy&enabledOnly=True
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:30
+Status Code: 400
+Response Data: Error: Set only 'text' or 'data' parameter, not both
+========REQUEST========
+Method: GET
+URL: http://localhost:33000/v2/languages
+Request Data: 
+========RESPONSE========
+Timestamp: 2024-06-24 11:34:30
+Status Code: 200
+Response Data: [{"name":"Arabic","code":"ar","longCode":"ar"},{"name":"Asturian","code":"ast","longCode":"ast-ES"},{"name":"Belarusian","code":"be","longCode":"be-BY"},{"name":"Breton","code":"br","longCode":"br-FR"},{"name":"Catalan","code":"ca","longCode":"ca-ES"},{"name":"Catalan (Valencian)","code":"ca","longCode":"ca-ES-valencia"},{"name":"Chinese","code":"zh","longCode":"zh-CN"},{"name":"Danish","code":"da","longCode":"da-DK"},{"name":"Dutch","code":"nl","longCode":"nl"},{"name":"English","code":"en","longCode":"en"},{"name":"English (Australian)","code":"en","longCode":"en-AU"},{"name":"English (Canadian)","code":"en","longCode":"en-CA"},{"name":"English (GB)","code":"en","longCode":"en-GB"},{"name":"English (New Zealand)","code":"en","longCode":"en-NZ"},{"name":"English (South African)","code":"en","longCode":"en-ZA"},{"name":"English (US)","code":"en","longCode":"en-US"},{"name":"Esperanto","code":"eo","longCode":"eo"},{"name":"French","code":"fr","longCode":"fr"},{"name":"Galician","code":"gl","longCode":"gl-ES"},{"name":"German","code":"de","longCode":"de"},{"name":"German (Austria)","code":"de","longCode":"de-AT"},{"name":"German (Germany)","code":"de","longCode":"de-DE"},{"name":"German (Swiss)","code":"de","longCode":"de-CH"},{"name":"Greek","code":"el","longCode":"el-GR"},{"name":"Irish","code":"ga","longCode":"ga-IE"},{"name":"Italian","code":"it","longCode":"it"},{"name":"Japanese","code":"ja","longCode":"ja-JP"},{"name":"Khmer","code":"km","longCode":"km-KH"},{"name":"Persian","code":"fa","longCode":"fa"},{"name":"Polish","code":"pl","longCode":"pl-PL"},{"name":"Portuguese","code":"pt","longCode":"pt"},{"name":"Portuguese (Angola preAO)","code":"pt","longCode":"pt-AO"},{"name":"Portuguese (Brazil)","code":"pt","longCode":"pt-BR"},{"name":"Portuguese (Moçambique preAO)","code":"pt","longCode":"pt-MZ"},{"name":"Portuguese (Portugal)","code":"pt","longCode":"pt-PT"},{"name":"Romanian","code":"ro","longCode":"ro-RO"},{"name":"Russian","code":"ru","longCode":"ru-RU"},{"name":"Simple German","code":"de-DE-x-simple-language","longCode":"de-DE-x-simple-language"},{"name":"Slovak","code":"sk","longCode":"sk-SK"},{"name":"Slovenian","code":"sl","longCode":"sl-SI"},{"name":"Spanish","code":"es","longCode":"es"},{"name":"Swedish","code":"sv","longCode":"sv"},{"name":"Tagalog","code":"tl","longCode":"tl-PH"},{"name":"Tamil","code":"ta","longCode":"ta-IN"},{"name":"Ukrainian","code":"uk","longCode":"uk-UA"}]

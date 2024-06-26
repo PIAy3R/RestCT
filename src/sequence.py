@@ -167,3 +167,9 @@ class Sequence:
         sequence, is_success = self._seq_model.execute()
         if is_success:
             return sequence
+
+    def build_error_sequence(self, operations: List[RestOp]):
+        self._operations = operations
+        sequences, is_success = self._seq_model.execute_error(self._operations)
+        if is_success:
+            return sequences

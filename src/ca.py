@@ -10,7 +10,7 @@ from src.factor import Value, ValueType, StringFactor, EnumFactor, BooleanFactor
 from src.generator import ACTS, PICT
 from src.keywords import DataType
 from src.keywords import Method
-from src.languagemodel.llm import ResponseModel, ValueModel, IDLModel, PICTModel
+from src.languagemodel.llm import ResponseModel, ValueModel, IDLModel, PICTModel, PathModel, ErrorValueModel
 from src.nlp import Processor, Constraint
 from src.rest import RestOp, RestParam, PathParam, QueryParam, BodyParam, HeaderParam
 
@@ -36,7 +36,8 @@ class CA:
         self._acts = ACTS(self._data_path, config.jar)
         self._pict = PICT(self._data_path, config.pict)
 
-        self._stat = kwargs.get("stat")
+        # self._stat = kwargs.get("stat")
+        self._operations = kwargs.get("operations")
 
     def _select_response_chains(self, response_chains):
         sorted_list = sorted(response_chains, key=lambda c: len(c.keys()), reverse=True)
@@ -58,9 +59,9 @@ class CA:
                 is_break = self._handle_one_operation(index, operation, chain, sequence, loop_num)
                 if is_break:
                     break
-        self._stat.seq_executed_num += 1
-        self._stat.sum_len_of_executed_seq += len(sequence)
-        self._stat.update_executed_c_way(sequence)
+        # self._stat.seq_executed_num += 1
+        # self._stat.sum_len_of_executed_seq += len(sequence)
+        # self._stat.update_executed_c_way(sequence)
         self._manager.save_response_to_file()
         return True
 
@@ -119,7 +120,7 @@ class CA:
         return status_code, response_data
 
     def _execute(self, op: RestOp, ca, chain, url_tuple, history, is_reuse=False, is_essential=True):
-        self._stat.op_executed_num.add(op)
+        # self._stat.op_executed_num.add(op)
         history.clear()
 
         has_success = False
@@ -131,7 +132,7 @@ class CA:
         response_list: List[(int, object)] = []
 
         for case in ca:
-            self._stat.dump_snapshot()
+            # self._stat.dump_snapshot()
             status_code, response_data = self.process(op, case, chain, is_reuse)
             if status_code < 300:
                 has_success = True
@@ -218,7 +219,7 @@ class CA:
         domain_map = defaultdict(list)
         for root_p in parameters:
             if isinstance(root_p, PathParam):
-                root_p.factor.gen_path(operation, chain)
+                root_p.factor.gen_path(operation, chain, self._manager)
                 if not self._manager.is_unresolved((operation, root_p.factor.get_global_name)):
                     domain_map = root_p.factor.add_domain_to_map(domain_map)
             else:
@@ -273,32 +274,33 @@ class CA:
     def _handle_response(self, url_tuple, operation, response_list, chain, ca, is_essential):
         is_success = False
         for index, (sc, response) in enumerate(response_list):
-            self._stat.req_num += 1
-            self._stat.req_num_all += 1
+            # self._stat.req_num += 1
+            # self._stat.req_num_all += 1
             if sc < 300:
                 self._manager.save_reuse(url_tuple, is_essential, ca[index])
                 self._manager.save_ok_value(ca[index])
                 self._manager.save_chain(chain, operation, response)
+                self._manager.save_success_response(operation, response)
                 is_success = True
-                self._stat.req_20x_num += 1
-                self._stat.op_success_num.add(operation)
+                # self._stat.req_20x_num += 1
+                # self._stat.op_success_num.add(operation)
                 if operation.verb is Method.POST:
                     self._manager.save_id_count(operation, response, self._id_counter)
-            elif sc in range(300, 400):
-                self._stat.req_30x_num += 1
-            elif sc in range(400, 500):
-                self._stat.req_40x_num += 1
+            # elif sc in range(300, 400):
+            # self._stat.req_30x_num += 1
+            # elif sc in range(400, 500):
+            # self._stat.req_40x_num += 1
             elif sc in range(500, 600):
                 # self._manager.save_bug(operation, ca[index], sc, response, chain, self._data_path, kwargs)
                 is_success = True
-                self._stat.req_50x_num += 1
+                # self._stat.req_50x_num += 1
                 # self._stat.op_success_num.add(operation)
                 # self._stat.bug.add(f"{operation.__repr__()}-{sc}-{response}")
-            elif sc >= 600:
-                self._stat.req_60x_num += 1
+            # elif sc >= 600:
+            #     self._stat.req_60x_num += 1
         if is_success:
             self._manager.save_success_seq(url_tuple)
-            self._stat.update_success_c_way(url_tuple)
+            # self._stat.update_success_c_way(url_tuple)
 
 
 class CAWithLLM(CA):
@@ -318,6 +320,9 @@ class CAWithLLM(CA):
 
         history = []
         self._reset_constraints(operation, operation.parameters)
+
+        # if loop_num == 1:
+        #     self._call_binding_model(operation, chain, self._operations)
 
         (have_success_e, have_bug_e, e_response_list), e_ca = self._handle_params(operation, sequence[:index],
                                                                                   success_url_tuple, chain, history,
@@ -368,6 +373,8 @@ class CAWithLLM(CA):
         operation.is_re_handle = True
         self._is_regenerate = True
         verify = (status_tuple[0] or status_tuple[1]) and have_constraint
+
+        # succeed to generate the request
         if (not (status_tuple[0] or status_tuple[1])) or verify:
             if not (status_tuple[0] or status_tuple[1]):
                 logger.info("no success request, use llm to help re-generate")
@@ -392,15 +399,33 @@ class CAWithLLM(CA):
                         logger.info("no param to ask")
                         return False
 
-            (have_success_e, have_bug_e, e_response_list), e_ca = self._handle_params(operation, sequence[:index],
-                                                                                      success_url_tuple, chain, history,
-                                                                                      index, True, verify)
-            is_break_e = have_success_e or have_bug_e
+            try:
+                (have_success_e, have_bug_e, e_response_list), e_ca = self._handle_params(operation, sequence[:index],
+                                                                                          success_url_tuple, chain,
+                                                                                          history,
+                                                                                          index, True, verify)
+                is_break_e = have_success_e or have_bug_e
 
-            (have_success_a, have_bug_a, a_response_list), a_ca = self._handle_params(operation, sequence[:index],
-                                                                                      success_url_tuple, chain, history,
-                                                                                      index, False, verify)
-            is_break_a = have_success_a or have_bug_a
+                (have_success_a, have_bug_a, a_response_list), a_ca = self._handle_params(operation, sequence[:index],
+                                                                                          success_url_tuple, chain,
+                                                                                          history,
+                                                                                          index, False, verify)
+                is_break_a = have_success_a or have_bug_a
+            except:
+                logger.exception("constraint failed")
+                self._manager.clear_llm_result(operation)
+                self._reset_constraints(operation, operation.parameters)
+                (have_success_e, have_bug_e, e_response_list), e_ca = self._handle_params(operation, sequence[:index],
+                                                                                          success_url_tuple, chain,
+                                                                                          history,
+                                                                                          index, True, verify)
+                is_break_e = have_success_e or have_bug_e
+
+                (have_success_a, have_bug_a, a_response_list), a_ca = self._handle_params(operation, sequence[:index],
+                                                                                          success_url_tuple, chain,
+                                                                                          history,
+                                                                                          index, False, verify)
+                is_break_a = have_success_a or have_bug_a
 
             self._manager.save_response(operation, e_response_list + a_response_list, e_ca + a_ca)
             self._manager.save_example_value(operation, e_response_list + a_response_list, e_ca + a_ca)
@@ -423,9 +448,30 @@ class CAWithLLM(CA):
                         f.clear_llm_example()
                 return is_break
 
+        # trigger bugs
         if not (status_tuple[2] or status_tuple[3]):
             return True
-            # logger.info("no 500 status code, use llm to help re-generate")
+        #     logger.info("no 500 status code, use llm to help re-generate")
+        #
+        #     success_url_tuple = tuple([op for op in sequence[:index] if op in chain.keys()] + [operation])
+        #     if len(operation.parameters) == 0:
+        #         self._execute(operation, [{}], chain, success_url_tuple, [])
+        #         return True
+        #
+        #     history = []
+        #     self._reset_constraints(operation, operation.parameters)
+        #
+        #     self._call_error_model(operation)
+        #
+        #     (have_success_e, have_bug_e, e_response_list), e_ca = self._handle_params(operation, sequence[:index],
+        #                                                                               success_url_tuple, chain, history,
+        #                                                                               index, True, verify)
+        #     is_break_e = have_success_e or have_bug_e
+        #
+        #     (have_success_a, have_bug_a, a_response_list), a_ca = self._handle_params(operation, sequence[:index],
+        #                                                                               success_url_tuple, chain, history,
+        #                                                                               index, False, verify)
+        #     is_break_a = have_success_a or have_bug_a
 
     def _call_response_language_model(self, operation: RestOp, response_list: List[Tuple[int, object]]):
         if len(response_list) == 0:
@@ -436,7 +482,7 @@ class CAWithLLM(CA):
 
     def _call_value_language_model(self, operation: RestOp):
         param_to_ask = []
-        problem_params = self._manager.get_constraint_params(operation)
+        # problem_params = self._manager.get_constraint_params(operation)
         for p in operation.parameters:
             if isinstance(p, PathParam):
                 if isinstance(p.factor, StringFactor):
@@ -477,3 +523,58 @@ class CAWithLLM(CA):
         for f in self._manager.get_constraint_params(operation):
             f.is_constraint = True
         operation.llm_constraints = self._manager.get_pict(operation)
+
+    def _call_binding_model(self, operation: RestOp, chain, all_operations: List[RestOp]):
+        param_to_ask = []
+        for p in operation.parameters:
+            if isinstance(p, PathParam):
+                param_to_ask.append(p.factor)
+        if len(param_to_ask) == 0:
+            return
+        else:
+            path_model = PathModel(operation, self._manager, self._config, param_to_ask, all_operations)
+            messages, formatted_output, is_success = path_model.execute()
+            return is_success
+
+    def _call_error_model(self, operation: RestOp):
+        error_model = ErrorValueModel(operation, self._manager, self._config)
+        messages, formatted_output, is_success = error_model.execute()
+        return is_success
+
+
+class LLMTest:
+    def __init__(self, config: Config, **kwargs):
+
+        # response chain
+        self._maxChainItems = 3
+        # idCount: delete created resource
+        self._id_counter: List[(int, str)] = list()
+        self._config = config
+
+        self._manager = kwargs.get("manager")
+        self._executor = RestRequest(config.query, config.header, self._manager)
+
+        self._data_path = config.data_path
+        self.start_time = None
+
+        self._acts = ACTS(self._data_path, config.jar)
+        self._pict = PICT(self._data_path, config.pict)
+
+        self._operations = kwargs.get("operations")
+
+    def _timeout(self):
+        return time.time() - self.start_time > self._config.budget
+
+    def handle(self, sequence: List[RestOp]):
+        for index, operation in enumerate(sequence):
+            logger.debug(f"{index + 1}-th operation: {operation}")
+            chain_list = self._manager.get_chains(self._maxChainItems)
+            loops = 0
+            while chain_list:
+                loops += 1
+                if self._timeout():
+                    return False
+                chain = chain_list.pop(0)
+                is_break = self._handle_one_operation(index, operation, chain, sequence, loops)
+                if is_break:
+                    break

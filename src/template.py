@@ -88,7 +88,8 @@ and i will give the name of all parameters in a list, extract constraints from t
 Note:
 1. Not all parameters are in Info are constrained, it’s just that we suspect there may be constraints.
    Check carefully to see if there are any constraints.
-
+2. Pay attention to the reference relationship. 
+   In some descriptions, the names that are the same as some parameters do not point to specific parameters.
  """
 
     SYS_ROLE_PICT = """
@@ -160,6 +161,8 @@ Note:
 2. Ignore possible example values appear in the descriptions. 
 3. Not all parameters are in Info are constrained, it’s just that we suspect there may be constraints.
    Check carefully to see if there are any constraints.
+   Pay attention to the description of the parameter, there may be some keywords of the constraint in it 
+   but it does not represent it has a constraint.
 """
 
     SYS_ROLE_EXTRACTION = """
@@ -176,7 +179,7 @@ When execution fails, it may contains error specific information.
 
 Now you are an expert related to RESTful API and help analyze the content of the response the server send back.
 
-The main content to be analyzed consists of four parts.
+The main content to be analyzed consists of three parts.
 1. Request is the method and base url of a RESTful API request.
 2. Parameter is a list contains the parameters of the request. 
    Some of these parameters may appear in the response content.
@@ -217,6 +220,15 @@ I will give you the parameter information of the path parameter of the RESTful A
 along with the name of the previous successful operation(arranged in order of execution).    
 """
 
+    SYS_ROLE_SEQ_ERROR = """
+You are a helpful assistant, helping handle the issues related to RESTful APIs. 
+In RESTful API Testing, we focus on every operation of the API. There are two important tasks. The first task is to cover each operation, which means making the test cases of the operation return 2XX status codes. The second task is to make each operation trigger the bug as much as possible, which means making the test cases of the operation return 500 status codes.
+But there is another type of failure that is not so intuitive. Some operations are expected to fail to execute successfully and get a 4XX status code, but after execution, a 2XX status code is obtained. Or you expect a 2XX status code but cannot execute successfully. These are implicit errors.
+Typically, this is achieved by some specific sequence of operations, such as querying a resource after deleting it.
+
+I will provide you with all the operations of a specific API, including some basic information.
+"""
+
 
 class INFO:
     EXTRACTION = """
@@ -245,6 +257,11 @@ Operation List: {}
 operation: {}
 Parameter info: {}
 Previous operation: {}
+"""
+
+    FIND_PARAMS = """
+I will give you the response of the previous operation.
+{}
 """
 
 
@@ -278,6 +295,7 @@ Your task:
 - According to the Parameter info, give 3 possible values for each parameter in Parameter list. 
   Note getting example values from description, the example value of one parameter may appear 
   in other parameters' descriptions.
+  Try your best to find the usable example values.
   Format your response as a JSON object.
   The format is {parameter1:[value1,value2,...],parameter2:[value1,value2,...],...}.
 """
@@ -290,6 +308,16 @@ Your task:
   The format is {sequence: [operation1, operation2, ...]}.
 """
 
+    SEQ_ERROR = """
+Your task:
+Based on the information provided above, infer three sequences that may trigger implicit errors.
+
+Note:
+RESTful APIs often have dependencies, requiring pre-operations to create certain resources before subsequent resource 
+operations can be performed. Usually these dependencies are determined by the URL hierarchy and CRUD word order. 
+In the results, all the pre-dependent operations need to be contained.
+"""
+
     BINDING = """
 Your task: 
 According to the name of previous operation and the information of the path parameter, 
@@ -297,5 +325,14 @@ infer the results of which operations the values of these parameters may depend 
 Answer at most three likely operations.
 Format you answer as a JSON object.
 The format is {param1:[operation1, operation2, operation3], param2:[operation1, operation2, operation3], ...}.
+Use only the operations in the previous operation list.
 Possibly higher operations are placed first.
+"""
+
+    FIND_PARAMS = """
+Your task:
+1. Try to give the parameter value should be the same as which parameter in the response.
+   Format your answer as JSON object. 
+   The format is {param1:{operation1:param_in_response, operation2:param_in_response...}, param2:{},...}
+   Only use the operations I provide the response.
 """

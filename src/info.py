@@ -16,7 +16,8 @@ class RuntimeInfoManager:
         self.call_time = 0
         self.prompt_tokens = 0
         self.cost = 0
-        self._response_chains: List[Dict[str, object]] = [dict()]
+        self._response_chains: List[Dict[RestOp, object]] = [dict()]
+        self._response_dict: Dict[RestOp, List[object]] = dict()
         self._unresolved_params: Set[Tuple[RestOp, str]] = set()
 
         self._param_to_ask: Dict[RestOp, Set[AbstractFactor]] = dict()
@@ -24,11 +25,13 @@ class RuntimeInfoManager:
         self._idl: Dict[RestOp, List[str]] = dict()
         self._pict: Dict[RestOp, List[str]] = dict()
         self._path_binding: Dict[RestOp, Dict[AbstractFactor, List[RestOp]]] = dict()
+        self._param_binding: Dict[RestOp, Dict[AbstractFactor, Dict[RestOp, str]]] = dict()
 
         self._reused_essential_seq_dict: Dict[Tuple[RestOp], List[Dict[str, Value]]] = defaultdict(list)
         self._reused_all_p_seq_dict: dict = defaultdict(list)
         self._ok_value_dict: Dict[str, List[Value]] = defaultdict(list)
         self._success_sequence: set = set()
+        self._success_operations: set = set()
 
         self._response_list = dict()
         self._example_value_dict: Dict[str, Dict[str, List[str, int]]] = dict()
@@ -75,6 +78,17 @@ class RuntimeInfoManager:
         self._response_chains.append(new_chain)
         if len(self._response_chains) > 10:
             self._response_chains.pop(0)
+
+    def save_success_response(self, operation, response):
+        if self._response_dict.get(operation) is None:
+            self._response_dict[operation] = list()
+        self._response_dict[operation].append(response)
+
+    def get_success_responses(self, operation=None):
+        if operation is None:
+            return self._response_dict
+        else:
+            return self._response_dict.get(operation, [])
 
     @staticmethod
     def save_id_count(operation, response, id_counter):
@@ -163,10 +177,14 @@ class RuntimeInfoManager:
         return self._pict.get(operation, [])
 
     def clear_llm_result(self, operation):
-        self._param_to_ask[operation].clear()
-        self._constraint_params[operation].clear()
-        self._idl[operation].clear()
-        self._pict[operation].clear()
+        if self._param_to_ask.get(operation) is not None:
+            self._param_to_ask[operation].clear()
+        if self._constraint_params.get(operation) is not None:
+            self._constraint_params[operation].clear()
+        if self._idl.get(operation) is not None:
+            self._idl[operation].clear()
+        if self._pict.get(operation) is not None:
+            self._pict[operation].clear()
 
     def save_constraint(self):
         idl_save_path = f"{self._config.data_path}/idl.csv"
@@ -205,5 +223,34 @@ class RuntimeInfoManager:
         with open(save_path, 'w') as f:
             json.dump(self._example_value_dict, f, indent=2)
 
-    def save_path_binding(self, path, binding):
-        self._path_binding[path] = binding
+    def save_path_binding(self, operation, binding, param_list, operations):
+        self._path_binding[operation] = dict()
+        for f in param_list:
+            constraint_operations = binding.get(f.get_global_name)
+            if len(constraint_operations) > 0:
+                for op_str in constraint_operations:
+                    for op in operations:
+                        if op.__repr__() == op_str:
+                            if self._path_binding[operation].get(f) is None:
+                                self._path_binding[operation][f] = list()
+                            self._path_binding[operation][f].append(op)
+                            break
+
+    def get_path_binding(self, operation):
+        return self._path_binding.get(operation, dict())
+
+    def bind_param(self, operation, response, param_list, operations):
+        for f in param_list:
+            if f.get_global_name in response:
+                bind_info = response[f.get_global_name]
+                dict_to_add = dict()
+                for op in operations:
+                    if op.__repr__() in bind_info:
+                        param_str = bind_info[op.__repr__()]
+                        dict_to_add[op] = param_str
+                if self._param_binding.get(operation) is None:
+                    self._param_binding[operation] = dict()
+                self._param_binding[operation][f] = dict_to_add
+
+    def get_param_binding(self, operation):
+        return self._param_binding.get(operation, dict())

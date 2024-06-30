@@ -140,6 +140,14 @@ class CA:
             elif status_code == 500:
                 has_bug = True
             response_list.append((status_code, response_data))
+            #
+            # # save case
+            # value_case = dict()
+            # for factor in op.get_leaf_factors():
+            #     if factor.get_global_name in case:
+            #         value_case[factor.get_global_name] = factor.printable_value()
+            # self._manager.save_case_response(op, value_case, response_data, status_code)
+
         logger.debug(f"Status codes: {[sc for (sc, res) in response_list]}")
         self._handle_response(url_tuple, op, response_list, chain, ca, is_essential)
         return has_success, has_bug, response_list

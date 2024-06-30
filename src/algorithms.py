@@ -78,6 +78,7 @@ class RestCT(Initialize):
 
         self._manager.save_constraint()
         self._manager.save_value_to_file()
+        self._manager.save_case_response_to_file()
         # self._statistics.write_report()
 
 

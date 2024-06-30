@@ -35,6 +35,7 @@ class RuntimeInfoManager:
 
         self._response_list = dict()
         self._example_value_dict: Dict[str, Dict[str, List[str, int]]] = dict()
+        self._test_case_dict = dict()
 
     def get_chains(self, max_chain_items):
         sortedList = sorted(self._response_chains, key=lambda c: len(c.keys()), reverse=True)
@@ -136,6 +137,18 @@ class RuntimeInfoManager:
             save_list[op] = list(response_set)
         with open(save_path, 'w') as f:
             json.dump(save_list, f, indent=2)
+
+    #
+    # def save_case_response(self, op, case, response_data, status_code):
+    #     if self._test_case_dict.get(op.__repr__()) is None:
+    #         self._test_case_dict[op.__repr__()] = list()
+    #     self._test_case_dict[op.__repr__()].append((case, response_data, status_code))
+    #
+    # def save_case_response_to_file(self):
+    #     save_path = f"{self._config.data_path}/case_response.json"
+    #     with open(save_path, 'w') as f:
+    #         json.dump(self._test_case_dict, f, indent=2)
+
 
     def save_problem_param(self, operation, param_list):
         if self._param_to_ask.get(operation) is None:

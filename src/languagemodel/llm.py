@@ -1,3 +1,4 @@
+import csv
 import time
 from pathlib import Path
 from typing import Dict, Set
@@ -11,7 +12,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 from src.config import Config
 from src.factor import *
 from src.languagemodel.fixer import *
-from src.template import SystemRole, INFO, Task
+from src.languagemodel.template import SystemRole, INFO, Task
 
 
 def get_type(factor):
@@ -126,7 +127,7 @@ class ResponseModel(BasicLanguageModel):
         self._response_list: List[(int, object)] = response_list
         self._fixer = ResponseFixer(manager, operation)
 
-        self._model = "gpt-4-1106-preview"
+        self._model = "gpt-4o"
 
     @staticmethod
     def calculate_cosine_similarity(string1, string2):
@@ -463,10 +464,15 @@ class PathModel(BasicLanguageModel):
         factor_operations_dict = self._manager.get_path_binding(self._operation)
         try:
             for f in self._param_to_ask:
-                related_operations = factor_operations_dict.get(f)
-                operation = related_operations[0]
-                response = self._manager.get_success_responses(operation)[0]
-                info[operation.__repr__()] = response
+                operation = factor_operations_dict.get(f)
+                response = self._manager.get_success_responses(operation)
+                if operation.responses[0].contents[0][1].__class__.__name__ == "ArrayFactor":
+                    example_response = sorted(response, key=lambda x: len(x), reverse=True)[0][0]
+                elif operation.responses[0].contents[0][1].__class__.__name__ == "ObjectFactor":
+                    example_response = response[0]
+                else:
+                    example_response = response[0]
+                info[operation.__repr__()] = example_response
             prompt = INFO.FIND_PARAMS.format(info) + Task.FIND_PARAMS
             return prompt
         except:
@@ -477,7 +483,7 @@ class ErrorValueModel(BasicLanguageModel):
     def __init__(self, operation: RestOp, manager, config: Config, temperature: float = 0.3):
         super().__init__(operation, manager, config, temperature)
 
-        self._fixer = ErrorValueFixer(manager, operation, param_to_ask)
+        self._fixer = ErrorValueFixer(manager, operation, operation.get_leaf_factors())
 
     def execute(self, message=None):
         logger.debug(f"Call language model to try to find bugs for operation {self._operation}")

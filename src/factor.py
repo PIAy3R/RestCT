@@ -76,47 +76,51 @@ class AbstractFactor(metaclass=abc.ABCMeta):
 
     def gen_path(self, op, chain, manager):
         self.domain.clear()
-        # binding_dict = manager.get_param_binding(op).get(self, {})
-        # try:
-        #     if len(binding_dict) > 0:
-        #         value_set = set()
-        #         for o, param_str in binding_dict.items():
-        #             for response in manager.get_success_responses(o):
-        #                 if isinstance(response, list):
-        #                     for response_dict in response:
-        #                         value_set.add(response_dict.get(param_str))
-        #                 if isinstance(response, dict):
-        #                     value_set.add(response.get(param_str))
-        #         for value in value_set:
-        #             if value is not None:
-        #                 self.domain.append(Value(value, ValueType.Example, DataType.NULL))
-        # except:
-        #     pass
-        # if len(self.domain) == 0:
+        binding_dict = manager.get_param_binding(op).get(self, {})
+        value_set = set()
+        try:
+            if len(binding_dict) > 0:
+                for o, param_str in binding_dict.items():
+                    for response in manager.get_success_responses(o):
+                        if o.responses[0].contents[0][1].__class__.__name__ == "ArrayFactor":
+                            value_set.add(response[0].get(param_str))
+                        elif o.responses[0].contents[0][1].__class__.__name__ == "ObjectFactor":
+                            value_set.add(response.get(param_str))
+        except:
+            pass
         dynamic_values = list()
-        response_value = list()
-        op_set = chain.keys()
-        high_weight, low_weight = AbstractFactor._analyse_url_relation(op, op_set, self.name)
-        for predecessor in high_weight:
-            response = chain.get(predecessor)
-            similarity_max = 0
-            path_depth_minimum = 10
-            right_path = None
-            right_value = None
-            for path, similarity, value in AbstractFactor.find_dynamic(self.name, response):
-                if similarity > similarity_max:
-                    right_path = path
-                    path_depth_minimum = len(path)
-                    similarity_max = similarity
-                    right_value = value
-                elif similarity == similarity_max:
-                    if len(path) < path_depth_minimum:
+        if len(value_set) == 0:
+            response_value = list()
+            op_set = chain.keys()
+            high_weight, low_weight = AbstractFactor._analyse_url_relation(op, op_set, self.name)
+            for predecessor in high_weight:
+                response = chain.get(predecessor)
+                similarity_max = 0
+                path_depth_minimum = 10
+                right_path = None
+                right_value = None
+                for path, similarity, value in AbstractFactor.find_dynamic(self.name, response):
+                    if similarity > similarity_max:
                         right_path = path
                         path_depth_minimum = len(path)
+                        similarity_max = similarity
                         right_value = value
-            if similarity_max > 0 and right_value not in response_value:
-                dynamic_values.append((predecessor, right_path))
-        if len(dynamic_values) > 0:
+                    elif similarity == similarity_max:
+                        if len(path) < path_depth_minimum:
+                            right_path = path
+                            path_depth_minimum = len(path)
+                            right_value = value
+                if similarity_max > 0 and right_value not in response_value:
+                    dynamic_values.append((predecessor, right_path))
+        if len(value_set) > 0:
+            # if len(dynamic_values) > 0:
+            #     for v in dynamic_values:
+            #         self.domain.append(Value(v, ValueType.Dynamic, DataType.NULL))
+            # else:
+            #     self.gen_domain()
+            for v in value_set:
+                self.domain.append(Value(v, ValueType.Example, DataType.NULL))
+        elif len(dynamic_values) > 0:
             if len(dynamic_values) < self.value_nums:
                 self.gen_domain()
             for v in dynamic_values:

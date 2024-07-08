@@ -322,11 +322,11 @@ In the results, all the pre-dependent operations need to be contained.
 Your task: 
 According to the name of previous operation and the information of the path parameter, 
 infer the results of which operations the values of these parameters may depend on.
-Answer at most three likely operations.
+Answer at most likely operation.
 Format you answer as a JSON object.
-The format is {param1:[operation1, operation2, operation3], param2:[operation1, operation2, operation3], ...}.
+The format is {param1:operation, param2:operation, ...}.
 Use only the operations in the previous operation list.
-Possibly higher operations are placed first.
+If the parameter value does not depend on any previous operation, the value is None.
 """
 
     FIND_PARAMS = """

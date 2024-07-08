@@ -59,12 +59,13 @@ class RestCT(Initialize):
         if not flag:
             return
 
-        # round 2: retry the failed operations
-        # failed_operations = sequence - self._manager.get_success_responses().keys()
+        # # round 2: retry the failed operations
+        # failed_operations = list(sequence - self._manager.get_success_responses().keys())
         # logger.info(f"round 2: retry the failed operations, failed operations: {len(failed_operations)}")
         # logger.info(f"Use llm to retry the failed operations")
-        # for op in failed_operations:
-        #     pass
+        # flag = self._ca.handle(failed_operations)
+        # if not flag:
+        #     return
 
         # round 3: find unexpected errors
         # success_operations = self._manager.get_success_responses().keys()
@@ -78,29 +79,28 @@ class RestCT(Initialize):
 
         self._manager.save_constraint()
         self._manager.save_value_to_file()
-        self._manager.save_case_response_to_file()
+        # self._manager.save_case_response_to_file()
         # self._statistics.write_report()
 
-
-class LLM(Initialize):
-    def __init__(self, config):
-        super().__init__(config)
-
-        self._seq = Sequence(self._config.s_strength, self._operations)
-
-        self._ca = CAWithLLM(self._config, manager=self._manager, operations=self._operations)
-
-    def run(self):
-        self._logger.info("operations: {}".format(len(self._operations)))
-        self._ca.start_time = time.time()
-
-        # step 1: cover all operations
-        logger.info("step 1: cover all operations")
-        sequence = self._seq.build_sequence(self._operations)
-        assert len(sequence) == len(self._operations)
-        logger.info(f"sequence length: {len(sequence)}")
-        self._ca.handle(sequence)
-
-        # step 2: retry the failed operations
-
-        # step 3: trigger bugs
+# class LLM(Initialize):
+#     def __init__(self, config):
+#         super().__init__(config)
+#
+#         self._seq = Sequence(self._config.s_strength, self._operations)
+#
+#         self._ca = CAWithLLM(self._config, manager=self._manager, operations=self._operations)
+#
+#     def run(self):
+#         self._logger.info("operations: {}".format(len(self._operations)))
+#         self._ca.start_time = time.time()
+#
+#         # step 1: cover all operations
+#         logger.info("step 1: cover all operations")
+#         sequence = self._seq.build_sequence(self._operations)
+#         assert len(sequence) == len(self._operations)
+#         logger.info(f"sequence length: {len(sequence)}")
+#         self._ca.handle(sequence)
+#
+#         # step 2: retry the failed operations
+#
+#         # step 3: trigger bugs

@@ -89,7 +89,11 @@ class RuntimeInfoManager:
         if operation is None:
             return self._response_dict
         else:
-            return self._response_dict.get(operation, [])
+            response = self._response_dict.get(operation, [])
+            if len(response) == 0:
+                return []
+            else:
+                return response
 
     @staticmethod
     def save_id_count(operation, response, id_counter):
@@ -239,15 +243,12 @@ class RuntimeInfoManager:
     def save_path_binding(self, operation, binding, param_list, operations):
         self._path_binding[operation] = dict()
         for f in param_list:
-            constraint_operations = binding.get(f.get_global_name)
-            if len(constraint_operations) > 0:
-                for op_str in constraint_operations:
-                    for op in operations:
-                        if op.__repr__() == op_str:
-                            if self._path_binding[operation].get(f) is None:
-                                self._path_binding[operation][f] = list()
-                            self._path_binding[operation][f].append(op)
-                            break
+            op_str = binding.get(f.get_global_name)
+            if op_str is not None:
+                for op in operations:
+                    if op.__repr__() == op_str:
+                        self._path_binding[operation][f] = op
+                        break
 
     def get_path_binding(self, operation):
         return self._path_binding.get(operation, dict())

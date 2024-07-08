@@ -329,8 +329,8 @@ class CAWithLLM(CA):
         history = []
         self._reset_constraints(operation, operation.parameters)
 
-        # if loop_num == 1:
-        #     self._call_binding_model(operation, chain, self._operations)
+        if loop_num == 1:
+            self._call_binding_model(operation, chain, self._operations)
 
         (have_success_e, have_bug_e, e_response_list), e_ca = self._handle_params(operation, sequence[:index],
                                                                                   success_url_tuple, chain, history,

@@ -51,7 +51,7 @@ class Config:
 
         # Language Model Settings
         self.use_llm = False
-        self.language_model = "gpt-4o-2024-05-13"
+        self.language_model = "gpt-4o"
         self.language_model_key = ""
         self.base_url = None
 

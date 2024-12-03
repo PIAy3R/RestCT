@@ -1,6 +1,7 @@
+from collections import defaultdict
+
 import csv
 import json
-from collections import defaultdict
 from typing import List, Dict, Tuple, Set
 
 from src.factor import Value, ValueType, AbstractFactor
@@ -142,16 +143,15 @@ class RuntimeInfoManager:
         with open(save_path, 'w') as f:
             json.dump(save_list, f, indent=2)
 
-    #
-    # def save_case_response(self, op, case, response_data, status_code):
-    #     if self._test_case_dict.get(op.__repr__()) is None:
-    #         self._test_case_dict[op.__repr__()] = list()
-    #     self._test_case_dict[op.__repr__()].append((case, response_data, status_code))
-    #
-    # def save_case_response_to_file(self):
-    #     save_path = f"{self._config.data_path}/case_response.json"
-    #     with open(save_path, 'w') as f:
-    #         json.dump(self._test_case_dict, f, indent=2)
+    def save_case_response(self, op, case, response_data, status_code):
+        if self._test_case_dict.get(op.__repr__()) is None:
+            self._test_case_dict[op.__repr__()] = list()
+        self._test_case_dict[op.__repr__()].append((case, response_data, status_code))
+
+    def save_case_response_to_file(self):
+        save_path = f"{self._config.data_path}/case_response.json"
+        with open(save_path, 'w') as f:
+            json.dump(self._test_case_dict, f, indent=2)
 
 
     def save_problem_param(self, operation, param_list):

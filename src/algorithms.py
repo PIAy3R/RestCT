@@ -1,8 +1,7 @@
 import sys
 import time
-from pathlib import Path
-
 from loguru import logger
+from pathlib import Path
 
 from src.ca import CA, CAWithLLM
 from src.info import RuntimeInfoManager
@@ -59,6 +58,9 @@ class RestCT(Initialize):
         if not flag:
             return
 
+        # round 2: try to find bugs
+        logger.info(f"round 2: try to find bugs")
+
         # # round 2: retry the failed operations
         # failed_operations = list(sequence - self._manager.get_success_responses().keys())
         # logger.info(f"round 2: retry the failed operations, failed operations: {len(failed_operations)}")
@@ -79,7 +81,7 @@ class RestCT(Initialize):
 
         self._manager.save_constraint()
         self._manager.save_value_to_file()
-        # self._manager.save_case_response_to_file()
+        self._manager.save_case_response_to_file()
         # self._statistics.write_report()
 
 # class LLM(Initialize):
